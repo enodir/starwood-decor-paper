@@ -8,7 +8,7 @@
   :root {
     --ink: #211c14;
     --ink-soft: #5c5342;
-    --paper: #f5f1e6;
+    --paper: #faf7ee;
     --paper-raised: #fffdf8;
     --brand: #845036;
     --brand-deep: #5f3a27;
@@ -67,7 +67,7 @@
   :root[data-theme="light"] {
     --ink: #211c14;
     --ink-soft: #5c5342;
-    --paper: #f5f1e6;
+    --paper: #faf7ee;
     --paper-raised: #fffdf8;
     --brand: #845036;
     --brand-deep: #5f3a27;
@@ -83,7 +83,8 @@
 
   body {
     margin: 0;
-    background: var(--paper);
+    background-color: var(--paper);
+    background-repeat: repeat;
     color: var(--ink);
     font-family: var(--font-body);
     font-size: 1.0625rem;
@@ -768,6 +769,66 @@
 
     var canvases = document.querySelectorAll("canvas.grain");
     canvases.forEach(paintGrain);
+
+    function paintPageTexture() {
+      var tile = 240;
+      var canvas = document.createElement("canvas");
+      canvas.width = tile;
+      canvas.height = tile;
+      var ctx = canvas.getContext("2d");
+
+      var base = getComputedStyle(document.documentElement).getPropertyValue("--paper").trim() || "#faf7ee";
+      var v = base.replace("#", "");
+      if (v.length === 3) v = v.split("").map(function (c) { return c + c; }).join("");
+      var rgb = [parseInt(v.substr(0, 2), 16), parseInt(v.substr(2, 2), 16), parseInt(v.substr(4, 2), 16)];
+
+      function tint(amount, alpha) {
+        var r = Math.max(0, Math.min(255, rgb[0] + amount));
+        var g = Math.max(0, Math.min(255, rgb[1] + amount));
+        var b = Math.max(0, Math.min(255, rgb[2] + amount));
+        return "rgba(" + r + "," + g + "," + b + "," + alpha + ")";
+      }
+
+      ctx.fillStyle = base;
+      ctx.fillRect(0, 0, tile, tile);
+
+      // fine paper fibres: short random-angle dashes, tileable via wrapped placement
+      for (var i = 0; i < 220; i++) {
+        var x = Math.random() * tile;
+        var y = Math.random() * tile;
+        var len = 3 + Math.random() * 9;
+        var angle = Math.random() * Math.PI;
+        var dx = Math.cos(angle) * len;
+        var dy = Math.sin(angle) * len;
+        ctx.strokeStyle = tint((Math.random() - 0.5) * 60, 0.05 + Math.random() * 0.07);
+        ctx.lineWidth = 0.6 + Math.random() * 0.7;
+        [[0, 0], [tile, 0], [-tile, 0], [0, tile], [0, -tile]].forEach(function (off) {
+          ctx.beginPath();
+          ctx.moveTo(x + off[0], y + off[1]);
+          ctx.lineTo(x + dx + off[0], y + dy + off[1]);
+          ctx.stroke();
+        });
+      }
+
+      // sparse flecks, like recycled-fibre paper
+      for (var j = 0; j < 50; j++) {
+        var fx = Math.random() * tile;
+        var fy = Math.random() * tile;
+        ctx.fillStyle = tint((Math.random() - 0.5) * 90, 0.04 + Math.random() * 0.05);
+        ctx.beginPath();
+        ctx.arc(fx, fy, 0.5 + Math.random() * 1.1, 0, Math.PI * 2);
+        ctx.fill();
+      }
+
+      document.body.style.backgroundImage = "url(" + canvas.toDataURL() + ")";
+      document.body.style.backgroundSize = tile + "px " + tile + "px";
+    }
+
+    paintPageTexture();
+    if (window.matchMedia) {
+      window.matchMedia("(prefers-color-scheme: dark)").addEventListener("change", paintPageTexture);
+    }
+    new MutationObserver(paintPageTexture).observe(document.documentElement, { attributes: true, attributeFilter: ["data-theme"] });
 
     var reveals = document.querySelectorAll(".benefit-card, .proof-logo, .collection-card");
     if ("IntersectionObserver" in window) {
