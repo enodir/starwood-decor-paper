@@ -3,39 +3,49 @@
 
   var reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
-  /* ---------- Language toggle ---------- */
+  /* ---------- Language switch: RU / EN / UZ ---------- */
   var LANG_KEY = 'starwood-lang';
+  var LANGS = ['ru', 'en', 'uz'];
   var html = document.documentElement;
-  var langToggles = [document.getElementById('lang-toggle'), document.getElementById('lang-toggle-footer')]
-    .filter(Boolean);
+  var langOptionButtons = document.querySelectorAll('.lang-option');
+
+  var META = {
+    ru: {
+      title: 'STARWOOD — Декоративная бумага для ламината ДСП/МДФ',
+      description: 'STARWOOD производит декоративную бумагу для ламинирования ДСП и МДФ: коллекции декоров, контроль качества, поставка образцов.'
+    },
+    en: {
+      title: 'STARWOOD — Decor Paper for Particleboard & MDF Laminate',
+      description: 'STARWOOD manufactures decor paper for particleboard and MDF lamination: decor collections, quality control, sample requests.'
+    },
+    uz: {
+      title: "STARWOOD — DSP va MDF laminati uchun dekorativ qog'oz",
+      description: "STARWOOD DSP va MDF laminatsiyasi uchun dekorativ qog'oz ishlab chiqaradi: dekor to'plamlari, sifat nazorati, namuna so'rovlari."
+    }
+  };
 
   function applyLang(lang) {
+    if (LANGS.indexOf(lang) === -1) lang = 'ru';
     html.setAttribute('lang', lang);
     html.setAttribute('data-lang', lang);
-    document.title = lang === 'ru'
-      ? 'STARWOOD — Декоративная бумага для ламината ДСП/МДФ'
-      : 'STARWOOD — Decor Paper for Particleboard & MDF Laminate';
+    document.title = META[lang].title;
     var metaDesc = document.querySelector('meta[name="description"]');
-    if (metaDesc) {
-      metaDesc.setAttribute('content', lang === 'ru'
-        ? 'STARWOOD производит декоративную бумагу для ламинирования ДСП и МДФ: коллекции декоров, контроль качества, поставка образцов.'
-        : 'STARWOOD manufactures decor paper for particleboard and MDF lamination: decor collections, quality control, sample requests.');
-    }
-    langToggles.forEach(function (btn) { btn.textContent = lang === 'ru' ? 'RU / EN' : 'EN / RU'; });
+    if (metaDesc) metaDesc.setAttribute('content', META[lang].description);
+    langOptionButtons.forEach(function (btn) {
+      btn.classList.toggle('is-active', btn.dataset.langSet === lang);
+    });
     document.querySelectorAll('option[data-ru]').forEach(function (opt) {
-      opt.textContent = lang === 'ru' ? opt.dataset.ru : opt.dataset.en;
+      opt.textContent = opt.dataset[lang] || opt.dataset.ru;
     });
     try { localStorage.setItem(LANG_KEY, lang); } catch (e) {}
   }
 
   var savedLang = null;
   try { savedLang = localStorage.getItem(LANG_KEY); } catch (e) {}
-  applyLang(savedLang === 'en' ? 'en' : 'ru');
+  applyLang(LANGS.indexOf(savedLang) !== -1 ? savedLang : 'ru');
 
-  langToggles.forEach(function (btn) {
-    btn.addEventListener('click', function () {
-      applyLang(html.getAttribute('lang') === 'ru' ? 'en' : 'ru');
-    });
+  langOptionButtons.forEach(function (btn) {
+    btn.addEventListener('click', function () { applyLang(btn.dataset.langSet); });
   });
 
   /* ---------- Mobile nav ---------- */
@@ -140,15 +150,19 @@
   }
 
   /* ---------- CTA form (no backend — placeholder submit) ---------- */
+  var CTA_STATUS_MESSAGE = {
+    ru: 'Заявка принята. Мы свяжемся с вами в течение рабочего дня.',
+    en: 'Request received. Our team will contact you within one business day.',
+    uz: "So'rov qabul qilindi. Bir ish kuni ichida siz bilan bog'lanamiz."
+  };
   var ctaForm = document.getElementById('sample-form');
   if (ctaForm) {
     ctaForm.addEventListener('submit', function (e) {
       e.preventDefault();
       var status = document.getElementById('cta-status');
       if (status) {
-        status.textContent = html.getAttribute('lang') === 'ru'
-          ? 'Заявка принята. Мы свяжемся с вами в течение рабочего дня.'
-          : 'Request received. Our team will contact you within one business day.';
+        var lang = html.getAttribute('lang');
+        status.textContent = CTA_STATUS_MESSAGE[lang] || CTA_STATUS_MESSAGE.ru;
       }
       ctaForm.reset();
     });

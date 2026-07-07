@@ -11,6 +11,13 @@
 :root {
   --press-black: #1E1A17;
   --press-black-soft: #2A2420;
+  /* Section-background variants of press-black, kept separate from the token above:
+     --press-black itself stays dark because it also serves as ink/text color on light
+     backgrounds (headings, focus rings, decor-card names) — lightening it would hurt
+     readability there. These two are for large dark-section backgrounds only
+     (hero, process, certificates, footer) and were lightened site-wide on request. */
+  --surface-dark: #4F4438;
+  --surface-dark-soft: #655947;
   --kraft-brown: #845036;
   --kraft-brown-dark: #6B3F2A;
   --kraft-brown-light: #A8734F;
@@ -19,6 +26,8 @@
   --registration-cyan: #1C8CA0;
   --ink-grey: #4A433C;
   --pulp-white: #F7F5F1;
+  --muted-on-dark: #C9C2B8;
+  --muted-on-dark-soft: #C4BAAC;
 
   --font-display: 'PT Sans Narrow', 'Arial Narrow', sans-serif;
   --font-body: 'IBM Plex Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
@@ -178,10 +187,12 @@ p.lead { font-size: clamp(1.05rem, 1.6vw, 1.25rem); color: var(--ink-grey); }
   position: sticky;
   top: 0;
   z-index: 500;
-  background: rgba(30, 26, 23, 0.92);
-  backdrop-filter: saturate(140%) blur(8px);
+  /* Same hue as the footer (.site-footer), by request, at 80% opacity so the
+     sticky bar stays a touch translucent over whatever scrolls beneath it. */
+  background: rgba(79, 68, 56, 0.8);
+  backdrop-filter: saturate(140%) blur(10px);
   color: var(--pulp-white);
-  border-bottom: 1px solid rgba(255,255,255,0.08);
+  border-bottom: 1px solid rgba(255,255,255,0.12);
 }
 
 .header-inner {
@@ -194,6 +205,7 @@ p.lead { font-size: clamp(1.05rem, 1.6vw, 1.25rem); color: var(--ink-grey); }
 }
 
 .logo {
+  position: relative;
   font-family: var(--font-display);
   font-weight: 700;
   font-size: 1.5rem;
@@ -201,12 +213,40 @@ p.lead { font-size: clamp(1.05rem, 1.6vw, 1.25rem); color: var(--ink-grey); }
 }
 .logo span { color: var(--kraft-brown-light); }
 
+/* Left-to-right underline sweep + bold-down, used for the logo and the main
+   nav links. A ::after bar scaled from 0 (transform-origin: left) reads as
+   "drawing" the line left-to-right, which a plain text-decoration toggle
+   can't do. */
+.logo::after,
+.main-nav a::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  bottom: -3px;
+  width: 100%;
+  height: 1px;
+  background: currentColor;
+  transform: scaleX(0);
+  transform-origin: left;
+  transition: transform 250ms var(--ease-out);
+}
+.logo:hover::after,
+.main-nav a:hover::after { transform: scaleX(1); }
+.logo:hover,
+.main-nav a:hover { font-weight: 700; }
+
 .main-nav {
   display: flex;
   gap: 1.75rem;
   font-size: 0.92rem;
 }
-.main-nav a { opacity: 0.85; transition: opacity 150ms; }
+.main-nav a {
+  position: relative;
+  opacity: 0.85;
+  text-decoration: none;
+  font-weight: 400;
+  transition: opacity 150ms;
+}
 .main-nav a:hover { opacity: 1; }
 
 .header-actions {
@@ -215,22 +255,44 @@ p.lead { font-size: clamp(1.05rem, 1.6vw, 1.25rem); color: var(--ink-grey); }
   gap: 0.9rem;
 }
 
-.lang-toggle {
+/* Three-way language switch: RU / EN / UZ. A single "current/next" toggle
+   button doesn't scale past two languages, so this is a segmented control —
+   each code is its own button, the active one is visually distinct. */
+.lang-switch {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.2rem;
+  border: 1px solid currentColor;
+  border-radius: var(--radius-card);
+  padding: 2px;
+  opacity: 0.85;
+}
+.lang-switch:hover { opacity: 1; }
+
+.lang-option {
   background: transparent;
-  border: 1px solid rgba(255,255,255,0.3);
-  color: var(--pulp-white);
+  border: none;
+  color: inherit;
   font-family: var(--font-mono);
   font-size: 0.78rem;
-  padding: 0.4em 0.7em;
-  border-radius: var(--radius-card);
+  letter-spacing: 0.02em;
+  padding: 0.32em 0.55em;
+  border-radius: 2px;
+  opacity: 0.6;
+  transition: opacity 150ms, background 150ms, color 150ms;
 }
-.lang-toggle:hover { border-color: var(--registration-cyan); color: var(--registration-cyan); }
+.lang-option:hover { opacity: 1; color: var(--registration-cyan); }
+.lang-option.is-active {
+  opacity: 1;
+  background: var(--registration-cyan);
+  color: var(--pulp-white);
+}
 
 .nav-toggle {
   display: none;
   background: none;
   border: none;
-  color: var(--pulp-white);
+  color: inherit;
   font-size: 1.4rem;
   line-height: 1;
 }
@@ -242,7 +304,7 @@ p.lead { font-size: clamp(1.05rem, 1.6vw, 1.25rem); color: var(--ink-grey); }
     left: 0;
     right: 0;
     flex-direction: column;
-    background: var(--press-black);
+    background: var(--surface-dark-soft);
     padding: 1rem var(--gutter) 1.5rem;
     gap: 1rem;
     display: none;
@@ -254,7 +316,7 @@ p.lead { font-size: clamp(1.05rem, 1.6vw, 1.25rem); color: var(--ink-grey); }
 
 /* ---------- Hero ---------- */
 .hero {
-  background: var(--press-black);
+  background: var(--surface-dark);
   color: var(--pulp-white);
   padding-block: clamp(3rem, 8vw, 6rem);
   overflow: clip;
@@ -273,7 +335,7 @@ p.lead { font-size: clamp(1.05rem, 1.6vw, 1.25rem); color: var(--ink-grey); }
 }
 
 .hero-copy h1 { color: var(--pulp-white); margin-bottom: 1.25rem; }
-.hero-copy .lead { color: #C9C2B8; max-width: 42ch; margin-bottom: 2rem; }
+.hero-copy .lead { color: var(--muted-on-dark); max-width: 42ch; margin-bottom: 2rem; }
 
 .hero-actions {
   display: flex;
@@ -317,7 +379,8 @@ p.lead { font-size: clamp(1.05rem, 1.6vw, 1.25rem); color: var(--ink-grey); }
 .layer-overlay {
   background: linear-gradient(155deg, rgba(255,255,255,0.22), rgba(255,255,255,0.02));
   border: 1px solid rgba(255,255,255,0.25);
-  transform: translate3d(14px, 16px, 0) rotate(2deg);
+  transform: translate3d(14px, 16px, 0) rotate(2deg) scale(1);
+  cursor: pointer;
 }
 
 .layer-press.is-pressed .layer {
@@ -326,7 +389,19 @@ p.lead { font-size: clamp(1.05rem, 1.6vw, 1.25rem); color: var(--ink-grey); }
 .layer-press.is-pressed .layer-kraft,
 .layer-press.is-pressed .layer-decor,
 .layer-press.is-pressed .layer-overlay {
-  transform: translate3d(0,0,0) rotate(0deg);
+  transform: translate3d(0,0,0) rotate(0deg) scale(1);
+}
+
+/* Hover zoom on the overlay sheet. Two rules because the resting transform
+   differs before/after the load animation settles — in practice users only
+   ever get to hover once `.is-pressed` has applied, but both are covered so
+   the effect still works with reduced motion (where is-pressed is instant). */
+.layer-overlay:hover {
+  transform: translate3d(14px, 16px, 0) rotate(2deg) scale(1.08);
+}
+.layer-press.is-pressed .layer-overlay:hover {
+  transform: translate3d(0,0,0) rotate(0deg) scale(1.08);
+  transition: transform 300ms var(--ease-out);
 }
 
 /* ---------- Generic section rhythm ---------- */
@@ -337,7 +412,7 @@ p.lead { font-size: clamp(1.05rem, 1.6vw, 1.25rem); color: var(--ink-grey); }
 .section--pulp { background: var(--raw-pulp); }
 .section-head--center { text-align: center; max-width: none; }
 .section-head--center .eyebrow { justify-content: center; }
-.section--dark { background: var(--press-black); color: var(--pulp-white); }
+.section--dark { background: var(--surface-dark); color: var(--pulp-white); }
 .section--dark h2 { color: var(--pulp-white); }
 
 .section-head {
@@ -488,7 +563,7 @@ p.lead { font-size: clamp(1.05rem, 1.6vw, 1.25rem); color: var(--ink-grey); }
 .stack-bar {
   height: 3.5rem;
   border-radius: var(--radius-card);
-  background: var(--press-black-soft);
+  background: var(--surface-dark-soft);
   border: 1px solid rgba(255,255,255,0.12);
   opacity: 0.3;
   transform: scaleX(0.94);
@@ -499,7 +574,7 @@ p.lead { font-size: clamp(1.05rem, 1.6vw, 1.25rem); color: var(--ink-grey); }
   padding-inline: 1rem;
   font-family: var(--font-mono);
   font-size: 0.78rem;
-  color: #C9C2B8;
+  color: var(--muted-on-dark);
   letter-spacing: 0.03em;
   text-transform: uppercase;
 }
@@ -538,7 +613,7 @@ p.lead { font-size: clamp(1.05rem, 1.6vw, 1.25rem); color: var(--ink-grey); }
 }
 
 .process-stage h3 { color: var(--pulp-white); margin-bottom: 0.25rem; font-size: 1.05rem; }
-.process-stage p { color: #C9C2B8; font-size: 0.92rem; }
+.process-stage p { color: var(--muted-on-dark); font-size: 0.92rem; }
 
 /* ---------- Advantages (no numbering — see PRD §3.5) ---------- */
 .advantages-grid {
@@ -591,7 +666,7 @@ p.lead { font-size: clamp(1.05rem, 1.6vw, 1.25rem); color: var(--ink-grey); }
   font-size: 0.78rem;
   text-transform: uppercase;
   letter-spacing: 0.04em;
-  color: #9E958A;
+  color: var(--muted-on-dark-soft);
   margin-top: 0.5rem;
 }
 
@@ -604,7 +679,7 @@ p.lead { font-size: clamp(1.05rem, 1.6vw, 1.25rem); color: var(--ink-grey); }
   font-family: var(--font-mono);
   font-size: 0.82rem;
   border: 1px dashed rgba(255,255,255,0.35);
-  color: #C9C2B8;
+  color: var(--muted-on-dark);
   padding: 0.7em 1.1em;
   border-radius: var(--radius-card);
 }
@@ -681,12 +756,12 @@ p.lead { font-size: clamp(1.05rem, 1.6vw, 1.25rem); color: var(--ink-grey); }
 .cta-status { margin-top: 0.75rem; font-family: var(--font-mono); font-size: 0.85rem; }
 
 /* ---------- Footer / Colophon ---------- */
-.site-footer { background: var(--press-black); color: var(--pulp-white); }
+.site-footer { background: var(--surface-dark); color: var(--pulp-white); }
 
 .colophon {
   font-family: var(--font-mono);
   font-size: 0.85rem;
-  color: #C9C2B8;
+  color: var(--muted-on-dark);
   padding-block: 1.75rem;
   border-bottom: 1px solid rgba(255,255,255,0.12);
   line-height: 1.8;
@@ -709,17 +784,17 @@ p.lead { font-size: clamp(1.05rem, 1.6vw, 1.25rem); color: var(--ink-grey); }
   font-size: 0.75rem;
   text-transform: uppercase;
   letter-spacing: 0.06em;
-  color: #9E958A;
+  color: var(--muted-on-dark-soft);
   margin-bottom: 0.9rem;
 }
-.footer-col ul { display: flex; flex-direction: column; gap: 0.55rem; font-size: 0.92rem; }
+.footer-col ul { list-style: none; padding: 0; display: flex; flex-direction: column; gap: 0.55rem; font-size: 0.92rem; }
 .footer-col a:hover { color: var(--registration-cyan); }
 
 .footer-bottom {
   border-top: 1px solid rgba(255,255,255,0.12);
   padding-block: 1.25rem;
   font-size: 0.8rem;
-  color: #9E958A;
+  color: var(--muted-on-dark-soft);
   display: flex;
   justify-content: space-between;
   flex-wrap: wrap;
@@ -727,9 +802,10 @@ p.lead { font-size: clamp(1.05rem, 1.6vw, 1.25rem); color: var(--ink-grey); }
 }
 
 /* ---------- i18n visibility ----------
-   All translatable nodes are <span data-i18n-lang="ru|en"> inline elements
+   All translatable nodes are <span data-i18n-lang="ru|en|uz"> inline elements
    living alongside static markup (buttons, headings, list items) — display
    must stay inline or it breaks the surrounding flow. */
 [data-i18n-lang] { display: none; }
 html[lang="ru"] [data-i18n-lang="ru"],
-html[lang="en"] [data-i18n-lang="en"] { display: inline; }
+html[lang="en"] [data-i18n-lang="en"],
+html[lang="uz"] [data-i18n-lang="uz"] { display: inline; }

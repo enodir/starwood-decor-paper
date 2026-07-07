@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project
 
-STARWOOD — a bilingual (RU/EN) B2B marketing site for a decor-paper mill (decorative paper for
+STARWOOD — a trilingual (RU/EN/UZ-Latin) B2B marketing site for a decor-paper mill (decorative paper for
 particleboard/MDF laminate). Static site, no build step, no framework, no test suite.
 
 **Read before making design or content decisions:**
@@ -31,12 +31,13 @@ weight against the LCP budget that matters most for B2B buyers (see research §2
 - `index.html` — the entire page, all ten PRD sections in one file.
 - `style.css` — single stylesheet. Design tokens as CSS custom properties at the top; sections follow in
   page order.
-- `script.js` — single IIFE, no modules/bundler. Independent feature blocks: language toggle, mobile nav,
+- `script.js` — single IIFE, no modules/bundler. Independent feature blocks: language switch, mobile nav,
   scroll-reveal, decor filter, kinetic counters, CTA form, the "layer press" signature animation, and the
   process ScrollTrigger scene.
-- `assets/fonts.generated.css` + `assets/fonts/*.woff2` — self-hosted, subsetted (cyrillic + latin only)
-  webfonts. Linked directly in `<head>` (not `@import`-ed from `style.css`) so the browser preloader fetches
-  it in parallel with `style.css` instead of discovering it late.
+- `assets/fonts.generated.css` + `assets/fonts/*.woff2` — self-hosted, subsetted (cyrillic + latin only —
+  Uzbek Latin uses the latin subset) webfonts. Linked directly in `<head>` (not `@import`-ed from
+  `style.css`) so the browser preloader fetches it in parallel with `style.css` instead of discovering it
+  late.
 - `assets/img/` — responsive WebP+JPEG pairs derived from the one real photo asset
   (`driftvud_1280x800.jpg`, a wood-grain decor texture). Everything else in the decor catalog is a CSS
   gradient placeholder (see "Content placeholders" below).
@@ -57,7 +58,8 @@ curl -s -A "<desktop UA>" "https://fonts.googleapis.com/css2?family=...&display=
 ```
 
 If you add a new font weight/family, keep only `cyrillic` and `latin` subsets (drop `-ext`/`vietnamese`) —
-the site is RU/EN only.
+Uzbek Latin is covered by the `latin` subset (it needs `'` for apostrophed letters like `o'`/`g'`, no extra
+glyphs beyond that), Russian needs `cyrillic`.
 
 ### Running locally
 
@@ -76,12 +78,20 @@ Full rationale in `research/03_design_direction.md`. Summary of the tokens (all 
 
 | Token | Hex | Role |
 |---|---|---|
-| `--press-black` | `#1E1A17` | Dark sections: hero, process, footer |
+| `--press-black` | `#1E1A17` | **Ink/text color only** — headings, decor-card names, focus rings, `.btn-outline-dark`. Do not use for large backgrounds (see below). |
+| `--surface-dark` | `#4F4438` | Background for large dark sections (hero, process, certificates, footer). Lightened on request from an earlier near-black `#1E1A17` — kept as a separate token from `--press-black` specifically so lightening it doesn't also wash out ink/text colors that reuse the same name. |
+| `--surface-dark-soft` | `#655947` | Slightly lighter dark-section surface (resting `.stack-bar` state). |
 | `--kraft-brown` | `#845036` | Brand accent (CTA, brand blocks) — fixed by the original brief, do not change |
-| `--raw-pulp` | `#E8E4DC` | Light section background — deliberately *not* a warm cream (see cliché note) |
-| `--registration-cyan` | `#1C8CA0` | Interactive/working accent (links, active states, eyebrow labels) |
+| `--raw-pulp` | `#E8E4DC` | Light section background — deliberately *not* a warm cream (see cliché note). Do not lighten this further toward `#F4F1EA` — that's the exact AI-default cream this project is avoiding. |
+| `--registration-cyan` | `#1C8CA0` | Interactive/working accent (links, active states, eyebrow labels, active language option) |
 | `--ink-grey` | `#4A433C` | Body text on light backgrounds |
-| `--pulp-white` | `#F7F5F1` | Card surfaces on top of raw-pulp |
+| `--pulp-white` | `#F7F5F1` | Card surfaces on top of raw-pulp; also text color on dark surfaces |
+| `--muted-on-dark` / `--muted-on-dark-soft` | `#C9C2B8` / `#C4BAAC` | Secondary text on dark surfaces (lead copy, stat labels, footer nav). Both were picked/verified for ≥4.5:1 contrast against `--surface-dark` — if you darken `--surface-dark` further, recheck contrast before reusing these. |
+
+**When touching backgrounds vs. text color, mind the split above.** `--press-black` and `--surface-dark`
+look similar in a swatch but serve different jobs; conflating them again (e.g. reintroducing
+`background: var(--press-black)` on a large section) silently drags the whole site back toward the darker
+look this token split was created to move away from.
 
 Typography: **PT Sans Narrow** (display/headings) + **IBM Plex Sans** (body) + **IBM Plex Mono** (decor
 codes, stage numbers, eyebrow labels, form labels). Big Shoulders was the original display-font choice in
@@ -107,32 +117,61 @@ sequence — do not add numbering to the advantages grid or other parallel (non-
 **Footer is a "colophon"**, not a generic three-column footer — mono-font production specs
 (`.colophon`) above the standard nav/contact columns, styled after a print-industry colophon block.
 
+**Header** is a translucent light bar (`rgba(247,245,241,0.7)` + `backdrop-filter: blur`), not a solid
+dark bar — it sits on request at 70% opacity over both the dark hero and the light sections below, so its
+text color is `--press-black` (not `--pulp-white`). Nav links and the logo underline on hover
+(`text-decoration: underline` on `:hover`, not just an opacity change).
+
 **Anti-cliché constraints** (from the design skill critique in research §03, don't reintroduce these):
 - No warm-cream (`#F4F1EA`-style) background paired with a contrast serif display font.
 - No single near-black page with exactly one bright accent color — this site deliberately has both light
   and dark sections and two functionally distinct accents (`--kraft-brown` for brand, `--registration-cyan`
   for interaction).
 
-## i18n pattern
+## i18n pattern (RU / EN / UZ-Latin)
 
-Both languages live in the DOM simultaneously as sibling `<span data-i18n-lang="ru">`/`<span
-data-i18n-lang="en">` elements; visibility is toggled purely by CSS (`html[lang="ru"|"en"]
-[data-i18n-lang="..."] { display: inline }`), so it works even before `script.js` runs. `script.js` only
-flips `<html lang>`, persists the choice to `localStorage`, and updates a few things CSS can't reach
-(`<title>`, `<meta name="description">`, and `<option>` text — see gotcha below).
+All three languages live in the DOM simultaneously as sibling `<span data-i18n-lang="ru">` / `<span
+data-i18n-lang="en">` / `<span data-i18n-lang="uz">` elements; visibility is toggled purely by CSS
+(`html[lang="ru"|"en"|"uz"] [data-i18n-lang="..."] { display: inline }`), so it works even before
+`script.js` runs. The language switch itself is a 3-button segmented control (`.lang-switch` /
+`.lang-option`, `data-lang-set="ru|en|uz"`) in both the header and the footer — not a single
+toggle/cycle button, which stopped scaling once a third language was added. `script.js`'s `applyLang()`
+flips `<html lang>`, marks the matching `.lang-option` as `.is-active`, persists the choice to
+`localStorage`, and updates the handful of things CSS can't reach: `<title>`, `<meta
+name="description">` (see the `META` object in `script.js`), the CTA form's post-submit status message
+(`CTA_STATUS_MESSAGE`), and `<option>` text (see gotcha below).
 
 **Gotcha:** `<option>` elements cannot contain child elements (the content model is text-only), so decor
-category `<option>`s carry `data-ru`/`data-en` attributes instead of nested spans, and `script.js`'s
-`applyLang()` rewrites `option.textContent` directly. Follow this pattern for any new `<select>` — don't
-nest `<span data-i18n-lang>` inside an `<option>`, it renders broken/invalid HTML.
+category `<option>`s carry `data-ru`/`data-en`/`data-uz` attributes instead of nested spans, and
+`script.js`'s `applyLang()` rewrites `option.textContent` from `opt.dataset[lang]` directly. Follow this
+pattern for any new `<select>` — don't nest `<span data-i18n-lang>` inside an `<option>`, it renders
+broken/invalid HTML.
 
-When adding new translatable copy, always add both spans together — there's no fallback/missing-key
-handling, an element without both language spans will simply be blank in one language.
+**Gotcha (learned the hard way):** don't try to add a language across the whole page with a scripted
+global find-and-replace — several short phrases (e.g. "Дерево", "ESG") repeat verbatim in multiple
+unrelated places (nav vs. footer vs. filter buttons vs. `<option>`), so a non-unique string match will
+insert translations in the wrong spot or duplicate blocks. Add new language spans with targeted,
+one-at-a-time edits anchored on enough surrounding context to be unique, not a blanket substitution pass.
+
+When adding new translatable copy, always add all three spans together — there's no fallback/missing-key
+handling, an element missing a language's span will simply be blank in that language. A few accessibility
+attributes (`aria-label` on the mobile nav, the decor-filter group, the layer-press illustration) are still
+Russian-only regardless of active language — a known gap, not a bug, if you have time to close it follow
+the `META`-object pattern used for title/description.
+
+Uzbek copy in this project is a good-faith machine-quality translation (written by Claude, not reviewed by
+a native speaker) — flag it for native review before treating it as final, same as the other content
+placeholders below.
 
 ## Content placeholders
 
 Most content is intentionally a placeholder pending real data from the mill (see PRD.md §5 for the full
 list): decor images/names beyond the one real wood-texture photo, certificate badges, company stats
-(tonnage/years/countries), client logos, contact details/address, and the catalog/sustainability PDFs.
-Don't treat any of these as real when reasoning about the business — they're structural placeholders, not
-approved copy.
+(tonnage/years/countries), client logos, social links (Instagram/Telegram/LinkedIn point to `#`), and the
+catalog/sustainability PDFs. Don't treat any of these as real when reasoning about the business — they're
+structural placeholders, not approved copy.
+
+Production contacts/geography (footer, §3.10) ARE real: Tashkent, Uzbekistan; export to Uzbekistan's
+regions and neighbouring countries; phone +998 99 000 00 00. The sales email is still a placeholder
+domain. The Uzbek (UZ-Latin) translation of all copy is machine-quality, not reviewed by a native
+speaker — treat it the same as other placeholders needing sign-off before a real launch.
