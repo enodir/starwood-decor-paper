@@ -55,6 +55,13 @@
 
   --bg-texture: url('assets/img/uludag-mese-bg.jpg');
 
+  /* Hero-only background photo: fanned wood-veneer/laminate decor swatches,
+     shallow depth of field, warm window light ("Samples of Wooden Floor" by
+     cottonbro studio, Pexels — free for commercial use, no attribution
+     required). Swapped for a narrower crop on mobile via media query below
+     (see .hero) to avoid shipping the full desktop asset on small screens. */
+  --hero-bg-photo: url('assets/img/hero-decor-swatches-1920.jpg');
+
   /* Inline SVG fractal-noise, ~300 bytes, no network request — a paper-grain
      ambient texture reinforcing "this is a paper mill" at near-zero cost.
      Scoped to the light "paper stock" sections only (see .section--pulp*). */
@@ -302,13 +309,13 @@ p.lead { font-size: clamp(1.05rem, 1.6vw, 1.25rem); color: var(--ink-grey); }
 .logo-img {
   height: 28px;
   width: auto;
-  animation: logo-slide-in 700ms var(--ease-out) both;
+  animation: logo-fade-in 900ms ease-out both;
 }
-/* One-time entrance on page load — logo slides in from off-screen left,
-   distinct from the hero's "layer press" signature motif. */
-@keyframes logo-slide-in {
-  from { transform: translateX(-120px); opacity: 0; }
-  to { transform: translateX(0); opacity: 1; }
+/* One-time entrance on page load — logo fades smoothly into view, distinct
+   from the hero's "layer press" signature motif. */
+@keyframes logo-fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
 }
 
 /* Left-to-right underline sweep + bold-down, used for the main nav links
@@ -433,13 +440,23 @@ p.lead { font-size: clamp(1.05rem, 1.6vw, 1.25rem); color: var(--ink-grey); }
 /* ---------- Hero ---------- */
 .hero {
   background-color: var(--surface-dark);
-  background-image: var(--bg-texture);
-  background-size: cover;
-  background-position: center;
-  background-blend-mode: multiply;
+  /* Same-hue scrim over the photo (not instead of it) — the swatch photo has
+     finer, busier detail than the sitewide wood-grain texture, so it needs
+     more coverage to keep hero-copy text legible regardless of whether the
+     photo ends up beside the text (desktop) or above it (mobile, where
+     hero-visual reorders first — see the 900px breakpoint below). */
+  background-image: linear-gradient(rgba(79, 68, 56, 0.72), rgba(79, 68, 56, 0.72)), var(--hero-bg-photo);
+  background-size: cover, cover;
+  background-position: center, center;
+  background-blend-mode: normal, multiply;
   color: var(--pulp-white);
   padding-block: clamp(3rem, 8vw, 6rem);
   overflow: clip;
+}
+@media (max-width: 760px) {
+  .hero {
+    background-image: linear-gradient(rgba(79, 68, 56, 0.72), rgba(79, 68, 56, 0.72)), url('assets/img/hero-decor-swatches-768.jpg');
+  }
 }
 
 .hero-grid {

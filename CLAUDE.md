@@ -38,9 +38,12 @@ weight against the LCP budget that matters most for B2B buyers (see research §2
   Uzbek Latin uses the latin subset) webfonts. Linked directly in `<head>` (not `@import`-ed from
   `style.css`) so the browser preloader fetches it in parallel with `style.css` instead of discovering it
   late.
-- `assets/img/` — responsive WebP+JPEG pairs derived from the one real photo asset
-  (`driftvud_1280x800.jpg`, a wood-grain decor texture). Everything else in the decor catalog is a CSS
-  gradient placeholder (see "Content placeholders" below).
+- `assets/img/` — responsive WebP+JPEG pairs derived from real photo assets: `driftvud_1280x800.jpg` (wood-grain
+  decor texture, used in the layer-press signature and decor catalog), `uludag-mese-bg.jpg` (oak wood-grain,
+  the sitewide texture backdrop — see `--bg-texture` in `style.css`), and `hero-decor-swatches-{768,1920}.jpg`
+  (fanned laminate/veneer sample photo, hero-section-only background — see `--hero-bg-photo`; "Samples of
+  Wooden Floor" by cottonbro studio via Pexels, free for commercial use, no attribution required). Everything
+  else in the decor catalog is a CSS gradient placeholder (see "Content placeholders" below).
 - `deploy/` — a separate Vercel deployment target (has its own `.vercel/`). It is **not** auto-synced with
   the root files — copy `index.html`/`style.css`/`script.js` into it manually before deploying.
 
