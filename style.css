@@ -40,10 +40,25 @@
   --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
   --dur-reveal: 550ms;
 
-  /* Oak wood-grain texture (Uludag mese) used as the site's light-section
-     background, sitting under a tinted overlay so text keeps contrast —
-     see body / .section--pulp-white / .section--pulp below. */
+  /* Oak wood-grain texture (Uludag mese) — the one backdrop behind the
+     entire page (see .bg-texture). Light sections show it as a translucent
+     tint (see .section--pulp-white/.section--pulp) since lightening never
+     threatens white-text contrast there. Dark/brand-colored surfaces
+     (hero, .section--dark, .btn-primary, .stack-bar.is-active,
+     .cta-section) use background-blend-mode: multiply instead of alpha —
+     alpha-blending a dark tone with this light-toned photo necessarily
+     brightens the surface (tried at 0.9, then 0.7, then 0.45 opacity: the
+     last was clearly visible but tanked secondary-text contrast to
+     ~1.5:1). Multiply can only darken or match the base color, never
+     lighten past it, so contrast stays anchored to the original verified
+     base colors while the grain still reads as texture. */
+
   --bg-texture: url('assets/img/uludag-mese-bg.jpg');
+
+  /* Inline SVG fractal-noise, ~300 bytes, no network request — a paper-grain
+     ambient texture reinforcing "this is a paper mill" at near-zero cost.
+     Scoped to the light "paper stock" sections only (see .section--pulp*). */
+  --paper-grain: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
 }
 
 /* ---------- Reset ---------- */
@@ -70,14 +85,25 @@ body {
   font-family: var(--font-body);
   color: var(--ink-grey);
   background-color: var(--raw-pulp);
-  background-image: var(--bg-texture);
-  background-size: cover;
-  background-position: center;
-  background-attachment: fixed;
-  background-repeat: no-repeat;
   font-size: 16px;
   line-height: 1.5;
   -webkit-font-smoothing: antialiased;
+}
+
+/* Wood-texture backdrop as a real fixed element, not background-attachment:
+   fixed. A background-attachment:fixed value is repainted by the main thread
+   on every scroll frame (and is inconsistently supported on iOS Safari) —
+   exactly the kind of jank this site needs to avoid on low-end mobile. A
+   position:fixed element gets its own compositor layer, so it costs nothing
+   during scroll on any device. */
+.bg-texture {
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  background-image: var(--bg-texture);
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
 }
 
 h1, h2, h3, h4 {
@@ -150,6 +176,46 @@ p.lead { font-size: clamp(1.05rem, 1.6vw, 1.25rem); color: var(--ink-grey); }
 .crosshair::before { left: 6px; top: 0; width: 2px; height: 14px; }
 .crosshair::after { left: 0; top: 6px; width: 14px; height: 2px; }
 
+/* Registration resolve: the two bars start slightly out of true (as if the
+   print plates haven't registered yet) and snap into alignment with a small
+   overshoot — the same alignment check a rotogravure press runs on every
+   sheet, played out in the eyebrow mark itself rather than left a static
+   glyph. One detail, repeated consistently at every section, not a new
+   competing signature moment alongside the layer press. */
+.reveal .crosshair::before {
+  opacity: 0;
+  transform: translateX(-4px);
+  transition: transform 480ms cubic-bezier(0.34, 1.56, 0.64, 1) 60ms, opacity 300ms ease-out 60ms;
+}
+.reveal .crosshair::after {
+  opacity: 0;
+  transform: translateY(4px);
+  transition: transform 480ms cubic-bezier(0.34, 1.56, 0.64, 1) 150ms, opacity 300ms ease-out 150ms;
+}
+.reveal.is-visible .crosshair::before,
+.reveal.is-visible .crosshair::after {
+  opacity: 1;
+  transform: translate(0, 0);
+}
+
+/* The hero eyebrow isn't inside a .reveal (hero is visible immediately on
+   load), so it gets the same resolve as a one-time load animation instead,
+   sequenced just after the logo settles in. */
+.hero .crosshair::before {
+  animation: crosshair-snap-v 480ms cubic-bezier(0.34, 1.56, 0.64, 1) 550ms both;
+}
+.hero .crosshair::after {
+  animation: crosshair-snap-h 480ms cubic-bezier(0.34, 1.56, 0.64, 1) 650ms both;
+}
+@keyframes crosshair-snap-v {
+  from { opacity: 0; transform: translateX(-4px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+@keyframes crosshair-snap-h {
+  from { opacity: 0; transform: translateY(4px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
 /* ---------- Buttons ---------- */
 .btn {
   display: inline-flex;
@@ -165,12 +231,27 @@ p.lead { font-size: clamp(1.05rem, 1.6vw, 1.25rem); color: var(--ink-grey); }
   transition: transform 200ms var(--ease-out), background 200ms, color 200ms, border-color 200ms;
 }
 .btn:hover { transform: translateY(-2px); }
+.btn:active { transform: scale(0.97); transition-duration: 100ms; }
 
 .btn-primary {
-  background: var(--kraft-brown);
+  background-color: var(--kraft-brown);
+  background-image: var(--bg-texture);
+  background-size: cover;
+  background-position: center;
+  background-blend-mode: multiply;
   color: var(--pulp-white);
+  box-shadow: 0 2px 0 rgba(0,0,0,0.22);
+  transition: transform 200ms var(--ease-out), background-color 200ms, color 200ms, border-color 200ms, box-shadow 150ms var(--ease-out);
 }
-.btn-primary:hover { background: var(--kraft-brown-dark); }
+.btn-primary:hover { background-color: var(--kraft-brown-dark); }
+/* Letterpress impression on the primary CTA specifically (the one button
+   that matters most) rather than the generic scale-down every button gets —
+   sinks in and loses its resting shadow, like a plate stamping into paper. */
+.btn-primary:active {
+  transform: translateY(1px) scale(0.98);
+  box-shadow: inset 0 2px 3px rgba(0,0,0,0.35);
+  transition-duration: 90ms;
+}
 
 .btn-outline {
   border-color: currentColor;
@@ -216,18 +297,26 @@ p.lead { font-size: clamp(1.05rem, 1.6vw, 1.25rem); color: var(--ink-grey); }
 
 .logo {
   position: relative;
-  font-family: var(--font-display);
-  font-weight: 700;
-  font-size: 1.5rem;
-  letter-spacing: 0.04em;
+  display: inline-block;
 }
-.logo span { color: var(--kraft-brown-light); }
+.logo-img {
+  height: 28px;
+  width: auto;
+  animation: logo-slide-in 700ms var(--ease-out) both;
+}
+/* One-time entrance on page load — logo slides in from off-screen left,
+   distinct from the hero's "layer press" signature motif. */
+@keyframes logo-slide-in {
+  from { transform: translateX(-120px); opacity: 0; }
+  to { transform: translateX(0); opacity: 1; }
+}
 
-/* Left-to-right underline sweep + bold-down, used for the logo and the main
-   nav links. A ::after bar scaled from 0 (transform-origin: left) reads as
-   "drawing" the line left-to-right, which a plain text-decoration toggle
-   can't do. */
-.logo::after,
+/* Left-to-right underline sweep + bold-down, used for the main nav links
+   (the logo used to share this via an image wordmark, dropped since it
+   became an <img> — an underline sweeping under a logo image read as a
+   glitch rather than an intentional hover state). A ::after bar scaled
+   from 0 (transform-origin: left) reads as "drawing" the line
+   left-to-right, which a plain text-decoration toggle can't do. */
 .main-nav a::after {
   content: '';
   position: absolute;
@@ -240,9 +329,7 @@ p.lead { font-size: clamp(1.05rem, 1.6vw, 1.25rem); color: var(--ink-grey); }
   transform-origin: left;
   transition: transform 250ms var(--ease-out);
 }
-.logo:hover::after,
 .main-nav a:hover::after { transform: scaleX(1); }
-.logo:hover,
 .main-nav a:hover { font-weight: 700; }
 
 .main-nav {
@@ -300,6 +387,11 @@ p.lead { font-size: clamp(1.05rem, 1.6vw, 1.25rem); color: var(--ink-grey); }
 
 .nav-toggle {
   display: none;
+  align-items: center;
+  justify-content: center;
+  min-width: 44px;
+  min-height: 44px;
+  margin-inline: -0.5rem;
   background: none;
   border: none;
   color: inherit;
@@ -317,16 +409,34 @@ p.lead { font-size: clamp(1.05rem, 1.6vw, 1.25rem); color: var(--ink-grey); }
     background: var(--surface-dark-soft);
     padding: 1rem var(--gutter) 1.5rem;
     gap: 1rem;
-    display: none;
+    display: flex;
+    /* Fade + slide instead of instant show/hide (state changes should
+       animate, not snap). visibility (not just opacity) keeps closed-state
+       links out of the tab order, matching the display:none behavior this
+       replaces. */
+    opacity: 0;
+    transform: translateY(-8px);
+    visibility: hidden;
+    pointer-events: none;
+    transition: opacity 220ms var(--ease-out), transform 220ms var(--ease-out), visibility 220ms;
   }
-  .main-nav.is-open { display: flex; }
-  .nav-toggle { display: block; }
+  .main-nav.is-open {
+    opacity: 1;
+    transform: translateY(0);
+    visibility: visible;
+    pointer-events: auto;
+  }
+  .nav-toggle { display: flex; }
   .header-actions .btn-sm { display: none; }
 }
 
 /* ---------- Hero ---------- */
 .hero {
-  background: var(--surface-dark);
+  background-color: var(--surface-dark);
+  background-image: var(--bg-texture);
+  background-size: cover;
+  background-position: center;
+  background-blend-mode: multiply;
   color: var(--pulp-white);
   padding-block: clamp(3rem, 8vw, 6rem);
   overflow: clip;
@@ -345,6 +455,14 @@ p.lead { font-size: clamp(1.05rem, 1.6vw, 1.25rem); color: var(--ink-grey); }
 }
 
 .hero-copy h1 { color: var(--pulp-white); margin-bottom: 1.25rem; }
+/* Thesis emphasis: one word carries the claim (trust), set off in the
+   "working" registration-cyan ink rather than left the same flat white as
+   the rest of the headline — the hero should read as an argument, not a
+   uniform block of type. */
+.hero-accent {
+  font-style: normal;
+  color: var(--registration-cyan);
+}
 .hero-copy .lead { color: var(--muted-on-dark); max-width: 42ch; margin-bottom: 2rem; }
 
 .hero-actions {
@@ -418,13 +536,37 @@ p.lead { font-size: clamp(1.05rem, 1.6vw, 1.25rem); color: var(--ink-grey); }
 .section {
   padding-block: clamp(3.5rem, 8vw, 6.5rem);
 }
-/* Translucent tints (not solid fills) so the body's fixed wood-texture
-   background shows through consistently across sections. */
+/* Translucent tints (not solid fills) so the wood-texture backdrop shows
+   through consistently across sections. */
+.section--pulp-white,
+.section--pulp {
+  position: relative;
+  isolation: isolate;
+}
 .section--pulp-white { background: rgba(247,245,241,0.55); }
 .section--pulp { background: rgba(232,228,220,0.55); }
+.section--pulp-white::before,
+.section--pulp::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background-image: var(--paper-grain);
+  background-size: 220px 220px;
+  opacity: 0.05;
+  mix-blend-mode: multiply;
+  pointer-events: none;
+}
 .section-head--center { text-align: center; max-width: none; }
 .section-head--center .eyebrow { justify-content: center; }
-.section--dark { background: var(--surface-dark); color: var(--pulp-white); }
+.section--dark {
+  background-color: var(--surface-dark);
+  background-image: var(--bg-texture);
+  background-size: cover;
+  background-position: center;
+  background-blend-mode: multiply;
+  color: var(--pulp-white);
+}
 .section--dark h2 { color: var(--pulp-white); }
 
 .section-head {
@@ -442,6 +584,30 @@ p.lead { font-size: clamp(1.05rem, 1.6vw, 1.25rem); color: var(--ink-grey); }
   transform: translateY(0);
   transition: opacity var(--dur-reveal) var(--ease-out), transform var(--dur-reveal) var(--ease-out);
 }
+
+/* Staggered grid reveal: the grid container itself (already a .reveal target
+   the JS observer toggles .is-visible on) skips its own fade and instead
+   passes the motion down to each child, offset a beat apart — reads as one
+   coordinated entrance rather than a flat block appearing at once. Capped at
+   10 explicit steps; anything past that enters with the 10th item's delay
+   rather than growing unbounded. */
+.reveal.stagger { opacity: 1; transform: none; }
+.stagger > * {
+  opacity: 0;
+  transform: translateY(14px);
+  transition: opacity 450ms var(--ease-out), transform 450ms var(--ease-out);
+}
+.stagger.is-visible > * { opacity: 1; transform: translateY(0); }
+.stagger.is-visible > *:nth-child(1) { transition-delay: 0ms; }
+.stagger.is-visible > *:nth-child(2) { transition-delay: 40ms; }
+.stagger.is-visible > *:nth-child(3) { transition-delay: 80ms; }
+.stagger.is-visible > *:nth-child(4) { transition-delay: 120ms; }
+.stagger.is-visible > *:nth-child(5) { transition-delay: 160ms; }
+.stagger.is-visible > *:nth-child(6) { transition-delay: 200ms; }
+.stagger.is-visible > *:nth-child(7) { transition-delay: 240ms; }
+.stagger.is-visible > *:nth-child(8) { transition-delay: 280ms; }
+.stagger.is-visible > *:nth-child(9) { transition-delay: 320ms; }
+.stagger.is-visible > *:nth-child(n+10) { transition-delay: 360ms; }
 
 /* ---------- Decor catalog ---------- */
 .decor-filters {
@@ -461,13 +627,24 @@ p.lead { font-size: clamp(1.05rem, 1.6vw, 1.25rem); color: var(--ink-grey); }
   border-radius: var(--radius-card);
   background: var(--pulp-white);
   color: var(--ink-grey);
-  transition: background 150ms, color 150ms, border-color 150ms;
+  transition: background 150ms, color 150ms, border-color 150ms, transform 100ms var(--ease-out);
 }
 .decor-filter:hover { border-color: var(--registration-cyan); }
+.decor-filter:active { transform: scale(0.96); }
 .decor-filter.is-active {
   background: var(--press-black);
   color: var(--pulp-white);
   border-color: var(--press-black);
+  /* A rubber date-stamp hitting paper, not a flat color swap — plays once
+     when a filter becomes active (re-clicking the same filter doesn't
+     retrigger it, matching how a stamp only lands once per impression). */
+  animation: filter-stamp 320ms var(--ease-out);
+}
+@keyframes filter-stamp {
+  0% { transform: scale(1); }
+  35% { transform: scale(0.9); }
+  65% { transform: scale(1.05); }
+  100% { transform: scale(1); }
 }
 
 .decor-grid {
@@ -593,7 +770,11 @@ p.lead { font-size: clamp(1.05rem, 1.6vw, 1.25rem); color: var(--ink-grey); }
 .stack-bar.is-active {
   opacity: 1;
   transform: scaleX(1);
-  background: var(--kraft-brown);
+  background-color: var(--kraft-brown);
+  background-image: var(--bg-texture);
+  background-size: cover;
+  background-position: center;
+  background-blend-mode: multiply;
   color: var(--pulp-white);
   border-color: transparent;
 }
@@ -672,6 +853,15 @@ p.lead { font-size: clamp(1.05rem, 1.6vw, 1.25rem); color: var(--ink-grey); }
   font-size: clamp(2.4rem, 5vw, 3.6rem);
   color: var(--pulp-white);
   line-height: 1;
+  font-variant-numeric: tabular-nums;
+}
+.stat-value span { display: inline-block; }
+.stat-value span.is-ticking {
+  animation: stat-tick 160ms var(--ease-out);
+}
+@keyframes stat-tick {
+  0% { transform: translateY(-12%); opacity: 0.55; }
+  100% { transform: translateY(0); opacity: 1; }
 }
 .stat-label {
   font-family: var(--font-mono);
@@ -721,7 +911,15 @@ p.lead { font-size: clamp(1.05rem, 1.6vw, 1.25rem); color: var(--ink-grey); }
 
 /* ---------- CTA form ---------- */
 .cta-section {
-  background: var(--kraft-brown);
+  background-color: var(--kraft-brown);
+  /* A same-hue translucent scrim sits on top of the multiplied texture (not
+     instead of it) — flattens the grain's local contrast so the section
+     reads as a calm, even brand tone with a hint of material underneath,
+     rather than the higher-contrast raw grain from the earlier version. */
+  background-image: linear-gradient(rgba(132, 80, 54, 0.55), rgba(132, 80, 54, 0.55)), var(--bg-texture);
+  background-size: cover, cover;
+  background-position: center, center;
+  background-blend-mode: normal, multiply;
   color: var(--pulp-white);
 }
 .cta-section .eyebrow { color: #FBE7DA; }
@@ -768,7 +966,14 @@ p.lead { font-size: clamp(1.05rem, 1.6vw, 1.25rem); color: var(--ink-grey); }
 .cta-status { margin-top: 0.75rem; font-family: var(--font-mono); font-size: 0.85rem; }
 
 /* ---------- Footer / Colophon ---------- */
-.site-footer { background: var(--surface-dark); color: var(--pulp-white); }
+.site-footer {
+  background-color: var(--surface-dark);
+  background-image: var(--bg-texture);
+  background-size: cover;
+  background-position: center;
+  background-blend-mode: multiply;
+  color: var(--pulp-white);
+}
 
 .colophon {
   font-family: var(--font-mono);
@@ -801,6 +1006,20 @@ p.lead { font-size: clamp(1.05rem, 1.6vw, 1.25rem); color: var(--ink-grey); }
 }
 .footer-col ul { list-style: none; padding: 0; display: flex; flex-direction: column; gap: 0.55rem; font-size: 0.92rem; }
 .footer-col a:hover { color: var(--registration-cyan); }
+
+.footer-col ul.social-list { flex-direction: row; align-items: center; gap: 0.9rem; }
+.social-link {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 44px;
+  min-height: 44px;
+  margin: -11px;
+  color: var(--muted-on-dark);
+  transition: color 150ms;
+}
+.social-link svg { width: 22px; height: 22px; }
+.social-link:hover { color: var(--registration-cyan); }
 
 .footer-bottom {
   border-top: 1px solid rgba(255,255,255,0.12);

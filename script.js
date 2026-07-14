@@ -114,7 +114,11 @@
     });
   });
 
-  /* ---------- Kinetic counters ---------- */
+  /* ---------- Kinetic counters ----------
+     Ticks at a fixed ~65ms cadence rather than every animation frame, and
+     bumps a short-lived CSS class on each digit change — reads as a
+     mechanical tally counter (the real batch-count hardware on a production
+     line) advancing, not a generic smooth-interpolation count-up. */
   var counters = document.querySelectorAll('[data-count-to]');
   function animateCounter(el) {
     var target = parseFloat(el.dataset.countTo);
@@ -123,16 +127,28 @@
       el.textContent = target + suffix;
       return;
     }
-    var start = null;
     var duration = 1400;
-    function step(ts) {
+    var tickInterval = 65;
+    var start = null;
+    var lastVal = null;
+
+    function render(ts) {
       if (!start) start = ts;
       var progress = Math.min((ts - start) / duration, 1);
       var eased = 1 - Math.pow(1 - progress, 3);
-      el.textContent = Math.round(target * eased) + suffix;
-      if (progress < 1) requestAnimationFrame(step);
+      var val = Math.round(target * eased);
+      if (val !== lastVal) {
+        lastVal = val;
+        el.textContent = val + suffix;
+        el.classList.remove('is-ticking');
+        void el.offsetWidth; /* force reflow so the animation restarts */
+        el.classList.add('is-ticking');
+      }
+      if (progress < 1) {
+        setTimeout(function () { requestAnimationFrame(render); }, tickInterval);
+      }
     }
-    requestAnimationFrame(step);
+    requestAnimationFrame(render);
   }
 
   if ('IntersectionObserver' in window) {
