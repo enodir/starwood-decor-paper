@@ -38,6 +38,7 @@
   --radius-card: 4px;
 
   --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-in-out: cubic-bezier(0.77, 0, 0.175, 1);
   --dur-reveal: 550ms;
 
   /* Oak wood-grain texture (Uludag mese) — the one backdrop behind the
@@ -61,6 +62,12 @@
      required). Swapped for a narrower crop on mobile via media query below
      (see .hero) to avoid shipping the full desktop asset on small screens. */
   --hero-bg-photo: url('assets/img/hero-decor-swatches-1920.jpg');
+
+  /* Production-process-only background photo: fanned stack of laminated
+     decor boards (source: assets/img/LDSP2.jpg). Native resolution is only
+     1000px wide, so no larger desktop variant was generated — upscaling
+     past that would just blur it. Swapped for a smaller crop on mobile. */
+  --process-bg-photo: url('assets/img/process-ldsp2-1000.jpg');
 
   /* Inline SVG fractal-noise, ~300 bytes, no network request — a paper-grain
      ambient texture reinforcing "this is a paper mill" at near-zero cost.
@@ -95,6 +102,17 @@ body {
   font-size: 16px;
   line-height: 1.5;
   -webkit-font-smoothing: antialiased;
+  transition: filter 200ms ease, opacity 200ms ease;
+}
+/* Language switch touches ~50 scattered text nodes at once via a hard
+   display:none/inline swap (see [data-i18n-lang] below) — no single element
+   crossfades cleanly. A brief blur+dim veil over the whole page masks the
+   swap instant, the same way blurring a crossfade hides two overlapping
+   states from the eye. script.js adds this right before swapping, removes
+   it right after. */
+body.is-lang-switching {
+  filter: blur(6px);
+  opacity: 0.7;
 }
 
 /* Wood-texture backdrop as a real fixed element, not background-attachment:
@@ -247,7 +265,9 @@ p.lead { font-size: clamp(1.05rem, 1.6vw, 1.25rem); color: var(--ink-grey); }
   background-position: center;
   background-blend-mode: multiply;
   color: var(--pulp-white);
-  box-shadow: 0 2px 0 rgba(0,0,0,0.22);
+  /* Tinted toward kraft-brown-dark rather than flat black — a shadow should
+     carry the hue of what's casting it. */
+  box-shadow: 0 2px 0 rgba(74, 41, 26, 0.35);
   transition: transform 200ms var(--ease-out), background-color 200ms, color 200ms, border-color 200ms, box-shadow 150ms var(--ease-out);
 }
 .btn-primary:hover { background-color: var(--kraft-brown-dark); }
@@ -256,7 +276,7 @@ p.lead { font-size: clamp(1.05rem, 1.6vw, 1.25rem); color: var(--ink-grey); }
    sinks in and loses its resting shadow, like a plate stamping into paper. */
 .btn-primary:active {
   transform: translateY(1px) scale(0.98);
-  box-shadow: inset 0 2px 3px rgba(0,0,0,0.35);
+  box-shadow: inset 0 2px 3px rgba(74, 41, 26, 0.45);
   transition-duration: 90ms;
 }
 
@@ -489,65 +509,51 @@ p.lead { font-size: clamp(1.05rem, 1.6vw, 1.25rem); color: var(--ink-grey); }
   flex-wrap: wrap;
 }
 
-/* Signature element: The Layer Press */
-.layer-press {
+/* Signature element: The Layer Press (production-process stack-bar +
+   decor-card corner only — see CLAUDE.md). The hero now uses its own
+   quieter motif, Swatch Float, below. */
+
+/* ---------- Hero visual: Swatch Float ----------
+   A loose scatter of real paper-sample photos that settle into place on
+   load, then drift with an independent, slow ease-in-out bob per card
+   (different duration/delay each, so the motion reads as organic rather
+   than four things animating in lockstep). Entrance uses a transition
+   (interruptible) rather than a keyframe; the ambient bob is a keyframe
+   because it's decorative, continuous, and never needs to be interrupted
+   mid-flight. Both are neutralised by the sitewide prefers-reduced-motion
+   rule above (animation/transition durations collapse to ~0). */
+.swatch-float {
   position: relative;
   aspect-ratio: 4 / 5;
   max-width: 420px;
   margin-inline: auto;
 }
 
-.layer-press .layer {
+.swatch-card {
   position: absolute;
-  inset: 0;
   border-radius: var(--radius-card);
-  box-shadow: 0 30px 60px -20px rgba(0,0,0,0.55);
+  overflow: hidden;
+  box-shadow: 0 30px 60px -20px rgba(30, 26, 23, 0.6);
+  opacity: 0;
   will-change: transform, opacity;
+  transition: opacity 700ms var(--ease-out), transform 700ms var(--ease-out);
 }
+.swatch-card img { width: 100%; height: 100%; object-fit: cover; }
 
-.layer-kraft {
-  background: linear-gradient(160deg, #6b4a35, #4a3324);
-  transform: translate3d(-26px, -34px, 0) rotate(-4deg);
-}
+.swatch-card--1 { top: 2%;    left: 0;    width: 46%; z-index: 2; transform: translateY(18px) scale(0.96) rotate(-6deg); transition-delay: 0ms; }
+.swatch-card--2 { top: 28%;   right: 0;   width: 52%; z-index: 3; transform: translateY(18px) scale(0.96) rotate(4deg);  transition-delay: 70ms; }
+.swatch-card--3 { bottom: 4%; left: 10%;  width: 48%; z-index: 1; transform: translateY(18px) scale(0.96) rotate(3deg);  transition-delay: 140ms; }
+.swatch-card--4 { bottom: 14%; right: 8%; width: 40%; z-index: 4; transform: translateY(18px) scale(0.96) rotate(-4deg); transition-delay: 210ms; }
 
-.layer-decor {
-  background-image: url('assets/img/decor-wood-640.webp');
-  background-image: image-set(
-    url('assets/img/decor-wood-640.webp') 1x,
-    url('assets/img/decor-wood-1024.webp') 2x
-  );
-  background-size: cover;
-  background-position: center;
-  transform: translate3d(-8px, -12px, 0) rotate(-1deg);
-}
+.swatch-float.is-visible .swatch-card--1 { opacity: 1; transform: rotate(-6deg) translateY(0); animation: swatch-bob-1 7.5s var(--ease-in-out) 0.9s infinite; }
+.swatch-float.is-visible .swatch-card--2 { opacity: 1; transform: rotate(4deg) translateY(0);  animation: swatch-bob-2 8.5s var(--ease-in-out) 1.6s infinite; }
+.swatch-float.is-visible .swatch-card--3 { opacity: 1; transform: rotate(3deg) translateY(0);  animation: swatch-bob-3 9s   var(--ease-in-out) 1.1s infinite; }
+.swatch-float.is-visible .swatch-card--4 { opacity: 1; transform: rotate(-4deg) translateY(0); animation: swatch-bob-4 7.8s var(--ease-in-out) 2s   infinite; }
 
-.layer-overlay {
-  background: linear-gradient(155deg, rgba(255,255,255,0.22), rgba(255,255,255,0.02));
-  border: 1px solid rgba(255,255,255,0.25);
-  transform: translate3d(14px, 16px, 0) rotate(2deg) scale(1);
-  cursor: pointer;
-}
-
-.layer-press.is-pressed .layer {
-  transition: transform 900ms var(--ease-out);
-}
-.layer-press.is-pressed .layer-kraft,
-.layer-press.is-pressed .layer-decor,
-.layer-press.is-pressed .layer-overlay {
-  transform: translate3d(0,0,0) rotate(0deg) scale(1);
-}
-
-/* Hover zoom on the overlay sheet. Two rules because the resting transform
-   differs before/after the load animation settles — in practice users only
-   ever get to hover once `.is-pressed` has applied, but both are covered so
-   the effect still works with reduced motion (where is-pressed is instant). */
-.layer-overlay:hover {
-  transform: translate3d(14px, 16px, 0) rotate(2deg) scale(1.08);
-}
-.layer-press.is-pressed .layer-overlay:hover {
-  transform: translate3d(0,0,0) rotate(0deg) scale(1.08);
-  transition: transform 300ms var(--ease-out);
-}
+@keyframes swatch-bob-1 { 0%, 100% { transform: rotate(-6deg) translateY(0); } 50% { transform: rotate(-6deg) translateY(-7px); } }
+@keyframes swatch-bob-2 { 0%, 100% { transform: rotate(4deg) translateY(0); }  50% { transform: rotate(4deg) translateY(-10px); } }
+@keyframes swatch-bob-3 { 0%, 100% { transform: rotate(3deg) translateY(0); }  50% { transform: rotate(3deg) translateY(-6px); } }
+@keyframes swatch-bob-4 { 0%, 100% { transform: rotate(-4deg) translateY(0); } 50% { transform: rotate(-4deg) translateY(-9px); } }
 
 /* ---------- Generic section rhythm ---------- */
 .section {
@@ -585,6 +591,23 @@ p.lead { font-size: clamp(1.05rem, 1.6vw, 1.25rem); color: var(--ink-grey); }
   color: var(--pulp-white);
 }
 .section--dark h2 { color: var(--pulp-white); }
+
+/* Production process gets its own background photo instead of the shared
+   .section--dark wood-grain texture — same-hue scrim + multiply so text
+   contrast stays anchored the same way as everywhere else this pattern is
+   used (hero, CTA, stack-bar). Certificates/stats keeps the plain
+   .section--dark texture; only .process overrides it. */
+.process {
+  background-image: linear-gradient(rgba(79, 68, 56, 0.75), rgba(79, 68, 56, 0.75)), var(--process-bg-photo);
+  background-size: cover, cover;
+  background-position: center, center;
+  background-blend-mode: normal, multiply;
+}
+@media (max-width: 760px) {
+  .process {
+    background-image: linear-gradient(rgba(79, 68, 56, 0.75), rgba(79, 68, 56, 0.75)), url('assets/img/process-ldsp2-768.jpg');
+  }
+}
 
 .section-head {
   max-width: 62ch;
@@ -676,7 +699,21 @@ p.lead { font-size: clamp(1.05rem, 1.6vw, 1.25rem); color: var(--ink-grey); }
   border-radius: var(--radius-card);
   overflow: hidden;
   isolation: isolate;
-  box-shadow: 0 1px 0 rgba(0,0,0,0.05);
+  /* Tinted warm (ink-grey) rather than flat black, to match the paper-stock
+     surfaces these cards sit on. */
+  box-shadow: 0 1px 0 rgba(74, 67, 60, 0.14);
+  transition: opacity 280ms var(--ease-out), transform 280ms var(--ease-out);
+}
+/* Filter show/hide: fade + settle instead of an instant display swap —
+   "elements appearing or disappearing without transition feel broken."
+   Exit is shorter than enter (180ms vs 280ms) — quick to leave, considered
+   to arrive. script.js toggles this class, waits it out, then sets
+   display:none/'' so filtered-out cards actually leave the grid flow. */
+.decor-card.is-filtered-out {
+  opacity: 0;
+  transform: scale(0.95) translateY(8px);
+  transition-duration: 180ms;
+  pointer-events: none;
 }
 
 .decor-card figure {
@@ -714,12 +751,21 @@ p.lead { font-size: clamp(1.05rem, 1.6vw, 1.25rem); color: var(--ink-grey); }
   transition: width 320ms var(--ease-out), height 320ms var(--ease-out), transform 320ms var(--ease-out), box-shadow 320ms var(--ease-out);
   pointer-events: none;
 }
-.decor-card:hover .decor-card__corner,
 .decor-card:focus-within .decor-card__corner {
   width: 46%;
   height: 46%;
   transform: rotate(-14deg) translate(2px, -2px);
-  box-shadow: -6px 6px 14px -6px rgba(0,0,0,0.25);
+  box-shadow: -6px 6px 14px -6px rgba(74, 67, 60, 0.35);
+}
+/* Hover-only devices get the lift on :hover too — gated so a tap on touch
+   doesn't leave the corner "stuck" lifted until the user taps elsewhere. */
+@media (hover: hover) and (pointer: fine) {
+  .decor-card:hover .decor-card__corner {
+    width: 46%;
+    height: 46%;
+    transform: rotate(-14deg) translate(2px, -2px);
+    box-shadow: -6px 6px 14px -6px rgba(74, 67, 60, 0.35);
+  }
 }
 
 .decor-card__body {
@@ -874,10 +920,10 @@ p.lead { font-size: clamp(1.05rem, 1.6vw, 1.25rem); color: var(--ink-grey); }
 }
 .stat-value span { display: inline-block; }
 .stat-value span.is-ticking {
-  animation: stat-tick 160ms var(--ease-out);
+  animation: stat-tick 110ms var(--ease-out);
 }
 @keyframes stat-tick {
-  0% { transform: translateY(-12%); opacity: 0.55; }
+  0% { transform: translateY(-6%); opacity: 0.75; }
   100% { transform: translateY(0); opacity: 1; }
 }
 .stat-label {
@@ -920,24 +966,31 @@ p.lead { font-size: clamp(1.05rem, 1.6vw, 1.25rem); color: var(--ink-grey); }
   letter-spacing: 0.03em;
   color: var(--ink-grey);
 }
-.logo-row .client-logo:hover {
-  filter: grayscale(0);
-  opacity: 1;
-  color: var(--kraft-brown);
+/* Gated to real hover devices — on touch, a tap would otherwise leave a
+   client logo "stuck" in full color until the user taps elsewhere. */
+@media (hover: hover) and (pointer: fine) {
+  .logo-row .client-logo:hover {
+    filter: grayscale(0);
+    opacity: 1;
+    color: var(--kraft-brown);
+  }
 }
 
 /* ---------- CTA form ---------- */
 .cta-section {
-  background-color: var(--kraft-brown);
-  /* A same-hue translucent scrim sits on top of the multiplied texture (not
-     instead of it) — flattens the grain's local contrast so the section
-     reads as a calm, even brand tone with a hint of material underneath,
-     rather than the higher-contrast raw grain from the earlier version. */
-  background-image: linear-gradient(rgba(132, 80, 54, 0.55), rgba(132, 80, 54, 0.55)), var(--bg-texture);
+  background-color: var(--surface-dark);
+  /* Matches .process: same scrim color/opacity and same photo, so the two
+     dark photo sections read as one consistent treatment. */
+  background-image: linear-gradient(rgba(79, 68, 56, 0.75), rgba(79, 68, 56, 0.75)), var(--process-bg-photo);
   background-size: cover, cover;
   background-position: center, center;
   background-blend-mode: normal, multiply;
   color: var(--pulp-white);
+}
+@media (max-width: 760px) {
+  .cta-section {
+    background-image: linear-gradient(rgba(79, 68, 56, 0.75), rgba(79, 68, 56, 0.75)), url('assets/img/process-ldsp2-768.jpg');
+  }
 }
 .cta-section .eyebrow { color: #FBE7DA; }
 .cta-section h2 { color: var(--pulp-white); }
@@ -980,7 +1033,25 @@ p.lead { font-size: clamp(1.05rem, 1.6vw, 1.25rem); color: var(--ink-grey); }
 
 .form-note { font-size: 0.82rem; color: #F3DCCB; margin-top: 0.75rem; }
 
-.cta-status { margin-top: 0.75rem; font-family: var(--font-mono); font-size: 0.85rem; }
+/* Modern enter-animation with no JS mount flag needed: only :not(:empty)
+   (i.e. once script.js has actually inserted the confirmation text) gets a
+   transition, and @starting-style supplies the "from" state for that first
+   frame. Unsupported browsers just skip @starting-style and show the text
+   immediately — a safe no-animation fallback, not a broken one. */
+.cta-status {
+  margin-top: 0.75rem;
+  font-family: var(--font-mono);
+  font-size: 0.85rem;
+}
+.cta-status:not(:empty) {
+  opacity: 1;
+  transform: translateY(0);
+  transition: opacity 300ms var(--ease-out), transform 300ms var(--ease-out);
+  @starting-style {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+}
 
 /* ---------- Footer / Colophon ---------- */
 .site-footer {

@@ -39,11 +39,13 @@ weight against the LCP budget that matters most for B2B buyers (see research §2
   `style.css`) so the browser preloader fetches it in parallel with `style.css` instead of discovering it
   late.
 - `assets/img/` — responsive WebP+JPEG pairs derived from real photo assets: `driftvud_1280x800.jpg` (wood-grain
-  decor texture, used in the layer-press signature and decor catalog), `uludag-mese-bg.jpg` (oak wood-grain,
-  the sitewide texture backdrop — see `--bg-texture` in `style.css`), and `hero-decor-swatches-{768,1920}.jpg`
-  (fanned laminate/veneer sample photo, hero-section-only background — see `--hero-bg-photo`; "Samples of
-  Wooden Floor" by cottonbro studio via Pexels, free for commercial use, no attribution required). Everything
-  else in the decor catalog is a CSS gradient placeholder (see "Content placeholders" below).
+  decor texture, used in the decor catalog), `uludag-mese-bg.jpg` (oak wood-grain, the sitewide texture
+  backdrop — see `--bg-texture` in `style.css`), `hero-decor-swatches-{768,1920}.jpg` (fanned laminate/veneer
+  sample photo, hero-section background — see `--hero-bg-photo`; "Samples of Wooden Floor" by cottonbro
+  studio via Pexels, free for commercial use, no attribution required), and `hero-swatch-{1..4}-{480,960}.
+  {webp,jpg}` (the four Swatch Float cards — square center-crops of real mill samples from
+  `assets/img/Papers/` via a one-off Pillow script, not yet re-run as a documented pipeline step below).
+  Everything else in the decor catalog is a CSS gradient placeholder (see "Content placeholders" below).
 - `deploy/` — a separate Vercel deployment target (has its own `.vercel/`). It is **not** auto-synced with
   the root files — copy `index.html`/`style.css`/`script.js` into it manually before deploying.
 
@@ -103,14 +105,22 @@ the design plan but was dropped during implementation because it has no Cyrillic
 for a Russian mill). If you add new display text, verify Cyrillic coverage before picking a typeface.
 
 **Signature motif — "The Layer Press."** One recurring visual idea (kraft paper + printed decor + resin
-overlay stacking/compressing into a plate), used in exactly three places and nowhere else:
-1. Hero load animation (`#layer-press`, `.layer-press.is-pressed`)
-2. Production-process pinned scroll scene (`.stack-bar`, `.process-stage`)
-3. Decor-card hover (`.decor-card__corner` — a small "dog-ear" at rest that lifts fully on hover)
+overlay stacking/compressing into a plate), used in exactly two places and nowhere else:
+1. Production-process pinned scroll scene (`.stack-bar`, `.process-stage`)
+2. Decor-card hover (`.decor-card__corner` — a small "dog-ear" at rest that lifts fully on hover)
 
-Do not add a fourth use of this motif or a competing signature animation elsewhere on the page — the
-design brief for this project explicitly calls for *one* bold moment and quiet, disciplined motion
-everywhere else (progressive fade/translateY reveals, grayscale→color logo hovers, kinetic counters).
+It no longer appears in the hero — that slot was deliberately handed to a different motif, **"Swatch
+Float"** (`#swatch-float`, `.swatch-card`, `assets/img/hero-swatch-{1..4}-{480,960}.{webp,jpg}` sourced
+from `assets/img/Papers/`): four real paper-sample photos that settle into a loose scatter on load
+(interruptible CSS transition, staggered 70ms per card) and then drift with an independent, slow
+ease-in-out bob per card (`--ease-in-out`, 7.5–9s cycles, distinct delays) so the motion reads as organic
+rather than synced. Modeled after the floating hero preview cards on tasteskill.dev, re-themed with this
+site's own assets, radius (`--radius-card`, not tasteskill's rounder 18px), and shadow language.
+
+Do not add a third animated showpiece elsewhere on the page — the design brief for this project explicitly
+calls for *one bold moment per major section slot* (Swatch Float in the hero, Layer Press in process +
+decor cards) and quiet, disciplined motion everywhere else (progressive fade/translateY reveals,
+grayscale→color logo hovers, kinetic counters).
 
 **Registration-mark eyebrow device** (`.eyebrow` + `.crosshair`): a small crosshair + mono-font label
 before every section heading, standing in for generic "eyebrow" labels. Numbering (`01`/`02`/...) is
@@ -158,7 +168,7 @@ one-at-a-time edits anchored on enough surrounding context to be unique, not a b
 
 When adding new translatable copy, always add all three spans together — there's no fallback/missing-key
 handling, an element missing a language's span will simply be blank in that language. A few accessibility
-attributes (`aria-label` on the mobile nav, the decor-filter group, the layer-press illustration) are still
+attributes (`aria-label` on the mobile nav, the decor-filter group, the swatch-float illustration) are still
 Russian-only regardless of active language — a known gap, not a bug, if you have time to close it follow
 the `META`-object pattern used for title/description.
 

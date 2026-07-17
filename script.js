@@ -45,7 +45,22 @@
   applyLang(LANGS.indexOf(savedLang) !== -1 ? savedLang : 'ru');
 
   langOptionButtons.forEach(function (btn) {
-    btn.addEventListener('click', function () { applyLang(btn.dataset.langSet); });
+    btn.addEventListener('click', function () {
+      var lang = btn.dataset.langSet;
+      if (lang === html.getAttribute('lang') || reduceMotion) {
+        applyLang(lang);
+        return;
+      }
+      /* Blur/dim veil masks the instant text swap (~50 scattered nodes,
+         no single element to crossfade) — see body.is-lang-switching. */
+      document.body.classList.add('is-lang-switching');
+      setTimeout(function () {
+        applyLang(lang);
+        requestAnimationFrame(function () {
+          document.body.classList.remove('is-lang-switching');
+        });
+      }, 140);
+    });
   });
 
   /* ---------- Mobile nav ---------- */
@@ -99,11 +114,43 @@
   function applyFilter(category) {
     var visibleCount = 0;
     decorCards.forEach(function (card) {
-      var match = category === 'all' || card.dataset.category === category;
-      card.style.display = match ? '' : 'none';
-      if (match) visibleCount++;
+      if (category === 'all' || card.dataset.category === category) visibleCount++;
     });
     if (decorEmpty) decorEmpty.hidden = visibleCount !== 0;
+
+    if (reduceMotion) {
+      decorCards.forEach(function (card) {
+        var match = category === 'all' || card.dataset.category === category;
+        card.style.display = match ? '' : 'none';
+      });
+      return;
+    }
+
+    var enterIndex = 0;
+    decorCards.forEach(function (card) {
+      var match = category === 'all' || card.dataset.category === category;
+      var isHidden = card.style.display === 'none';
+      if (match && isHidden) {
+        /* Entering: unhide, start from the faded/scaled-down state, force a
+           reflow so the browser registers it, then transition to normal —
+           staggered a beat apart per card. */
+        card.style.display = '';
+        card.classList.add('is-filtered-out');
+        void card.offsetWidth;
+        (function (el, delay) {
+          setTimeout(function () { el.classList.remove('is-filtered-out'); }, delay);
+        })(card, enterIndex * 40);
+        enterIndex++;
+      } else if (!match && !isHidden) {
+        /* Leaving: fade out, then drop from layout once the transition
+           finishes. Guarded in case the same card gets re-matched by a
+           rapid second click before the timeout fires. */
+        card.classList.add('is-filtered-out');
+        setTimeout(function () {
+          if (card.classList.contains('is-filtered-out')) card.style.display = 'none';
+        }, 180);
+      }
+    });
   }
 
   filterButtons.forEach(function (btn) {
@@ -115,7 +162,7 @@
   });
 
   /* ---------- Kinetic counters ----------
-     Ticks at a fixed ~65ms cadence rather than every animation frame, and
+     Ticks at a fixed ~40ms cadence rather than every animation frame, and
      bumps a short-lived CSS class on each digit change — reads as a
      mechanical tally counter (the real batch-count hardware on a production
      line) advancing, not a generic smooth-interpolation count-up. */
@@ -128,7 +175,7 @@
       return;
     }
     var duration = 1400;
-    var tickInterval = 65;
+    var tickInterval = 40;
     var start = null;
     var lastVal = null;
 
@@ -184,20 +231,20 @@
     });
   }
 
-  /* ---------- Signature element: The Layer Press ---------- */
-  var heroPress = document.getElementById('layer-press');
+  /* ---------- Hero visual: Swatch Float ---------- */
+  var swatchFloat = document.getElementById('swatch-float');
 
-  function runHeroPress() {
-    if (!heroPress) return;
+  function runSwatchFloat() {
+    if (!swatchFloat) return;
     if (reduceMotion) {
-      heroPress.classList.add('is-pressed');
+      swatchFloat.classList.add('is-visible');
       return;
     }
     requestAnimationFrame(function () {
-      setTimeout(function () { heroPress.classList.add('is-pressed'); }, 200);
+      setTimeout(function () { swatchFloat.classList.add('is-visible'); }, 200);
     });
   }
-  runHeroPress();
+  runSwatchFloat();
 
   /* ---------- Process pinned scroll scene ---------- */
   function initProcessScene() {
