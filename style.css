@@ -69,10 +69,61 @@
      past that would just blur it. Swapped for a smaller crop on mobile. */
   --process-bg-photo: url('assets/img/process-ldsp2-1000.jpg');
 
+  /* Certificates-section-only background photo: Belaya Korona decor paper
+     (source: assets/img/Papers/Belaya_Korona.webp) — a light, low-contrast
+     wood-grain sample. First tried the mill's full color-list grid here
+     (assets/img/Papers/color list.jpg), but its saturated, discrete tiles
+     read as noisy/patchwork behind the stats and needed either an
+     unreadably heavy scrim or lost all its color — swapped for a single
+     coherent photo like the other shell sections use. */
+  --certificates-bg-photo: url('assets/img/certificates-belayakorona-1400.jpg');
+
   /* Inline SVG fractal-noise, ~300 bytes, no network request — a paper-grain
      ambient texture reinforcing "this is a paper mill" at near-zero cost.
      Scoped to the light "paper stock" sections only (see .section--pulp*). */
   --paper-grain: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+
+  /* ---------- Day/night theme ----------
+     "Night" (moon, default) is the site exactly as designed: hero, process,
+     certificates, CTA and footer are dark "shell" sections against the light
+     paper-stock sections. "Day" (sun) flips every shell section to a light
+     surface with dark ink instead, so the whole page reads as bright/uniform.
+     The already-light sections (decor catalog, advantages, sustainability,
+     clients) don't need a variant — they're light in both themes. Components
+     that live in a shell section reference --shell-* below instead of the
+     raw --surface-dark/--pulp-white pair directly, so this block is the only
+     place the theme swap has to be taught new colors. */
+  --shell-bg: var(--surface-dark);
+  --shell-bg-soft: var(--surface-dark-soft);
+  --shell-ink: var(--pulp-white);
+  --shell-muted: var(--muted-on-dark);
+  --shell-muted-soft: var(--muted-on-dark-soft);
+  --shell-border: rgba(255, 255, 255, 0.12);
+  --shell-border-strong: rgba(255, 255, 255, 0.35);
+  --shell-scrim-rgb: 79, 68, 56;
+  --shell-eyebrow: #7FD4E2;
+  --shell-cta-eyebrow: #FBE7DA;
+  --shell-cta-lead: #F3DCCB;
+  --shell-form-fill: rgba(255, 255, 255, 0.94);
+  --shell-form-ink: var(--press-black);
+  --footer-bg: #B1A29C;
+}
+
+html[data-theme="day"] {
+  --shell-bg: var(--raw-pulp);
+  --shell-bg-soft: var(--raw-pulp-dark);
+  --shell-ink: var(--press-black);
+  --shell-muted: var(--ink-grey);
+  --shell-muted-soft: #6B6156;
+  --shell-border: rgba(30, 26, 23, 0.14);
+  --shell-border-strong: rgba(30, 26, 23, 0.3);
+  --shell-scrim-rgb: 232, 228, 220;
+  --shell-eyebrow: var(--registration-cyan);
+  --shell-cta-eyebrow: var(--kraft-brown-dark);
+  --shell-cta-lead: var(--ink-grey);
+  --shell-form-fill: rgba(30, 26, 23, 0.06);
+  --shell-form-ink: var(--press-black);
+  --footer-bg: #D8CFC7;
 }
 
 /* ---------- Reset ---------- */
@@ -184,7 +235,7 @@ p.lead { font-size: clamp(1.05rem, 1.6vw, 1.25rem); color: var(--ink-grey); }
   color: var(--registration-cyan);
   margin-bottom: 1rem;
 }
-.eyebrow--dark { color: #7fd4e2; }
+.eyebrow--dark { color: var(--shell-eyebrow); }
 
 .crosshair {
   position: relative;
@@ -227,10 +278,10 @@ p.lead { font-size: clamp(1.05rem, 1.6vw, 1.25rem); color: var(--ink-grey); }
    load), so it gets the same resolve as a one-time load animation instead,
    sequenced just after the logo settles in. */
 .hero .crosshair::before {
-  animation: crosshair-snap-v 480ms cubic-bezier(0.34, 1.56, 0.64, 1) 550ms both;
+  animation: crosshair-snap-v 480ms cubic-bezier(0.34, 1.56, 0.64, 1) 800ms both;
 }
 .hero .crosshair::after {
-  animation: crosshair-snap-h 480ms cubic-bezier(0.34, 1.56, 0.64, 1) 650ms both;
+  animation: crosshair-snap-h 480ms cubic-bezier(0.34, 1.56, 0.64, 1) 900ms both;
 }
 @keyframes crosshair-snap-v {
   from { opacity: 0; transform: translateX(-4px); }
@@ -289,7 +340,7 @@ p.lead { font-size: clamp(1.05rem, 1.6vw, 1.25rem); color: var(--ink-grey); }
 .btn-outline-dark { color: var(--press-black); border-color: var(--press-black); }
 .btn-outline-dark:hover { background: rgba(0,0,0,0.05); }
 
-.btn-outline-light { border-color: #fff; }
+.btn-outline-light { border-color: var(--shell-ink); }
 
 .btn-link {
   padding: 0.9em 0.2em;
@@ -305,12 +356,14 @@ p.lead { font-size: clamp(1.05rem, 1.6vw, 1.25rem); color: var(--ink-grey); }
   position: sticky;
   top: 0;
   z-index: 500;
-  /* Same hue as the footer (.site-footer), by request, at 80% opacity so the
-     sticky bar stays a touch translucent over whatever scrolls beneath it. */
-  background: rgba(79, 68, 56, 0.8);
+  /* Same hue as the footer (.site-footer), by request, at 95% opacity so the
+     sticky bar stays mostly solid but keeps a hint of translucency over
+     whatever scrolls beneath it. */
+  background: rgba(var(--shell-scrim-rgb), 0.95);
   backdrop-filter: saturate(140%) blur(10px);
-  color: var(--pulp-white);
-  border-bottom: 1px solid rgba(255,255,255,0.12);
+  color: var(--shell-ink);
+  border-bottom: 1px solid var(--shell-border);
+  transition: background-color 300ms, color 300ms;
 }
 
 .header-inner {
@@ -329,13 +382,17 @@ p.lead { font-size: clamp(1.05rem, 1.6vw, 1.25rem); color: var(--ink-grey); }
 .logo-img {
   height: 28px;
   width: auto;
-  animation: logo-fade-in 900ms ease-out both;
+  transform-origin: left center;
+  animation: logo-press-in 1300ms cubic-bezier(0.34, 1.56, 0.64, 1) both;
 }
-/* One-time entrance on page load — logo fades smoothly into view, distinct
-   from the hero's "layer press" signature motif. */
-@keyframes logo-fade-in {
-  from { opacity: 0; }
-  to { opacity: 1; }
+/* One-time entrance on page load — the mark drops in slightly oversized and
+   settles with a small overshoot, like a plate coming down and finding its
+   registration, rather than a plain fade. Same spring curve as the crosshair
+   snap below, so the two reads as one language instead of two competing
+   entrance styles. */
+@keyframes logo-press-in {
+  from { opacity: 0; transform: scale(1.18) translateY(-8px); }
+  to { opacity: 1; transform: scale(1) translateY(0); }
 }
 
 /* Left-to-right underline sweep + bold-down, used for the main nav links
@@ -412,6 +469,45 @@ p.lead { font-size: clamp(1.05rem, 1.6vw, 1.25rem); color: var(--ink-grey); }
   color: var(--pulp-white);
 }
 
+/* ---------- Day/night toggle (header) ----------
+   Two pre-rendered pill-switch graphics (assets/img/theme-toggle-{night,day}.*,
+   cropped from assets/img/day-night_toggle.avif) are stacked in the same slot
+   and cross-faded by the html[data-theme] attribute — same mechanism the
+   theme tokens above key off, so the icon state and the actual palette can
+   never drift apart. */
+.theme-toggle {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 52px;
+  height: 26px;
+  padding: 0;
+  border: none;
+  background: transparent;
+  opacity: 0.9;
+  transition: opacity 150ms, transform 150ms var(--ease-out);
+}
+.theme-toggle:hover { opacity: 1; }
+.theme-toggle:active { transform: scale(0.94); }
+
+.theme-toggle__icon {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  transition: opacity 300ms var(--ease-out);
+}
+.theme-toggle__icon--night { opacity: 1; }
+.theme-toggle__icon--day { opacity: 0; }
+html[data-theme="day"] .theme-toggle__icon--night { opacity: 0; }
+html[data-theme="day"] .theme-toggle__icon--day { opacity: 1; }
+
+@media (prefers-reduced-motion: reduce) {
+  .theme-toggle__icon { transition-duration: 1ms; }
+}
+
 .nav-toggle {
   display: none;
   align-items: center;
@@ -433,7 +529,7 @@ p.lead { font-size: clamp(1.05rem, 1.6vw, 1.25rem); color: var(--ink-grey); }
     left: 0;
     right: 0;
     flex-direction: column;
-    background: var(--surface-dark-soft);
+    background: var(--shell-bg-soft);
     padding: 1rem var(--gutter) 1.5rem;
     gap: 1rem;
     display: flex;
@@ -459,23 +555,24 @@ p.lead { font-size: clamp(1.05rem, 1.6vw, 1.25rem); color: var(--ink-grey); }
 
 /* ---------- Hero ---------- */
 .hero {
-  background-color: var(--surface-dark);
+  background-color: var(--shell-bg);
   /* Same-hue scrim over the photo (not instead of it) — the swatch photo has
      finer, busier detail than the sitewide wood-grain texture, so it needs
      more coverage to keep hero-copy text legible regardless of whether the
      photo ends up beside the text (desktop) or above it (mobile, where
      hero-visual reorders first — see the 900px breakpoint below). */
-  background-image: linear-gradient(rgba(79, 68, 56, 0.72), rgba(79, 68, 56, 0.72)), var(--hero-bg-photo);
+  background-image: linear-gradient(rgba(var(--shell-scrim-rgb), 0.72), rgba(var(--shell-scrim-rgb), 0.72)), var(--hero-bg-photo);
   background-size: cover, cover;
   background-position: center, center;
   background-blend-mode: normal, multiply;
-  color: var(--pulp-white);
+  color: var(--shell-ink);
   padding-block: clamp(3rem, 8vw, 6rem);
   overflow: clip;
+  transition: background-color 300ms, color 300ms;
 }
 @media (max-width: 760px) {
   .hero {
-    background-image: linear-gradient(rgba(79, 68, 56, 0.72), rgba(79, 68, 56, 0.72)), url('assets/img/hero-decor-swatches-768.jpg');
+    background-image: linear-gradient(rgba(var(--shell-scrim-rgb), 0.72), rgba(var(--shell-scrim-rgb), 0.72)), url('assets/img/hero-decor-swatches-768.jpg');
   }
 }
 
@@ -491,7 +588,7 @@ p.lead { font-size: clamp(1.05rem, 1.6vw, 1.25rem); color: var(--ink-grey); }
   .hero-visual { order: -1; }
 }
 
-.hero-copy h1 { color: var(--pulp-white); margin-bottom: 1.25rem; }
+.hero-copy h1 { color: var(--shell-ink); margin-bottom: 1.25rem; }
 /* Thesis emphasis: one word carries the claim (trust), set off in the
    "working" registration-cyan ink rather than left the same flat white as
    the rest of the headline — the hero should read as an argument, not a
@@ -500,7 +597,7 @@ p.lead { font-size: clamp(1.05rem, 1.6vw, 1.25rem); color: var(--ink-grey); }
   font-style: normal;
   color: var(--registration-cyan);
 }
-.hero-copy .lead { color: var(--muted-on-dark); max-width: 42ch; margin-bottom: 2rem; }
+.hero-copy .lead { color: var(--shell-muted); max-width: 42ch; margin-bottom: 2rem; }
 
 .hero-actions {
   display: flex;
@@ -525,7 +622,7 @@ p.lead { font-size: clamp(1.05rem, 1.6vw, 1.25rem); color: var(--ink-grey); }
 .swatch-float {
   position: relative;
   aspect-ratio: 4 / 5;
-  max-width: 420px;
+  max-width: 460px;
   margin-inline: auto;
 }
 
@@ -544,16 +641,28 @@ p.lead { font-size: clamp(1.05rem, 1.6vw, 1.25rem); color: var(--ink-grey); }
 .swatch-card--2 { top: 28%;   right: 0;   width: 52%; z-index: 3; transform: translateY(18px) scale(0.96) rotate(4deg);  transition-delay: 70ms; }
 .swatch-card--3 { bottom: 4%; left: 10%;  width: 48%; z-index: 1; transform: translateY(18px) scale(0.96) rotate(3deg);  transition-delay: 140ms; }
 .swatch-card--4 { bottom: 14%; right: 8%; width: 40%; z-index: 4; transform: translateY(18px) scale(0.96) rotate(-4deg); transition-delay: 210ms; }
+.swatch-card--5 { top: 40%;   left: 32%;  width: 30%; z-index: 5; transform: translateY(18px) scale(0.96) rotate(8deg);  transition-delay: 280ms; }
+.swatch-card--6 { top: -6%;   right: -2%; width: 34%; z-index: 6; transform: translateY(18px) scale(0.96) rotate(12deg); transition-delay: 350ms; }
+.swatch-card--7 { bottom: -8%; right: 26%; width: 32%; z-index: 2; transform: translateY(18px) scale(0.96) rotate(-10deg); transition-delay: 420ms; }
+.swatch-card--8 { top: 58%;   left: -6%;  width: 34%; z-index: 3; transform: translateY(18px) scale(0.96) rotate(9deg);  transition-delay: 490ms; }
 
-.swatch-float.is-visible .swatch-card--1 { opacity: 1; transform: rotate(-6deg) translateY(0); animation: swatch-bob-1 7.5s var(--ease-in-out) 0.9s infinite; }
-.swatch-float.is-visible .swatch-card--2 { opacity: 1; transform: rotate(4deg) translateY(0);  animation: swatch-bob-2 8.5s var(--ease-in-out) 1.6s infinite; }
-.swatch-float.is-visible .swatch-card--3 { opacity: 1; transform: rotate(3deg) translateY(0);  animation: swatch-bob-3 9s   var(--ease-in-out) 1.1s infinite; }
-.swatch-float.is-visible .swatch-card--4 { opacity: 1; transform: rotate(-4deg) translateY(0); animation: swatch-bob-4 7.8s var(--ease-in-out) 2s   infinite; }
+.swatch-float.is-visible .swatch-card--1 { opacity: 1; transform: rotate(-6deg) translateY(0); animation: swatch-bob-1 5.3s var(--ease-in-out) 0.9s infinite; }
+.swatch-float.is-visible .swatch-card--2 { opacity: 1; transform: rotate(4deg) translateY(0);  animation: swatch-bob-2 6s   var(--ease-in-out) 1.6s infinite; }
+.swatch-float.is-visible .swatch-card--3 { opacity: 1; transform: rotate(3deg) translateY(0);  animation: swatch-bob-3 6.3s var(--ease-in-out) 1.1s infinite; }
+.swatch-float.is-visible .swatch-card--4 { opacity: 1; transform: rotate(-4deg) translateY(0); animation: swatch-bob-4 5.5s var(--ease-in-out) 2s   infinite; }
+.swatch-float.is-visible .swatch-card--5 { opacity: 1; transform: rotate(8deg) translateY(0);  animation: swatch-bob-5 5.7s var(--ease-in-out) 2.4s infinite; }
+.swatch-float.is-visible .swatch-card--6 { opacity: 1; transform: rotate(12deg) translateY(0); animation: swatch-bob-6 6.2s var(--ease-in-out) 1.3s infinite; }
+.swatch-float.is-visible .swatch-card--7 { opacity: 1; transform: rotate(-10deg) translateY(0); animation: swatch-bob-7 5.5s var(--ease-in-out) 1.9s infinite; }
+.swatch-float.is-visible .swatch-card--8 { opacity: 1; transform: rotate(9deg) translateY(0);  animation: swatch-bob-8 6.5s var(--ease-in-out) 0.6s infinite; }
 
 @keyframes swatch-bob-1 { 0%, 100% { transform: rotate(-6deg) translateY(0); } 50% { transform: rotate(-6deg) translateY(-7px); } }
 @keyframes swatch-bob-2 { 0%, 100% { transform: rotate(4deg) translateY(0); }  50% { transform: rotate(4deg) translateY(-10px); } }
 @keyframes swatch-bob-3 { 0%, 100% { transform: rotate(3deg) translateY(0); }  50% { transform: rotate(3deg) translateY(-6px); } }
 @keyframes swatch-bob-4 { 0%, 100% { transform: rotate(-4deg) translateY(0); } 50% { transform: rotate(-4deg) translateY(-9px); } }
+@keyframes swatch-bob-5 { 0%, 100% { transform: rotate(8deg) translateY(0); }  50% { transform: rotate(8deg) translateY(-8px); } }
+@keyframes swatch-bob-6 { 0%, 100% { transform: rotate(12deg) translateY(0); } 50% { transform: rotate(12deg) translateY(-9px); } }
+@keyframes swatch-bob-7 { 0%, 100% { transform: rotate(-10deg) translateY(0); } 50% { transform: rotate(-10deg) translateY(-6px); } }
+@keyframes swatch-bob-8 { 0%, 100% { transform: rotate(9deg) translateY(0); }  50% { transform: rotate(9deg) translateY(-10px); } }
 
 /* ---------- Generic section rhythm ---------- */
 .section {
@@ -583,29 +692,44 @@ p.lead { font-size: clamp(1.05rem, 1.6vw, 1.25rem); color: var(--ink-grey); }
 .section-head--center { text-align: center; max-width: none; }
 .section-head--center .eyebrow { justify-content: center; }
 .section--dark {
-  background-color: var(--surface-dark);
+  background-color: var(--shell-bg);
   background-image: var(--bg-texture);
   background-size: cover;
   background-position: center;
   background-blend-mode: multiply;
-  color: var(--pulp-white);
+  color: var(--shell-ink);
+  transition: background-color 300ms, color 300ms;
 }
-.section--dark h2 { color: var(--pulp-white); }
+.section--dark h2 { color: var(--shell-ink); }
 
 /* Production process gets its own background photo instead of the shared
    .section--dark wood-grain texture — same-hue scrim + multiply so text
    contrast stays anchored the same way as everywhere else this pattern is
-   used (hero, CTA, stack-bar). Certificates/stats keeps the plain
-   .section--dark texture; only .process overrides it. */
+   used (hero, CTA, stack-bar). Certificates/stats gets its own photo too
+   (see #certificates below); only these two override the shared texture. */
 .process {
-  background-image: linear-gradient(rgba(79, 68, 56, 0.75), rgba(79, 68, 56, 0.75)), var(--process-bg-photo);
+  background-image: linear-gradient(rgba(var(--shell-scrim-rgb), 0.75), rgba(var(--shell-scrim-rgb), 0.75)), var(--process-bg-photo);
   background-size: cover, cover;
   background-position: center, center;
   background-blend-mode: normal, multiply;
 }
 @media (max-width: 760px) {
   .process {
-    background-image: linear-gradient(rgba(79, 68, 56, 0.75), rgba(79, 68, 56, 0.75)), url('assets/img/process-ldsp2-768.jpg');
+    background-image: linear-gradient(rgba(var(--shell-scrim-rgb), 0.75), rgba(var(--shell-scrim-rgb), 0.75)), url('assets/img/process-ldsp2-768.jpg');
+  }
+}
+
+/* Certificates/stats gets its own background photo — same scrim opacity as
+   .process/.cta-section since it's the same kind of single-hue wood photo. */
+#certificates {
+  background-image: linear-gradient(rgba(var(--shell-scrim-rgb), 0.75), rgba(var(--shell-scrim-rgb), 0.75)), var(--certificates-bg-photo);
+  background-size: cover, cover;
+  background-position: center, center;
+  background-blend-mode: normal, multiply;
+}
+@media (max-width: 760px) {
+  #certificates {
+    background-image: linear-gradient(rgba(var(--shell-scrim-rgb), 0.75), rgba(var(--shell-scrim-rgb), 0.75)), url('assets/img/certificates-belayakorona-768.jpg');
   }
 }
 
@@ -815,8 +939,8 @@ p.lead { font-size: clamp(1.05rem, 1.6vw, 1.25rem); color: var(--ink-grey); }
 .stack-bar {
   height: 3.5rem;
   border-radius: var(--radius-card);
-  background: var(--surface-dark-soft);
-  border: 1px solid rgba(255,255,255,0.12);
+  background: var(--shell-bg-soft);
+  border: 1px solid var(--shell-border);
   opacity: 0.3;
   transform: scaleX(0.94);
   transform-origin: center;
@@ -826,7 +950,7 @@ p.lead { font-size: clamp(1.05rem, 1.6vw, 1.25rem); color: var(--ink-grey); }
   padding-inline: 1rem;
   font-family: var(--font-mono);
   font-size: 0.78rem;
-  color: var(--muted-on-dark);
+  color: var(--shell-muted);
   letter-spacing: 0.03em;
   text-transform: uppercase;
 }
@@ -854,11 +978,11 @@ p.lead { font-size: clamp(1.05rem, 1.6vw, 1.25rem); color: var(--ink-grey); }
   grid-template-columns: 3.5rem 1fr;
   gap: 1rem;
   padding-block: 1.1rem;
-  border-top: 1px solid rgba(255,255,255,0.12);
+  border-top: 1px solid var(--shell-border);
   opacity: 0.45;
   transition: opacity 300ms;
 }
-.process-stage:last-child { border-bottom: 1px solid rgba(255,255,255,0.12); }
+.process-stage:last-child { border-bottom: 1px solid var(--shell-border); }
 .process-stage.is-active { opacity: 1; }
 
 .process-stage::before {
@@ -868,8 +992,8 @@ p.lead { font-size: clamp(1.05rem, 1.6vw, 1.25rem); color: var(--ink-grey); }
   font-size: 1.1rem;
 }
 
-.process-stage h3 { color: var(--pulp-white); margin-bottom: 0.25rem; font-size: 1.05rem; }
-.process-stage p { color: var(--muted-on-dark); font-size: 0.92rem; }
+.process-stage h3 { color: var(--shell-ink); margin-bottom: 0.25rem; font-size: 1.05rem; }
+.process-stage p { color: var(--shell-muted); font-size: 0.92rem; }
 
 /* ---------- Advantages (no numbering — see PRD §3.5) ---------- */
 .advantages-grid {
@@ -914,7 +1038,7 @@ p.lead { font-size: clamp(1.05rem, 1.6vw, 1.25rem); color: var(--ink-grey); }
 .stat-value {
   font-family: var(--font-display);
   font-size: clamp(2.4rem, 5vw, 3.6rem);
-  color: var(--pulp-white);
+  color: var(--shell-ink);
   line-height: 1;
   font-variant-numeric: tabular-nums;
 }
@@ -931,7 +1055,7 @@ p.lead { font-size: clamp(1.05rem, 1.6vw, 1.25rem); color: var(--ink-grey); }
   font-size: 0.78rem;
   text-transform: uppercase;
   letter-spacing: 0.04em;
-  color: var(--muted-on-dark-soft);
+  color: var(--shell-muted-soft);
   margin-top: 0.5rem;
 }
 
@@ -943,8 +1067,8 @@ p.lead { font-size: clamp(1.05rem, 1.6vw, 1.25rem); color: var(--ink-grey); }
 .cert-badge {
   font-family: var(--font-mono);
   font-size: 0.82rem;
-  border: 1px dashed rgba(255,255,255,0.35);
-  color: var(--muted-on-dark);
+  border: 1px dashed var(--shell-border-strong);
+  color: var(--shell-muted);
   padding: 0.7em 1.1em;
   border-radius: var(--radius-card);
 }
@@ -978,23 +1102,23 @@ p.lead { font-size: clamp(1.05rem, 1.6vw, 1.25rem); color: var(--ink-grey); }
 
 /* ---------- CTA form ---------- */
 .cta-section {
-  background-color: var(--surface-dark);
+  background-color: var(--shell-bg);
   /* Matches .process: same scrim color/opacity and same photo, so the two
      dark photo sections read as one consistent treatment. */
-  background-image: linear-gradient(rgba(79, 68, 56, 0.75), rgba(79, 68, 56, 0.75)), var(--process-bg-photo);
+  background-image: linear-gradient(rgba(var(--shell-scrim-rgb), 0.75), rgba(var(--shell-scrim-rgb), 0.75)), var(--process-bg-photo);
   background-size: cover, cover;
   background-position: center, center;
   background-blend-mode: normal, multiply;
-  color: var(--pulp-white);
+  color: var(--shell-ink);
 }
 @media (max-width: 760px) {
   .cta-section {
-    background-image: linear-gradient(rgba(79, 68, 56, 0.75), rgba(79, 68, 56, 0.75)), url('assets/img/process-ldsp2-768.jpg');
+    background-image: linear-gradient(rgba(var(--shell-scrim-rgb), 0.75), rgba(var(--shell-scrim-rgb), 0.75)), url('assets/img/process-ldsp2-768.jpg');
   }
 }
-.cta-section .eyebrow { color: #FBE7DA; }
-.cta-section h2 { color: var(--pulp-white); }
-.cta-section .lead { color: #F3DCCB; }
+.cta-section .eyebrow { color: var(--shell-cta-eyebrow); }
+.cta-section h2 { color: var(--shell-ink); }
+.cta-section .lead { color: var(--shell-cta-lead); }
 
 .cta-layout {
   display: grid;
@@ -1014,13 +1138,13 @@ p.lead { font-size: clamp(1.05rem, 1.6vw, 1.25rem); color: var(--ink-grey); }
   font-size: 0.78rem;
   text-transform: uppercase;
   letter-spacing: 0.03em;
-  color: #FBE7DA;
+  color: var(--shell-cta-eyebrow);
 }
 .form-field input,
 .form-field select,
 .form-field textarea {
-  background: rgba(255,255,255,0.94);
-  color: var(--press-black);
+  background: var(--shell-form-fill);
+  color: var(--shell-form-ink);
   border: 1px solid transparent;
   border-radius: var(--radius-card);
   padding: 0.75em 0.9em;
@@ -1028,10 +1152,10 @@ p.lead { font-size: clamp(1.05rem, 1.6vw, 1.25rem); color: var(--ink-grey); }
 .form-field input:focus,
 .form-field select:focus,
 .form-field textarea:focus {
-  outline: 2px solid var(--press-black);
+  outline: 2px solid var(--shell-form-ink);
 }
 
-.form-note { font-size: 0.82rem; color: #F3DCCB; margin-top: 0.75rem; }
+.form-note { font-size: 0.82rem; color: var(--shell-cta-lead); margin-top: 0.75rem; }
 
 /* Modern enter-animation with no JS mount flag needed: only :not(:empty)
    (i.e. once script.js has actually inserted the confirmation text) gets a
@@ -1055,23 +1179,24 @@ p.lead { font-size: clamp(1.05rem, 1.6vw, 1.25rem); color: var(--ink-grey); }
 
 /* ---------- Footer / Colophon ---------- */
 .site-footer {
-  background-color: var(--surface-dark);
+  background-color: var(--footer-bg);
   background-image: var(--bg-texture);
   background-size: cover;
   background-position: center;
   background-blend-mode: multiply;
-  color: var(--pulp-white);
+  color: var(--shell-ink);
+  transition: background-color 300ms, color 300ms;
 }
 
 .colophon {
   font-family: var(--font-mono);
   font-size: 0.85rem;
-  color: var(--muted-on-dark);
+  color: var(--shell-muted);
   padding-block: 1.75rem;
-  border-bottom: 1px solid rgba(255,255,255,0.12);
+  border-bottom: 1px solid var(--shell-border);
   line-height: 1.8;
 }
-.colophon strong { color: var(--pulp-white); }
+.colophon strong { color: var(--shell-ink); }
 
 .footer-lower {
   display: grid;
@@ -1089,7 +1214,7 @@ p.lead { font-size: clamp(1.05rem, 1.6vw, 1.25rem); color: var(--ink-grey); }
   font-size: 0.75rem;
   text-transform: uppercase;
   letter-spacing: 0.06em;
-  color: var(--muted-on-dark-soft);
+  color: var(--shell-muted-soft);
   margin-bottom: 0.9rem;
 }
 .footer-col ul { list-style: none; padding: 0; display: flex; flex-direction: column; gap: 0.55rem; font-size: 0.92rem; }
@@ -1103,17 +1228,17 @@ p.lead { font-size: clamp(1.05rem, 1.6vw, 1.25rem); color: var(--ink-grey); }
   min-width: 44px;
   min-height: 44px;
   margin: -11px;
-  color: var(--muted-on-dark);
+  color: var(--shell-muted);
   transition: color 150ms;
 }
 .social-link svg { width: 22px; height: 22px; }
 .social-link:hover { color: var(--registration-cyan); }
 
 .footer-bottom {
-  border-top: 1px solid rgba(255,255,255,0.12);
+  border-top: 1px solid var(--shell-border);
   padding-block: 1.25rem;
   font-size: 0.8rem;
-  color: var(--muted-on-dark-soft);
+  color: var(--shell-muted-soft);
   display: flex;
   justify-content: space-between;
   flex-wrap: wrap;

@@ -63,6 +63,27 @@
     });
   });
 
+  /* ---------- Day/night theme ---------- */
+  var THEME_KEY = 'starwood-theme';
+  var themeToggle = document.getElementById('theme-toggle');
+
+  function applyTheme(theme) {
+    if (theme !== 'day' && theme !== 'night') theme = 'night';
+    html.setAttribute('data-theme', theme);
+    if (themeToggle) themeToggle.setAttribute('aria-pressed', theme === 'day' ? 'true' : 'false');
+    try { localStorage.setItem(THEME_KEY, theme); } catch (e) {}
+  }
+
+  var savedTheme = null;
+  try { savedTheme = localStorage.getItem(THEME_KEY); } catch (e) {}
+  applyTheme(savedTheme === 'day' ? 'day' : 'night');
+
+  if (themeToggle) {
+    themeToggle.addEventListener('click', function () {
+      applyTheme(html.getAttribute('data-theme') === 'day' ? 'night' : 'day');
+    });
+  }
+
   /* ---------- Mobile nav ---------- */
   var navToggle = document.getElementById('nav-toggle');
   var mainNav = document.getElementById('main-nav');
