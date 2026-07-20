@@ -424,12 +424,13 @@ p.lead { font-size: clamp(1.05rem, 1.6vw, 1.25rem); color: var(--ink-grey); }
 .action-island {
   pointer-events: auto;
   /* Darkened from an earlier pulp-white-based glass (rgba(247,245,241,.85))
-     toward --raw-pulp-dark, then dropped to 50% fill on request — glassier,
-     more of the page shows through. Over the dark hero photo specifically
-     this lowers --press-black ink contrast versus the near-opaque version;
-     backdrop-filter's saturate(140%) blur(12px) still keeps the pill
-     readable as a distinct surface even where the fill itself goes thin. */
-  background: rgba(200, 191, 172, 0.5);
+     toward --raw-pulp-dark, then dropped fill opacity on request (90% →
+     50% → 20%) — glassier each step, more of the page shows through. At
+     20% over the dark hero photo the fill barely tints the backdrop, so
+     --press-black ink contrast leans almost entirely on backdrop-filter's
+     saturate(140%) blur(12px) to separate the pill from the photo — worth
+     rechecking legibility there if this goes any lower. */
+  background: rgba(200, 191, 172, 0.2);
   backdrop-filter: saturate(140%) blur(12px);
   -webkit-backdrop-filter: saturate(140%) blur(12px);
   border: 1px solid rgba(30, 26, 23, 0.16);
@@ -579,8 +580,8 @@ p.lead { font-size: clamp(1.05rem, 1.6vw, 1.25rem); color: var(--ink-grey); }
   /* Same fill as .logo/.nav-island/.action-island, on request — unlike
      .theme-toggle (a plain icon button with no background of its own),
      this control gets the island tint so its segmented buttons read
-     clearly. Kept in step with the islands' 50% opacity below. */
-  background: rgba(200, 191, 172, 0.5);
+     clearly. Kept in step with the islands' 20% opacity below. */
+  background: rgba(200, 191, 172, 0.2);
   border: 1px solid currentColor;
   border-radius: var(--radius-card);
   padding: 2px;
