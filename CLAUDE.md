@@ -86,7 +86,7 @@ Full rationale in `research/03_design_direction.md`. Summary of the tokens (all 
 | `--press-black` | `#1E1A17` | **Ink/text color only** — headings, decor-card names, focus rings, `.btn-outline-dark`. Do not use for large backgrounds (see below). |
 | `--surface-dark` | `#4F4438` | Background for large dark sections (hero, process, certificates, footer). Lightened on request from an earlier near-black `#1E1A17` — kept as a separate token from `--press-black` specifically so lightening it doesn't also wash out ink/text colors that reuse the same name. |
 | `--surface-dark-soft` | `#655947` | Slightly lighter dark-section surface (resting `.stack-bar` state). |
-| `--kraft-brown` | `#845036` | Brand accent (CTA, brand blocks) — fixed by the original brief, do not change |
+| `--kraft-brown` | `#8C776E` | Brand accent (CTA, brand blocks) — updated from the original brief's `#845036` |
 | `--raw-pulp` | `#E8E4DC` | Light section background — deliberately *not* a warm cream (see cliché note). Do not lighten this further toward `#F4F1EA` — that's the exact AI-default cream this project is avoiding. |
 | `--registration-cyan` | `#1C8CA0` | Interactive/working accent (links, active states, eyebrow labels, active language option) |
 | `--ink-grey` | `#4A433C` | Body text on light backgrounds |

@@ -26,9 +26,9 @@
      so don't lighten --surface-dark further without rechecking that pair. */
   --surface-dark: #544A3A;
   --surface-dark-soft: #6C6050;
-  --kraft-brown: #845036;
-  --kraft-brown-dark: #6B3F2A;
-  --kraft-brown-light: #A8734F;
+  --kraft-brown: #8C776E;
+  --kraft-brown-dark: #77655E;
+  --kraft-brown-light: #A79790;
   --raw-pulp: #D9D2C4;
   --raw-pulp-dark: #C8BFAC;
   --registration-cyan: #1C8CA0;
@@ -339,9 +339,9 @@ p.lead { font-size: clamp(1.05rem, 1.6vw, 1.25rem); color: var(--ink-grey); }
   background-size: cover;
   background-position: center;
   background-blend-mode: multiply;
-  color: var(--pulp-white);
-  /* Tinted toward kraft-brown-dark rather than flat black — a shadow should
-     carry the hue of what's casting it. */
+  /* Pure black, not --press-black — needed for AA contrast (4.98:1) against
+     the lightened kraft-brown; press-black only reaches 4.10:1 here. */
+  color: #000000;
   box-shadow: 0 2px 0 rgba(74, 41, 26, 0.35);
   transition: transform 200ms var(--ease-out), background-color 200ms, color 200ms, border-color 200ms, box-shadow 150ms var(--ease-out);
 }
@@ -405,17 +405,20 @@ p.lead { font-size: clamp(1.05rem, 1.6vw, 1.25rem); color: var(--ink-grey); }
 }
 
 .header-inner {
+  --header-pad: clamp(0.75rem, 2vw, 1.25rem);
   display: flex;
   /* stretch (not center) so the shorter logo pill is forced to the same
      height as the taller nav-island pill instead of floating at its own
      shorter natural height next to it. */
   align-items: stretch;
-  /* Logo pinned left; nav-island + action-island cluster at the right
-     edge via margin-left:auto on nav-island below — plain
-     justify-content:space-between would spread all three islands evenly
-     across the full row instead of keeping the right-side pair together. */
-  gap: 0.75rem;
-  padding-block: clamp(0.75rem, 2vw, 1.25rem);
+  /* Fixed --header-pad gap between islands (matches the inset to every
+     edge) instead of letting justify-content:space-between push leftover
+     row width into the gaps — the three islands grow to fill that
+     leftover width themselves instead (flex-grow:1 below), so the gap
+     between islands stays the same size as the gap to the top border
+     regardless of viewport width. */
+  gap: var(--header-pad);
+  padding: var(--header-pad);
   position: relative;
 }
 
@@ -423,28 +426,34 @@ p.lead { font-size: clamp(1.05rem, 1.6vw, 1.25rem); color: var(--ink-grey); }
 .nav-island,
 .action-island {
   pointer-events: auto;
-  /* Darkened from an earlier pulp-white-based glass (rgba(247,245,241,.85))
-     toward --raw-pulp-dark, then dropped fill opacity on request (90% →
-     50% → 20%) — glassier each step, more of the page shows through. At
-     20% over the dark hero photo the fill barely tints the backdrop, so
-     --press-black ink contrast leans almost entirely on backdrop-filter's
-     saturate(140%) blur(12px) to separate the pill from the photo — worth
-     rechecking legibility there if this goes any lower. */
-  background: rgba(200, 191, 172, 0.2);
-  backdrop-filter: saturate(140%) blur(12px);
-  -webkit-backdrop-filter: saturate(140%) blur(12px);
-  border: 1px solid rgba(30, 26, 23, 0.16);
+  /* Grow to soak up the row's leftover width instead of leaving it in the
+     gaps (see .header-inner) — on request, so the pills read as one
+     continuous stretched bar rather than three content-sized chips with
+     wide gaps between them. */
+  flex: 1 1 auto;
+  /* Fully transparent fill, on request — only the border marks the pill's
+     edge, no backdrop-filter either since saturate() tints whatever shows
+     through even with no background-color of its own. Ink is fixed
+     --press-black (not theme-following) because with nothing behind it to
+     control, the pill shows raw page content as the user scrolls — hero
+     photo, light paper-stock sections, dark shell sections — and a fixed
+     dark ink is the one choice that stays legible-ish across all of them,
+     same as the mobile dropdown assumes. */
+  background: transparent;
+  /* Bolder on request now that background is gone — the border is the
+     pill's only visible edge, so 1px/0.16 read as too faint on its own. */
+  border: 1.5px solid rgba(30, 26, 23, 0.32);
   /* Squared off to match the CTA button's --radius-card, on request —
      was a full 999px pill/oval. */
   border-radius: var(--radius-card);
   box-shadow: 0 6px 18px -6px rgba(30, 26, 23, 0.22), 0 1px 2px rgba(0, 0, 0, 0.05);
   color: var(--press-black);
-  transition: box-shadow 200ms var(--ease-out), border-color 200ms, background-color 200ms;
+  transition: box-shadow 200ms var(--ease-out), border-color 200ms, background-color 200ms, color 200ms;
 }
 .logo:hover,
 .nav-island:hover,
 .action-island:hover {
-  border-color: rgba(30, 26, 23, 0.24);
+  border-color: rgba(30, 26, 23, 0.44);
   box-shadow: 0 14px 30px -8px rgba(30, 26, 23, 0.32), 0 1px 2px rgba(0, 0, 0, 0.05);
 }
 
@@ -452,6 +461,10 @@ p.lead { font-size: clamp(1.05rem, 1.6vw, 1.25rem); color: var(--ink-grey); }
   position: relative;
   display: inline-flex;
   align-items: center;
+  /* Centers the mark now that the pill grows wider than its content (see
+     flex:1 1 auto above) — left-aligned (the old default) would strand it
+     against the left edge with empty space trailing off to the right. */
+  justify-content: center;
   /* Padding split unevenly (less on top, more on bottom) rather than
      centering the mark in the pill's true geometric middle — the star's
      point-up silhouette carries more visual weight low, so a geometric
@@ -486,13 +499,14 @@ p.lead { font-size: clamp(1.05rem, 1.6vw, 1.25rem); color: var(--ink-grey); }
   display: flex;
   align-items: center;
   gap: 1.25rem;
+  /* Spreads the 5 links across the pill's now-wider box (see flex:1 1 auto
+     above) instead of leaving them clumped at the left — reads like an
+     actual nav bar spanning its container rather than a left-anchored
+     cluster with dead space trailing off to the right. */
+  justify-content: space-between;
   /* Symmetric now that this pill holds only the nav links (the CTA button
      that used to sit at its right edge is its own island now). */
   padding: 0.55rem 1.5rem;
-  /* Pushes this pill + every sibling after it (plain controls, CTA,
-     mobile toggle) to the right edge, leaving the logo alone on the left —
-     see the .header-inner comment above. */
-  margin-inline-start: auto;
 }
 /* One-time entrance on page load — a plate dropping in slightly askew,
    oversized and hot off the press, then stamping down and settling into
@@ -566,6 +580,11 @@ p.lead { font-size: clamp(1.05rem, 1.6vw, 1.25rem); color: var(--ink-grey); }
 .action-island {
   display: flex;
   align-items: center;
+  /* Centered, not spread — CTA/lang-switch/toggle/burger are a single
+     related control cluster, not a list like .nav-island's links, so
+     space-between would visually disconnect them once this pill grows
+     wider than its content (see flex:1 1 auto above). */
+  justify-content: center;
   gap: 0.75rem;
   padding: 0.45rem 0.6rem;
 }
@@ -580,8 +599,8 @@ p.lead { font-size: clamp(1.05rem, 1.6vw, 1.25rem); color: var(--ink-grey); }
   /* Same fill as .logo/.nav-island/.action-island, on request — unlike
      .theme-toggle (a plain icon button with no background of its own),
      this control gets the island tint so its segmented buttons read
-     clearly. Kept in step with the islands' 20% opacity below. */
-  background: rgba(200, 191, 172, 0.2);
+     clearly. Kept in step with the islands' transparent fill above. */
+  background: transparent;
   border: 1px solid currentColor;
   border-radius: var(--radius-card);
   padding: 2px;
@@ -668,11 +687,12 @@ html[data-theme="day"] .theme-toggle__icon--day { opacity: 1; }
      in the 861-1023px range and was clipping off the right edge of the
      viewport. Collapsing to the compact hamburger layout earlier avoids
      that; verified no overflow at 1024px (~40px to spare). */
-  /* Mobile dropdown becomes its own light-glass island (same surface
-     language as the desktop pills) rather than a full-bleed dark panel —
-     the pills above are always light-on-dark-ink now regardless of the
-     day/night section theme, so a --shell-bg-soft panel (dark in the
-     night theme) would put dark ink on a dark surface. */
+  /* Mobile dropdown stays its own fixed light-glass panel rather than the
+     desktop pills' transparent-with-border treatment — a fully transparent
+     panel here would show raw page content through the open dropdown with
+     no separation from the links stacked on top of it. color is pinned
+     (not just inherited) so it stays --press-black regardless of what the
+     shared island rule above does to its own ink. */
   .main-nav {
     position: absolute;
     top: calc(100% + 0.6rem);
@@ -680,6 +700,7 @@ html[data-theme="day"] .theme-toggle__icon--day { opacity: 1; }
     right: var(--gutter);
     flex-direction: column;
     background: rgba(200, 191, 172, 0.94);
+    color: var(--press-black);
     backdrop-filter: saturate(140%) blur(12px);
     -webkit-backdrop-filter: saturate(140%) blur(12px);
     border: 1px solid rgba(30, 26, 23, 0.1);
@@ -727,7 +748,7 @@ html[data-theme="day"] .theme-toggle__icon--day { opacity: 1; }
      more coverage to keep hero-copy text legible regardless of whether the
      photo ends up beside the text (desktop) or above it (mobile, where
      hero-visual reorders first — see the 900px breakpoint below). */
-  background-image: linear-gradient(rgba(var(--shell-scrim-rgb), 0.72), rgba(var(--shell-scrim-rgb), 0.72)), var(--hero-bg-photo);
+  background-image: linear-gradient(rgba(var(--shell-scrim-rgb), 0.72), rgba(var(--shell-scrim-rgb), 0.72)), var(--certificates-bg-photo);
   background-size: cover, cover;
   background-position: center, center;
   background-blend-mode: normal, multiply;
@@ -742,7 +763,7 @@ html[data-theme="day"] .theme-toggle__icon--day { opacity: 1; }
 }
 @media (max-width: 760px) {
   .hero {
-    background-image: linear-gradient(rgba(var(--shell-scrim-rgb), 0.72), rgba(var(--shell-scrim-rgb), 0.72)), url('assets/img/hero-decor-swatches-768.jpg');
+    background-image: linear-gradient(rgba(var(--shell-scrim-rgb), 0.72), rgba(var(--shell-scrim-rgb), 0.72)), url('assets/img/certificates-belayakorona-768.jpg');
   }
 }
 
@@ -1136,7 +1157,8 @@ html[data-theme="day"] .theme-toggle__icon--day { opacity: 1; }
   background-size: cover;
   background-position: center;
   background-blend-mode: multiply;
-  color: var(--pulp-white);
+  /* Pure black, not --press-black — see .btn-primary for why. */
+  color: #000000;
   border-color: transparent;
 }
 
