@@ -24,6 +24,12 @@
     }
   };
 
+  var PROCESS_FLOW_ALT = {
+    ru: 'Схема процесса: сырьё, печать, пропитка, прессование, контроль качества',
+    en: 'Process diagram: raw material, printing, impregnation, pressing, quality control',
+    uz: 'Jarayon sxemasi: xom ashyo, chop etish, shimdirish, presslash, nazorat'
+  };
+
   function applyLang(lang) {
     if (LANGS.indexOf(lang) === -1) lang = 'ru';
     html.setAttribute('lang', lang);
@@ -37,6 +43,19 @@
     document.querySelectorAll('option[data-ru]').forEach(function (opt) {
       opt.textContent = opt.dataset[lang] || opt.dataset.ru;
     });
+    /* Each language has its own baked-in-text process-flow GIF (see
+       assets/img/process-flow/) — src/srcset are swapped here rather than
+       shipping all three and hiding two with CSS, since display:none
+       doesn't reliably stop a browser from fetching an <img>'s src. */
+    var flowImg = document.querySelector('.process-flow-img');
+    if (flowImg) {
+      flowImg.src = 'assets/img/process-flow/process-flow-' + lang + '.gif';
+      flowImg.alt = PROCESS_FLOW_ALT[lang];
+    }
+    var flowReducedSrc = document.querySelector('.process-flow-reduced-src');
+    if (flowReducedSrc) {
+      flowReducedSrc.srcset = 'assets/img/process-flow/process-flow-' + lang + '-static.png';
+    }
     try { localStorage.setItem(LANG_KEY, lang); } catch (e) {}
   }
 
@@ -127,6 +146,50 @@
     revealEls.forEach(function (el) { el.classList.add('is-visible'); });
   }
 
+  /* ---------- Decor catalog carousel ----------
+     Prev/next buttons drive the same horizontal scroller a trackpad or
+     touch swipe would — buttons just call scrollBy, scroll-snap (see
+     .decor-grid) handles landing on a card edge either way. */
+  var decorGrid = document.getElementById('decor-grid');
+  var decorNavButtons = document.querySelectorAll('[data-decor-nav]');
+
+  function updateDecorNav() {
+    if (!decorGrid) return;
+    var maxScroll = decorGrid.scrollWidth - decorGrid.clientWidth;
+    decorNavButtons.forEach(function (btn) {
+      if (btn.dataset.decorNav === 'prev') {
+        btn.disabled = decorGrid.scrollLeft <= 1;
+      } else {
+        btn.disabled = decorGrid.scrollLeft >= maxScroll - 1;
+      }
+    });
+  }
+
+  if (decorGrid) {
+    decorNavButtons.forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        var direction = btn.dataset.decorNav === 'prev' ? -1 : 1;
+        decorGrid.scrollBy({
+          left: direction * decorGrid.clientWidth * 0.92,
+          behavior: reduceMotion ? 'auto' : 'smooth'
+        });
+      });
+    });
+
+    var decorNavTicking = false;
+    decorGrid.addEventListener('scroll', function () {
+      if (decorNavTicking) return;
+      decorNavTicking = true;
+      requestAnimationFrame(function () {
+        updateDecorNav();
+        decorNavTicking = false;
+      });
+    }, { passive: true });
+
+    window.addEventListener('resize', updateDecorNav);
+    updateDecorNav();
+  }
+
   /* ---------- Decor catalog filter ---------- */
   var filterButtons = document.querySelectorAll('.decor-filter');
   var decorCards = document.querySelectorAll('.decor-card');
@@ -179,6 +242,13 @@
       filterButtons.forEach(function (b) { b.classList.remove('is-active'); });
       btn.classList.add('is-active');
       applyFilter(btn.dataset.filter);
+      if (decorGrid) {
+        decorGrid.scrollTo({ left: 0, behavior: reduceMotion ? 'auto' : 'smooth' });
+        /* Cards leaving the flow do so on a 180ms fade (see applyFilter) —
+           scrollWidth isn't settled until that finishes, so re-check nav
+           state after it instead of only on the pre-filter layout. */
+        setTimeout(updateDecorNav, 220);
+      }
     });
   });
 
@@ -270,7 +340,6 @@
   /* ---------- Process pinned scroll scene ---------- */
   function initProcessScene() {
     var stages = document.querySelectorAll('.process-stage');
-    var stackLayers = document.querySelectorAll('.stack-bar');
     if (!stages.length) return;
 
     var hasGSAP = window.gsap && window.ScrollTrigger;
@@ -305,7 +374,6 @@
 
     function setActiveStage(index) {
       stages.forEach(function (s, i) { s.classList.toggle('is-active', i <= index); });
-      stackLayers.forEach(function (l, i) { l.classList.toggle('is-active', i <= index); });
     }
   }
 

@@ -25,7 +25,6 @@
      tightest margin is --muted-on-dark-soft on --surface-dark at ~4.5:1,
      so don't lighten --surface-dark further without rechecking that pair. */
   --surface-dark: #544A3A;
-  --surface-dark-soft: #6C6050;
   --kraft-brown: #8C776E;
   --kraft-brown-dark: #77655E;
   --kraft-brown-light: #A79790;
@@ -53,7 +52,7 @@
      entire page (see .bg-texture). Light sections show it as a translucent
      tint (see .section--pulp-white/.section--pulp) since lightening never
      threatens white-text contrast there. Dark/brand-colored surfaces
-     (hero, .section--dark, .btn-primary, .stack-bar.is-active,
+     (hero, .section--dark, .btn-primary,
      .cta-section) use background-blend-mode: multiply instead of alpha —
      alpha-blending a dark tone with this light-toned photo necessarily
      brightens the surface (tried at 0.9, then 0.7, then 0.45 opacity: the
@@ -62,20 +61,20 @@
      lighten past it, so contrast stays anchored to the original verified
      base colors while the grain still reads as texture. */
 
-  --bg-texture: url('assets/img/uludag-mese-bg.jpg');
+  --bg-texture: url('assets/img/process-flow/uludag-mese-bg.jpg');
 
   /* Hero-only background photo: fanned wood-veneer/laminate decor swatches,
      shallow depth of field, warm window light ("Samples of Wooden Floor" by
      cottonbro studio, Pexels — free for commercial use, no attribution
      required). Swapped for a narrower crop on mobile via media query below
      (see .hero) to avoid shipping the full desktop asset on small screens. */
-  --hero-bg-photo: url('assets/img/hero-decor-swatches-1920.jpg');
+  --hero-bg-photo: url('assets/img/process-flow/hero-decor-swatches-1920.jpg');
 
   /* Production-process-only background photo: fanned stack of laminated
-     decor boards (source: assets/img/LDSP2.jpg). Native resolution is only
+     decor boards (source: assets/img/process-flow/LDSP2.jpg). Native resolution is only
      1000px wide, so no larger desktop variant was generated — upscaling
      past that would just blur it. Swapped for a smaller crop on mobile. */
-  --process-bg-photo: url('assets/img/process-ldsp2-1000.jpg');
+  --process-bg-photo: url('assets/img/process-flow/process-ldsp2-1000.jpg');
 
   /* Certificates-section-only background photo: Belaya Korona decor paper
      (source: assets/img/Papers/Belaya_Korona.webp) — a light, low-contrast
@@ -84,7 +83,7 @@
      read as noisy/patchwork behind the stats and needed either an
      unreadably heavy scrim or lost all its color — swapped for a single
      coherent photo like the other shell sections use. */
-  --certificates-bg-photo: url('assets/img/certificates-belayakorona-1400.jpg');
+  --certificates-bg-photo: url('assets/img/process-flow/certificates-belayakorona-1400.jpg');
 
   /* Inline SVG fractal-noise, ~300 bytes, no network request — a paper-grain
      ambient texture reinforcing "this is a paper mill" at near-zero cost.
@@ -102,7 +101,6 @@
      raw --surface-dark/--pulp-white pair directly, so this block is the only
      place the theme swap has to be taught new colors. */
   --shell-bg: var(--surface-dark);
-  --shell-bg-soft: var(--surface-dark-soft);
   --shell-ink: var(--pulp-white);
   --shell-muted: var(--muted-on-dark);
   --shell-muted-soft: var(--muted-on-dark-soft);
@@ -128,7 +126,6 @@
 
 html[data-theme="day"] {
   --shell-bg: var(--raw-pulp);
-  --shell-bg-soft: var(--raw-pulp-dark);
   --shell-ink: var(--press-black);
   --shell-muted: var(--ink-grey);
   --shell-muted-soft: #6B6156;
@@ -628,7 +625,7 @@ p.lead { font-size: clamp(1.05rem, 1.6vw, 1.25rem); color: var(--ink-grey); }
 }
 
 /* ---------- Day/night toggle (header) ----------
-   Two pre-rendered pill-switch graphics (assets/img/theme-toggle-{night,day}.*,
+   Two pre-rendered pill-switch graphics (assets/img/process-flow/theme-toggle-{night,day}.*,
    cropped from assets/img/day-night_toggle.avif) are stacked in the same slot
    and cross-faded by the html[data-theme] attribute — same mechanism the
    theme tokens above key off, so the icon state and the actual palette can
@@ -763,7 +760,7 @@ html[data-theme="day"] .theme-toggle__icon--day { opacity: 1; }
 }
 @media (max-width: 760px) {
   .hero {
-    background-image: linear-gradient(rgba(var(--shell-scrim-rgb), 0.72), rgba(var(--shell-scrim-rgb), 0.72)), url('assets/img/certificates-belayakorona-768.jpg');
+    background-image: linear-gradient(rgba(var(--shell-scrim-rgb), 0.72), rgba(var(--shell-scrim-rgb), 0.72)), url('assets/img/process-flow/certificates-belayakorona-768.jpg');
   }
 }
 
@@ -797,9 +794,10 @@ html[data-theme="day"] .theme-toggle__icon--day { opacity: 1; }
   flex-wrap: wrap;
 }
 
-/* Signature element: The Layer Press (production-process stack-bar +
-   decor-card corner only — see CLAUDE.md). The hero now uses its own
-   quieter motif, Swatch Float, below. */
+/* Signature element: The Layer Press (decor-card corner — see CLAUDE.md;
+   the production-process stack-bar that used to be this motif's other
+   instance was replaced by the process-flow-img diagram, see .process).
+   The hero now uses its own quieter motif, Swatch Float, below. */
 
 /* ---------- Hero visual: Swatch Float ----------
    A loose scatter of real paper-sample photos that settle into place on
@@ -872,6 +870,22 @@ html[data-theme="day"] .theme-toggle__icon--day { opacity: 1; }
    .bg-texture, not flat fills) at the old, much lighter values. */
 .section--pulp-white { background: rgba(235,231,222,0.55); }
 .section--pulp { background: rgba(217,210,196,0.55); }
+/* Darker in night/dark mode, on request — scoped to these 3 IDs (not the
+   shared .section--pulp-white/.section--pulp classes) since #clients also
+   uses .section--pulp-white and should keep the original lighter tone.
+   Capped around rgb(186,178,165) rather than going as dark as the true
+   .section--dark shell surfaces: #decors' lead paragraph and .advantage p
+   both render --ink-grey directly on this background (not inside an
+   opaque card, unlike .decor-card/.sustain-card), and --ink-grey needs
+   ~180+ lightness behind it to clear 4.5:1 AA — going darker would take
+   those below AA. html[data-theme="day"] restores the original lighter
+   tint, since day theme is uniformly light by design (see the day/night
+   theme comment near --shell-bg above). */
+#decors, #advantages { background: rgba(186, 178, 165, 0.85); }
+#sustainability { background: rgba(168, 158, 142, 0.85); }
+html[data-theme="day"] #decors,
+html[data-theme="day"] #advantages { background: rgba(235, 231, 222, 0.55); }
+html[data-theme="day"] #sustainability { background: rgba(217, 210, 196, 0.55); }
 .section--pulp-white::before,
 .section--pulp::before {
   content: '';
@@ -900,7 +914,7 @@ html[data-theme="day"] .theme-toggle__icon--day { opacity: 1; }
 /* Production process gets its own background photo instead of the shared
    .section--dark wood-grain texture — same-hue scrim + multiply so text
    contrast stays anchored the same way as everywhere else this pattern is
-   used (hero, CTA, stack-bar). Certificates/stats gets its own photo too
+   used (hero, CTA). Certificates/stats gets its own photo too
    (see #certificates below); only these two override the shared texture. */
 .process {
   background-image: linear-gradient(rgba(var(--shell-scrim-rgb), 0.75), rgba(var(--shell-scrim-rgb), 0.75)), var(--process-bg-photo);
@@ -910,7 +924,7 @@ html[data-theme="day"] .theme-toggle__icon--day { opacity: 1; }
 }
 @media (max-width: 760px) {
   .process {
-    background-image: linear-gradient(rgba(var(--shell-scrim-rgb), 0.75), rgba(var(--shell-scrim-rgb), 0.75)), url('assets/img/process-ldsp2-768.jpg');
+    background-image: linear-gradient(rgba(var(--shell-scrim-rgb), 0.75), rgba(var(--shell-scrim-rgb), 0.75)), url('assets/img/process-flow/process-ldsp2-768.jpg');
   }
 }
 
@@ -924,7 +938,7 @@ html[data-theme="day"] .theme-toggle__icon--day { opacity: 1; }
 }
 @media (max-width: 760px) {
   #certificates {
-    background-image: linear-gradient(rgba(var(--shell-scrim-rgb), 0.75), rgba(var(--shell-scrim-rgb), 0.75)), url('assets/img/certificates-belayakorona-768.jpg');
+    background-image: linear-gradient(rgba(var(--shell-scrim-rgb), 0.75), rgba(var(--shell-scrim-rgb), 0.75)), url('assets/img/process-flow/certificates-belayakorona-768.jpg');
   }
 }
 
@@ -933,6 +947,44 @@ html[data-theme="day"] .theme-toggle__icon--day { opacity: 1; }
   margin-bottom: clamp(2rem, 5vw, 3.5rem);
 }
 .section-head p.lead { margin-top: 0.75rem; }
+
+.decor-nav {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.6rem;
+  flex-shrink: 0;
+  /* margin-left:auto (not .decor-filters' justify-content) pushes this to
+     the row's right edge — it keeps working if .decor-filters__list wraps
+     and .decor-nav drops to its own line, where space-between would
+     otherwise leave a lone item flush left instead of right. */
+  margin-left: auto;
+}
+.decor-nav__btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  /* 36px = .decor-filter's own rendered height (0.82rem text over 1.5
+     line-height, plus its 0.55em padding-block and 1px border) — matched
+     by measurement rather than shared box-model math, since an icon-only
+     button and a text button don't arrive at a height the same way. If
+     .decor-filter's font-size/padding/border ever change, re-measure and
+     update this. */
+  width: 36px;
+  height: 36px;
+  padding: 0;
+  background: transparent;
+  border: 1.5px solid var(--press-black);
+  border-radius: var(--radius-card);
+  color: var(--press-black);
+  transition: background 150ms, opacity 150ms, transform 150ms var(--ease-out);
+}
+.decor-nav__btn svg { width: 16px; height: 16px; }
+.decor-nav__btn:hover:not(:disabled) { background: rgba(30, 26, 23, 0.06); }
+.decor-nav__btn:active:not(:disabled) { transform: scale(0.94); }
+.decor-nav__btn:disabled {
+  opacity: 0.3;
+  cursor: default;
+}
 
 .reveal {
   opacity: 0;
@@ -969,11 +1021,25 @@ html[data-theme="day"] .theme-toggle__icon--day { opacity: 1; }
 .stagger.is-visible > *:nth-child(n+10) { transition-delay: 360ms; }
 
 /* ---------- Decor catalog ---------- */
+/* Row holds the filter pills and the carousel's prev/next buttons on one
+   line, nav pinned to the right via space-between — align-items:stretch
+   (the default) is what makes .decor-nav__btn match .decor-filter height
+   below, not a hardcoded number that could drift out of sync. */
 .decor-filters {
   display: flex;
   flex-wrap: wrap;
-  gap: 0.6rem;
+  /* flex-start, not the stretch default — .decor-filters__list can wrap to
+     a second row on narrow screens (long filter labels), and stretch would
+     then force .decor-nav to match that taller 2-row height instead of
+     staying pinned to the first line. */
+  align-items: flex-start;
+  gap: 0.75rem 1rem;
   margin-bottom: 2.25rem;
+}
+.decor-filters__list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6rem;
 }
 
 .decor-filter {
@@ -1006,14 +1072,49 @@ html[data-theme="day"] .theme-toggle__icon--day { opacity: 1; }
   100% { transform: scale(1); }
 }
 
+/* Horizontal carousel, 4 cards visible at a time on desktop (see
+   .decor-nav for the prev/next controls that drive it) — a fixed 4-up
+   flex-basis rather than the old wrapping auto-fill grid. --decor-gap is
+   a variable, not a bare 1.5rem, so script.js's scroll-by-page math
+   reads the same number the layout actually uses. scroll-snap keeps a
+   card's left edge flush with the container after every scroll/button
+   press instead of leaving one half-visible at the seam. Scrollbar is
+   hidden since .decor-nav is the intended way to move the carousel —
+   drag/swipe/trackpad scrolling still works, just without a visible
+   track. */
 .decor-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(230px, 1fr));
-  gap: 1.5rem;
+  --decor-gap: 1.5rem;
+  --decor-nav-basis: 4;
+  display: flex;
+  gap: var(--decor-gap);
+  overflow-x: auto;
+  scroll-snap-type: x mandatory;
+  scroll-padding-left: 0;
+  scrollbar-width: none;
+  -webkit-overflow-scrolling: touch;
+}
+.decor-grid::-webkit-scrollbar { display: none; }
+@media (max-width: 1024px) {
+  /* 2 cards visible, on request's spirit of a partial-peek carousel at
+     narrower widths — the 4-up basis would squeeze cards under the
+     230px floor .decor-card sets below. */
+  .decor-grid { --decor-nav-basis: 2; }
+}
+@media (max-width: 640px) {
+  /* 1 card + a peek of the next, standard mobile-carousel affordance
+     that hints there's more to scroll to. */
+  .decor-grid { --decor-nav-basis: 1.15; }
 }
 
 .decor-card {
   position: relative;
+  /* --decor-nav-basis cards per screenful, minus the gaps between them —
+     same formula at every breakpoint, only the basis variable (set on
+     .decor-grid) changes. min-width keeps cards readable if a future
+     basis value would otherwise squeeze them past legibility. */
+  flex: 0 0 calc((100% - (var(--decor-nav-basis) - 1) * var(--decor-gap)) / var(--decor-nav-basis));
+  min-width: 210px;
+  scroll-snap-align: start;
   background: var(--pulp-white);
   border-radius: var(--radius-card);
   overflow: hidden;
@@ -1111,58 +1212,39 @@ html[data-theme="day"] .theme-toggle__icon--day { opacity: 1; }
 .section-cta { margin-top: 2.5rem; }
 
 /* ---------- Process ---------- */
+/* Every language shows its own process-flow-img (see assets/img/process-flow/
+   — each language's labels are baked into its own GIF's pixels, swapped by
+   script.js's applyLang, since a raster image can't hold data-i18n-lang
+   spans the way text nodes elsewhere on the page do). It's a wide
+   (~2970×640, ~4.6:1) horizontal diagram, so it stacks full-width above
+   the stage list rather than sitting beside it — replaced the earlier
+   side-by-side Layer Press stack-bar treatment entirely once all three
+   languages had their own diagram (previously only UZ did, since that
+   was the only asset available; RU/EN used the stack-bar as a
+   placeholder until their own diagrams existed). */
 .process-layout {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: 1fr;
+  grid-template-areas: "flow" "stages";
   gap: clamp(2rem, 5vw, 4rem);
-  align-items: center;
+  align-items: start;
 }
 
-@media (max-width: 900px) {
-  .process-layout { grid-template-columns: 1fr; }
-}
+/* The img sits inside a <picture> (for the prefers-reduced-motion static
+   fallback) — display:contents removes that wrapper from the box model so
+   .process-flow-img's grid-area below still targets a direct grid-item
+   child of .process-layout, same as if the img had no wrapper. */
+.process-layout picture { display: contents; }
 
-.process-stack {
-  display: flex;
-  flex-direction: column-reverse;
-  gap: 0.5rem;
-  max-width: 380px;
-  margin-inline: auto;
-  min-height: 340px;
-}
-
-.stack-bar {
-  height: 3.5rem;
-  border-radius: var(--radius-card);
-  background: var(--shell-bg-soft);
-  border: 1px solid var(--shell-border);
-  opacity: 0.3;
-  transform: scaleX(0.94);
-  transform-origin: center;
-  transition: opacity 450ms var(--ease-out), transform 450ms var(--ease-out), background 450ms;
-  display: flex;
-  align-items: center;
-  padding-inline: 1rem;
-  font-family: var(--font-mono);
-  font-size: 0.78rem;
-  color: var(--shell-muted);
-  letter-spacing: 0.03em;
-  text-transform: uppercase;
-}
-.stack-bar.is-active {
-  opacity: 1;
-  transform: scaleX(1);
-  background-color: var(--kraft-brown);
-  background-image: var(--bg-texture);
-  background-size: cover;
-  background-position: center;
-  background-blend-mode: multiply;
-  /* Pure black, not --press-black — see .btn-primary for why. */
-  color: #000000;
-  border-color: transparent;
+.process-flow-img {
+  display: block;
+  grid-area: flow;
+  width: 100%;
+  height: auto;
 }
 
 .process-stages {
+  grid-area: stages;
   counter-reset: stage;
   display: flex;
   flex-direction: column;
@@ -1309,7 +1391,7 @@ html[data-theme="day"] .theme-toggle__icon--day { opacity: 1; }
 }
 @media (max-width: 760px) {
   .cta-section {
-    background-image: linear-gradient(rgba(var(--shell-scrim-rgb), 0.75), rgba(var(--shell-scrim-rgb), 0.75)), url('assets/img/process-ldsp2-768.jpg');
+    background-image: linear-gradient(rgba(var(--shell-scrim-rgb), 0.75), rgba(var(--shell-scrim-rgb), 0.75)), url('assets/img/process-flow/process-ldsp2-768.jpg');
   }
 }
 .cta-section .eyebrow { color: var(--shell-cta-eyebrow); }

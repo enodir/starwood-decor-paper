@@ -77,6 +77,25 @@ python3 -m http.server 8123
 Verified working via Playwright (`pip3 install --user playwright && python3 -m playwright install chromium`)
 in the prior session — no chromium-cli/node toolchain in this environment.
 
+## Required skills for interface work
+
+Apply these on every UI change, not just new features — a small tweak should still leave the touched
+element feeling considered, not just "changed":
+
+1. **`emil-design-eng`** — for all interfaces, so the site feels alive rather than static: motion,
+   component polish, and the invisible interaction details (hover/press states, timing, easing) that make
+   an interface feel handcrafted instead of default.
+2. **`impeccable`** — for typography, color contrast, layout, and spacing across the entire interface. Use
+   it to check/derive type scale, spacing rhythm, and WCAG contrast before shipping a visual change, not
+   just when something looks obviously broken.
+3. **A taste skill** (e.g. `design-taste-frontend`, `high-end-visual-design`, `ui-ux-pro-max`) — for overall
+   visual quality on any new section or redesign, so work doesn't default to generic/templated AI-look
+   patterns (see the cliché note in `research/03_design_direction.md`).
+
+These sit on top of, not instead of, the design system below — the tokens, motifs, and rationale already
+established here are the site's specific point of view; the skills above are how new or changed work stays
+polished while remaining consistent with that point of view, not a license to redesign it wholesale.
+
 ## Design system — keep new work consistent with this
 
 Full rationale in `research/03_design_direction.md`. Summary of the tokens (all in `style.css :root`):
@@ -85,7 +104,6 @@ Full rationale in `research/03_design_direction.md`. Summary of the tokens (all 
 |---|---|---|
 | `--press-black` | `#1E1A17` | **Ink/text color only** — headings, decor-card names, focus rings, `.btn-outline-dark`. Do not use for large backgrounds (see below). |
 | `--surface-dark` | `#4F4438` | Background for large dark sections (hero, process, certificates, footer). Lightened on request from an earlier near-black `#1E1A17` — kept as a separate token from `--press-black` specifically so lightening it doesn't also wash out ink/text colors that reuse the same name. |
-| `--surface-dark-soft` | `#655947` | Slightly lighter dark-section surface (resting `.stack-bar` state). |
 | `--kraft-brown` | `#8C776E` | Brand accent (CTA, brand blocks) — updated from the original brief's `#845036` |
 | `--raw-pulp` | `#E8E4DC` | Light section background — deliberately *not* a warm cream (see cliché note). Do not lighten this further toward `#F4F1EA` — that's the exact AI-default cream this project is avoiding. |
 | `--registration-cyan` | `#1C8CA0` | Interactive/working accent (links, active states, eyebrow labels, active language option) |
@@ -105,9 +123,15 @@ the design plan but was dropped during implementation because it has no Cyrillic
 for a Russian mill). If you add new display text, verify Cyrillic coverage before picking a typeface.
 
 **Signature motif — "The Layer Press."** One recurring visual idea (kraft paper + printed decor + resin
-overlay stacking/compressing into a plate), used in exactly two places and nowhere else:
-1. Production-process pinned scroll scene (`.stack-bar`, `.process-stage`)
-2. Decor-card hover (`.decor-card__corner` — a small "dog-ear" at rest that lifts fully on hover)
+overlay stacking/compressing into a plate), used in exactly one place now:
+1. Decor-card hover (`.decor-card__corner` — a small "dog-ear" at rest that lifts fully on hover)
+
+It used to also drive the production-process pinned scroll scene (`.stack-bar`, staircase-highlighting in
+step with `.process-stage`), but that was replaced by `.process-flow-img` — a per-language animated GIF
+diagram (`assets/img/process-flow/process-flow-{ru,en,uz}.gif`, swapped by `applyLang` in script.js, with a
+static PNG fallback per language for `prefers-reduced-motion`). `.process-stage` (the numbered text list)
+is unchanged and still drives scroll-linked activation via `initProcessScene()`; it just no longer also
+toggles a `.stack-bar` sibling since that element is gone.
 
 It no longer appears in the hero — that slot was deliberately handed to a different motif, **"Swatch
 Float"** (`#swatch-float`, `.swatch-card`, `assets/img/hero-swatch-{1..4}-{480,960}.{webp,jpg}` sourced
@@ -117,9 +141,10 @@ ease-in-out bob per card (`--ease-in-out`, 7.5–9s cycles, distinct delays) so 
 rather than synced. Modeled after the floating hero preview cards on tasteskill.dev, re-themed with this
 site's own assets, radius (`--radius-card`, not tasteskill's rounder 18px), and shadow language.
 
-Do not add a third animated showpiece elsewhere on the page — the design brief for this project explicitly
-calls for *one bold moment per major section slot* (Swatch Float in the hero, Layer Press in process +
-decor cards) and quiet, disciplined motion everywhere else (progressive fade/translateY reveals,
+Do not add a showpiece to every section — the design brief for this project explicitly calls for *one bold
+moment per major section slot* (Swatch Float in the hero, the animated process-flow-img diagram in
+process, Layer Press on decor cards) and quiet, disciplined motion everywhere else (progressive
+fade/translateY reveals,
 grayscale→color logo hovers, kinetic counters).
 
 **Registration-mark eyebrow device** (`.eyebrow` + `.crosshair`): a small crosshair + mono-font label
