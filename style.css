@@ -568,6 +568,18 @@ p.lead { font-size: clamp(1.05rem, 1.6vw, 1.25rem); color: var(--ink-grey); }
   text-decoration: none;
   font-weight: 400;
   transition: opacity 150ms;
+  /* White ink coated in a black outline (reversed from black-on-white, on
+     request) — the header islands have no background of their own (see
+     .nav-island), so this text sits directly over whatever's scrolled
+     underneath. White fill reads on the dark hero/process/certificates/CTA
+     sections; the black coating is what stays legible over the light
+     paper-stock sections instead. */
+  color: var(--pulp-white);
+  text-shadow:
+    -1px -1px 0 var(--press-black),
+     1px -1px 0 var(--press-black),
+    -1px  1px 0 var(--press-black),
+     1px  1px 0 var(--press-black);
 }
 .main-nav a:hover { opacity: 1; }
 
@@ -598,7 +610,12 @@ p.lead { font-size: clamp(1.05rem, 1.6vw, 1.25rem); color: var(--ink-grey); }
      this control gets the island tint so its segmented buttons read
      clearly. Kept in step with the islands' transparent fill above. */
   background: transparent;
+  color: var(--pulp-white);
   border: 1px solid currentColor;
+  /* Black halo on the border, reversed from black-on-white — see
+     .main-nav a for why this control needs the dual-color treatment at
+     all (it's transparent, so it sits over both light and dark sections). */
+  box-shadow: 0 0 0 1px var(--press-black);
   border-radius: var(--radius-card);
   padding: 2px;
   opacity: 0.85;
@@ -616,6 +633,12 @@ p.lead { font-size: clamp(1.05rem, 1.6vw, 1.25rem); color: var(--ink-grey); }
   border-radius: 2px;
   opacity: 0.6;
   transition: opacity 150ms, background 150ms, color 150ms;
+  /* White ink coated in black — see .main-nav a for why. */
+  text-shadow:
+    -1px -1px 0 var(--press-black),
+     1px -1px 0 var(--press-black),
+    -1px  1px 0 var(--press-black),
+     1px  1px 0 var(--press-black);
 }
 .lang-option:hover { opacity: 1; color: var(--registration-cyan); }
 .lang-option.is-active {
@@ -753,7 +776,7 @@ html[data-theme="day"] .theme-toggle__icon--day { opacity: 1; }
   /* Extra top clearance for the fixed floating header (see --header-clearance)
      — the header no longer sits in normal flow, so this replaces the space
      the old sticky bar used to reserve above the hero. */
-  padding-top: calc(clamp(3rem, 8vw, 6rem) + var(--header-clearance));
+  padding-top: calc(clamp(2rem, 4vw, 3.5rem) + var(--header-clearance));
   padding-bottom: clamp(3rem, 8vw, 6rem);
   overflow: clip;
   transition: background-color 300ms, color 300ms;
@@ -855,7 +878,8 @@ html[data-theme="day"] .theme-toggle__icon--day { opacity: 1; }
 
 /* ---------- Generic section rhythm ---------- */
 .section {
-  padding-block: clamp(3.5rem, 8vw, 6.5rem);
+  padding-top: clamp(2rem, 4vw, 3.5rem);
+  padding-bottom: clamp(2rem, 4vw, 5rem);
 }
 /* Translucent tints (not solid fills) so the wood-texture backdrop shows
    through consistently across sections. */
