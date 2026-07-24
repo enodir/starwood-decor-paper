@@ -1,5 +1,5 @@
 /* =========================================================
-   STARWOOD — Decor Paper
+   DECOSTAR — Decor Paper
    Design system per PRD.md §3.0 / research/03_design_direction.md
    ========================================================= */
 
@@ -42,6 +42,14 @@
 
   --container-w: 1200px;
   --gutter: clamp(1.25rem, 4vw, 3rem);
+  /* The actual visual left/right gap from a section's edge to its content:
+     .container centers at --container-w, so past that width the browser
+     adds an auto-margin on top of --gutter that just being the same
+     padding value doesn't capture (see .container). Section top/bottom
+     padding uses this same formula so vertical spacing tracks the real
+     horizontal gap — including that auto-margin — at every viewport width,
+     not just a single breakpoint. */
+  --section-vgap: calc(max(0px, (100vw - var(--container-w)) / 2) + var(--gutter));
   --radius-card: 4px;
 
   --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
@@ -466,11 +474,15 @@ p.lead { font-size: clamp(1.05rem, 1.6vw, 1.25rem); color: var(--ink-grey); }
      centering the mark in the pill's true geometric middle — the star's
      point-up silhouette carries more visual weight low, so a geometric
      center reads as sitting slightly low; this nudges it up to look
-     centered. */
-  padding: 0.35rem 1.1rem 0.65rem;
+     centered. Shrunk from 0.35/0.65rem (same ~1:2 ratio) to make room for a
+     bigger logo-img without growing the pill itself — .logo's height is
+     stretched to match .nav-island (see align-items:stretch above), so this
+     is the only lever that controls how large the mark can render inside
+     that fixed box. */
+  padding: 0.2rem 1.1rem 0.4rem;
 }
 .logo-img {
-  height: 28px;
+  height: 38px;
   width: auto;
   /* width/height attributes on the <img> (see index.html) reserve the
      correct box from first paint via the browser's default aspect-ratio
@@ -775,9 +787,14 @@ html[data-theme="day"] .theme-toggle__icon--day { opacity: 1; }
   color: var(--shell-ink);
   /* Extra top clearance for the fixed floating header (see --header-clearance)
      — the header no longer sits in normal flow, so this replaces the space
-     the old sticky bar used to reserve above the hero. */
-  padding-top: calc(clamp(2rem, 4vw, 3.5rem) + var(--header-clearance));
-  padding-bottom: clamp(3rem, 8vw, 6rem);
+     the old sticky bar used to reserve above the hero. Base value here is
+     --gutter, not --section-vgap like every other section's top/bottom
+     (see .section) — hero's top is intentionally smaller than its own
+     bottom and smaller than other sections' top/bottom, on request, since
+     --section-vgap alone already grows quite large on wide screens before
+     --header-clearance is even added on top of it. Bottom is untouched. */
+  padding-top: calc(var(--gutter) + var(--header-clearance));
+  padding-bottom: var(--section-vgap);
   overflow: clip;
   transition: background-color 300ms, color 300ms;
 }
@@ -819,8 +836,9 @@ html[data-theme="day"] .theme-toggle__icon--day { opacity: 1; }
 
 /* Signature element: The Layer Press (decor-card corner — see CLAUDE.md;
    the production-process stack-bar that used to be this motif's other
-   instance was replaced by the process-flow-img diagram, see .process).
-   The hero now uses its own quieter motif, Swatch Float, below. */
+   instance was replaced first by a per-language process-flow-img diagram,
+   then by the .process-card 5-step flow — see .process-track). The hero
+   now uses its own quieter motif, Swatch Float, below. */
 
 /* ---------- Hero visual: Swatch Float ----------
    A loose scatter of real paper-sample photos that settle into place on
@@ -878,8 +896,15 @@ html[data-theme="day"] .theme-toggle__icon--day { opacity: 1; }
 
 /* ---------- Generic section rhythm ---------- */
 .section {
-  padding-top: clamp(2rem, 4vw, 3.5rem);
-  padding-bottom: clamp(2rem, 4vw, 5rem);
+  /* Top/bottom aligned to --section-vgap, which mirrors the *actual*
+     visual left/right gap from a section's edge to its content — the
+     container's auto-margin past --container-w plus --gutter — not just
+     the --gutter clamp on its own. Matching --gutter alone left top/bottom
+     far smaller than left/right on wide screens, since the container's
+     centering margin grows past 1200px but a plain --gutter padding-top
+     doesn't. */
+  padding-top: var(--section-vgap);
+  padding-bottom: var(--section-vgap);
 }
 /* Translucent tints (not solid fills) so the wood-texture backdrop shows
    through consistently across sections. */
@@ -1236,66 +1261,117 @@ html[data-theme="day"] #sustainability { background: rgba(217, 210, 196, 0.55); 
 .section-cta { margin-top: 2.5rem; }
 
 /* ---------- Process ---------- */
-/* Every language shows its own process-flow-img (see assets/img/process-flow/
-   — each language's labels are baked into its own GIF's pixels, swapped by
-   script.js's applyLang, since a raster image can't hold data-i18n-lang
-   spans the way text nodes elsewhere on the page do). It's a wide
-   (~2970×640, ~4.6:1) horizontal diagram, so it stacks full-width above
-   the stage list rather than sitting beside it — replaced the earlier
-   side-by-side Layer Press stack-bar treatment entirely once all three
-   languages had their own diagram (previously only UZ did, since that
-   was the only asset available; RU/EN used the stack-bar as a
-   placeholder until their own diagrams existed). */
-.process-layout {
+/* Five-card flow diagram, replacing the earlier per-language baked-text GIF
+   + separate scroll-highlighted stage list. Content is real i18n spans now
+   (no raster text), so applyLang needs no special-casing for this section
+   any more. Entrance rides the sitewide .reveal/.stagger system (see
+   style.css's generic rules) — .process-flow gets .is-visible from the same
+   IntersectionObserver as every other .reveal target, which also gates the
+   connector-line draw-in below; the continuous travelling dot is the one
+   piece that needs its own JS (see initProcessFlowDots in script.js),
+   started once off that same .is-visible moment. */
+.process-track {
   display: grid;
-  grid-template-columns: 1fr;
-  grid-template-areas: "flow" "stages";
-  gap: clamp(2rem, 5vw, 4rem);
-  align-items: start;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 1.25rem;
+  position: relative;
 }
 
-/* The img sits inside a <picture> (for the prefers-reduced-motion static
-   fallback) — display:contents removes that wrapper from the box model so
-   .process-flow-img's grid-area below still targets a direct grid-item
-   child of .process-layout, same as if the img had no wrapper. */
-.process-layout picture { display: contents; }
+/* Connectors are grid siblings of .process-card but position:absolute lifts
+   them out of grid flow entirely, so the 5 .process-card items still land
+   one-per-column via auto-placement — same trick as the reference markup,
+   just with left/width authored per nth-of-type instead of inline styles
+   from a JS layout loop (content here is static, not templated). */
+.process-connector {
+  position: absolute;
+  top: 34px;
+  height: 40px;
+  pointer-events: none;
+  z-index: 0;
+}
+.process-connector svg { width: 100%; height: 100%; display: block; overflow: visible; }
+.process-connector:nth-of-type(1) { left: 10%; width: 20%; }
+.process-connector:nth-of-type(2) { left: 30%; width: 20%; }
+.process-connector:nth-of-type(3) { left: 50%; width: 20%; }
+.process-connector:nth-of-type(4) { left: 70%; width: 20%; }
 
-.process-flow-img {
-  display: block;
-  grid-area: flow;
-  width: 100%;
-  height: auto;
+.process-connector__line { fill: none; stroke: var(--shell-border-strong); stroke-width: 1.5; }
+.process-connector__progress {
+  fill: none;
+  stroke: var(--registration-cyan);
+  stroke-width: 1.5;
+  stroke-dasharray: 100;
+  stroke-dashoffset: 100;
+}
+/* Gated by .is-visible (added by the shared reveal observer, see
+   style.css's .reveal/.stagger) rather than firing on page load — this
+   section is well below the fold, so animating it immediately would mean
+   it finishes long before it's ever seen. */
+.process-flow.is-visible .process-connector__progress { animation: process-draw 900ms var(--ease-out) forwards; }
+.process-connector:nth-of-type(1) .process-connector__progress { animation-delay: 160ms; }
+.process-connector:nth-of-type(2) .process-connector__progress { animation-delay: 300ms; }
+.process-connector:nth-of-type(3) .process-connector__progress { animation-delay: 440ms; }
+.process-connector:nth-of-type(4) .process-connector__progress { animation-delay: 580ms; }
+@keyframes process-draw { to { stroke-dashoffset: 0; } }
+
+.process-connector__dot { fill: var(--registration-cyan); opacity: 0; }
+
+.process-card {
+  position: relative;
+  z-index: 1;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid var(--shell-border);
+  border-radius: var(--radius-card);
+  padding: 1.5rem 1.1rem 1.25rem;
+  text-align: center;
+  transition: transform 300ms var(--ease-out), border-color 300ms, background 300ms;
+}
+.process-card:hover {
+  transform: translateY(-4px);
+  border-color: var(--registration-cyan);
+  background: rgba(255, 255, 255, 0.08);
 }
 
-.process-stages {
-  grid-area: stages;
-  counter-reset: stage;
-  display: flex;
-  flex-direction: column;
-}
-
-.process-stage {
-  counter-increment: stage;
-  display: grid;
-  grid-template-columns: 3.5rem 1fr;
-  gap: 1rem;
-  padding-block: 1.1rem;
-  border-top: 1px solid var(--shell-border);
-  opacity: 0.45;
-  transition: opacity 300ms;
-}
-.process-stage:last-child { border-bottom: 1px solid var(--shell-border); }
-.process-stage.is-active { opacity: 1; }
-
-.process-stage::before {
-  content: counter(stage, decimal-leading-zero);
-  font-family: var(--font-mono);
+.process-card__badge {
+  width: 30px;
+  height: 30px;
+  margin: 0 auto 0.9rem;
+  border-radius: 50%;
+  border: 1.5px solid var(--registration-cyan);
   color: var(--registration-cyan);
-  font-size: 1.1rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--font-mono);
+  font-size: 0.78rem;
+  transition: background 300ms, color 300ms;
 }
+/* Same fill/ink pairing as .lang-option.is-active — already vetted for
+   contrast on this exact accent color, so reused rather than guessed. */
+.process-card:hover .process-card__badge { background: var(--registration-cyan); color: var(--pulp-white); }
 
-.process-stage h3 { color: var(--shell-ink); margin-bottom: 0.25rem; font-size: 1.05rem; }
-.process-stage p { color: var(--shell-muted); font-size: 0.92rem; }
+.process-card__icon {
+  width: 52px;
+  height: 52px;
+  margin: 0 auto 0.9rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(255, 255, 255, 0.06);
+  border-radius: var(--radius-card);
+  transition: background 300ms;
+}
+.process-card__icon svg { width: 26px; height: 26px; stroke: var(--shell-ink); fill: none; stroke-width: 1.5; }
+.process-card:hover .process-card__icon { background: var(--registration-cyan); }
+.process-card:hover .process-card__icon svg { stroke: var(--pulp-white); }
+
+.process-card h3 { color: var(--shell-ink); font-size: 1.02rem; margin-bottom: 0.4rem; }
+.process-card p { color: var(--shell-muted); font-size: 0.86rem; line-height: 1.5; }
+
+@media (max-width: 760px) {
+  .process-track { grid-template-columns: 1fr; gap: 1.75rem; }
+  .process-connector { display: none; }
+}
 
 /* ---------- Advantages (no numbering — see PRD §3.5) ---------- */
 .advantages-grid {

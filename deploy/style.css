@@ -1,483 +1,1636 @@
-  :root {
-    --ink: #211c14;
-    --ink-soft: #5c5342;
-    --paper: #faf7ee;
-    --paper-raised: #fffdf8;
-    --brand: #845036;
-    --brand-deep: #5f3a27;
-    --brand-on-dark: #d99b78;
-    --surface-strong: #2e2015;
-    --surface-strong-text: #f3ede0;
-    --line: rgba(33, 28, 20, 0.14);
-    --shadow: rgba(46, 32, 21, 0.2);
+/* =========================================================
+   DECOSTAR — Decor Paper
+   Design system per PRD.md §3.0 / research/03_design_direction.md
+   ========================================================= */
 
-    --font-display: "Futura", "Century Gothic", "Avenir Next", Avenir, sans-serif;
-    --font-body: Georgia, "Iowan Old Style", "Palatino Linotype", Palatino, serif;
+/* Font @font-face rules are linked separately from <head> (assets/fonts.generated.css)
+   rather than @import-ed here — @import would block CSSOM construction on a second
+   sequential fetch instead of letting the browser's preloader fetch both in parallel. */
 
-    --space-1: 0.5rem;
-    --space-2: 1rem;
-    --space-3: 1.5rem;
-    --space-4: 2rem;
-    --space-5: 3rem;
-    --space-6: 4.5rem;
-    --space-7: 6.5rem;
+/* ---------- Design tokens ---------- */
+:root {
+  --press-black: #1E1A17;
+  --press-black-soft: #2A2420;
+  /* Section-background variants of press-black, kept separate from the token above:
+     --press-black itself stays dark because it also serves as ink/text color on light
+     backgrounds (headings, focus rings, decor-card names) — lightening it would hurt
+     readability there. These two are for large dark-section backgrounds only
+     (hero, process, certificates, footer) and were lightened site-wide on request. */
+  /* Section backgrounds narrowed toward each other on request — dark
+     surfaces lightened, light surfaces darkened — so the light/dark
+     section alternation reads as one continuous material instead of a
+     stark on/off flip. Nudges were bounded by WCAG contrast against the
+     text tokens that sit on top of them (--pulp-white/--muted-on-dark* on
+     the dark side, --press-black/--ink-grey on the light side) — the
+     tightest margin is --muted-on-dark-soft on --surface-dark at ~4.5:1,
+     so don't lighten --surface-dark further without rechecking that pair. */
+  --surface-dark: #544A3A;
+  --kraft-brown: #8C776E;
+  --kraft-brown-dark: #77655E;
+  --kraft-brown-light: #A79790;
+  --raw-pulp: #D9D2C4;
+  --raw-pulp-dark: #C8BFAC;
+  --registration-cyan: #1C8CA0;
+  --ink-grey: #4A433C;
+  --pulp-white: #F7F5F1;
+  --muted-on-dark: #C9C2B8;
+  --muted-on-dark-soft: #C4BAAC;
 
-    color-scheme: light;
+  --font-display: 'PT Sans Narrow', 'Arial Narrow', sans-serif;
+  --font-body: 'IBM Plex Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  --font-mono: 'IBM Plex Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
+
+  --container-w: 1200px;
+  --gutter: clamp(1.25rem, 4vw, 3rem);
+  /* The actual visual left/right gap from a section's edge to its content:
+     .container centers at --container-w, so past that width the browser
+     adds an auto-margin on top of --gutter that just being the same
+     padding value doesn't capture (see .container). Section top/bottom
+     padding uses this same formula so vertical spacing tracks the real
+     horizontal gap — including that auto-margin — at every viewport width,
+     not just a single breakpoint. */
+  --section-vgap: calc(max(0px, (100vw - var(--container-w)) / 2) + var(--gutter));
+  --radius-card: 4px;
+
+  --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-in-out: cubic-bezier(0.77, 0, 0.175, 1);
+  --dur-reveal: 550ms;
+
+  /* Oak wood-grain texture (Uludag mese) — the one backdrop behind the
+     entire page (see .bg-texture). Light sections show it as a translucent
+     tint (see .section--pulp-white/.section--pulp) since lightening never
+     threatens white-text contrast there. Dark/brand-colored surfaces
+     (hero, .section--dark, .btn-primary,
+     .cta-section) use background-blend-mode: multiply instead of alpha —
+     alpha-blending a dark tone with this light-toned photo necessarily
+     brightens the surface (tried at 0.9, then 0.7, then 0.45 opacity: the
+     last was clearly visible but tanked secondary-text contrast to
+     ~1.5:1). Multiply can only darken or match the base color, never
+     lighten past it, so contrast stays anchored to the original verified
+     base colors while the grain still reads as texture. */
+
+  --bg-texture: url('assets/img/process-flow/uludag-mese-bg.jpg');
+
+  /* Hero-only background photo: fanned wood-veneer/laminate decor swatches,
+     shallow depth of field, warm window light ("Samples of Wooden Floor" by
+     cottonbro studio, Pexels — free for commercial use, no attribution
+     required). Swapped for a narrower crop on mobile via media query below
+     (see .hero) to avoid shipping the full desktop asset on small screens. */
+  --hero-bg-photo: url('assets/img/process-flow/hero-decor-swatches-1920.jpg');
+
+  /* Production-process-only background photo: fanned stack of laminated
+     decor boards (source: assets/img/process-flow/LDSP2.jpg). Native resolution is only
+     1000px wide, so no larger desktop variant was generated — upscaling
+     past that would just blur it. Swapped for a smaller crop on mobile. */
+  --process-bg-photo: url('assets/img/process-flow/process-ldsp2-1000.jpg');
+
+  /* Certificates-section-only background photo: Belaya Korona decor paper
+     (source: assets/img/Papers/Belaya_Korona.webp) — a light, low-contrast
+     wood-grain sample. First tried the mill's full color-list grid here
+     (assets/img/Papers/color list.jpg), but its saturated, discrete tiles
+     read as noisy/patchwork behind the stats and needed either an
+     unreadably heavy scrim or lost all its color — swapped for a single
+     coherent photo like the other shell sections use. */
+  --certificates-bg-photo: url('assets/img/process-flow/certificates-belayakorona-1400.jpg');
+
+  /* Inline SVG fractal-noise, ~300 bytes, no network request — a paper-grain
+     ambient texture reinforcing "this is a paper mill" at near-zero cost.
+     Scoped to the light "paper stock" sections only (see .section--pulp*). */
+  --paper-grain: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+
+  /* ---------- Day/night theme ----------
+     "Night" (moon, default) is the site exactly as designed: hero, process,
+     certificates, CTA and footer are dark "shell" sections against the light
+     paper-stock sections. "Day" (sun) flips every shell section to a light
+     surface with dark ink instead, so the whole page reads as bright/uniform.
+     The already-light sections (decor catalog, advantages, sustainability,
+     clients) don't need a variant — they're light in both themes. Components
+     that live in a shell section reference --shell-* below instead of the
+     raw --surface-dark/--pulp-white pair directly, so this block is the only
+     place the theme swap has to be taught new colors. */
+  --shell-bg: var(--surface-dark);
+  --shell-ink: var(--pulp-white);
+  --shell-muted: var(--muted-on-dark);
+  --shell-muted-soft: var(--muted-on-dark-soft);
+  --shell-border: rgba(255, 255, 255, 0.12);
+  --shell-border-strong: rgba(255, 255, 255, 0.35);
+  --shell-scrim-rgb: 84, 74, 58;
+  --shell-eyebrow: #7FD4E2;
+  --shell-cta-eyebrow: #FBE7DA;
+  --shell-cta-lead: #F3DCCB;
+  --shell-form-fill: rgba(255, 255, 255, 0.94);
+  --shell-form-ink: var(--press-black);
+  /* Darkened alongside --surface-dark above so the CTA→footer transition
+     (dark shell straight into the footer) narrows too, not just the
+     light/dark alternation earlier in the page. Also improves a
+     pre-existing contrast gap: footer text uses the same light --shell-ink/
+     --shell-muted* tokens as the dark shell sections, but footer-bg was its
+     own lighter color (#B1A29C, ~2.3:1 for body text, ~1.3:1 for the muted
+     labels) — well under AA. At this darker value body text (--shell-ink)
+     clears AA (~4.8:1); the muted labels improve to ~2.7-3:1 but are still
+     below 4.5:1 — a preexisting gap this change narrows, not fully closes. */
+  --footer-bg: #786A5E;
+}
+
+html[data-theme="day"] {
+  --shell-bg: var(--raw-pulp);
+  --shell-ink: var(--press-black);
+  --shell-muted: var(--ink-grey);
+  --shell-muted-soft: #6B6156;
+  --shell-border: rgba(30, 26, 23, 0.14);
+  --shell-border-strong: rgba(30, 26, 23, 0.3);
+  --shell-scrim-rgb: 217, 210, 196;
+  --shell-eyebrow: var(--registration-cyan);
+  --shell-cta-eyebrow: var(--kraft-brown-dark);
+  --shell-cta-lead: var(--ink-grey);
+  --shell-form-fill: rgba(30, 26, 23, 0.06);
+  --shell-form-ink: var(--press-black);
+  /* Nudged closer to the new --raw-pulp-dark family alongside the night
+     value above, for the same reason — day theme is already uniformly
+     light, so this is a smaller move than the night footer-bg. */
+  --footer-bg: #C7BEAF;
+}
+
+/* ---------- Reset ---------- */
+*, *::before, *::after { box-sizing: border-box; }
+html { scroll-behavior: smooth; }
+/* Anchor-jump offset for the fixed floating header (see --header-clearance
+   on .site-header) — without this, #decors/#process/etc. land flush under
+   the pills instead of below them. */
+section[id], footer[id] { scroll-margin-top: var(--header-clearance); }
+body, h1, h2, h3, h4, p, figure, blockquote, dl, dd, ul, ol { margin: 0; }
+ul[class], ol[class] { padding: 0; list-style: none; }
+img, picture, svg { display: block; max-width: 100%; }
+input, button, textarea, select { font: inherit; color: inherit; }
+button { cursor: pointer; }
+a { color: inherit; text-decoration: none; }
+
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
   }
+}
 
-  @media (prefers-color-scheme: dark) {
-    :root {
-      --ink: #f3ede0;
-      --ink-soft: #cbbfa3;
-      --paper: #3a3224;
-      --paper-raised: #453b2a;
-      --brand: #cf8a5e;
-      --brand-deep: #b97652;
-      --brand-on-dark: #d99b78;
-      --surface-strong: #3c2a1c;
-      --surface-strong-text: #f3ede0;
-      --line: rgba(243, 237, 224, 0.14);
-      --shadow: rgba(0, 0, 0, 0.5);
-      color-scheme: dark;
-    }
-  }
+body {
+  font-family: var(--font-body);
+  color: var(--ink-grey);
+  background-color: var(--raw-pulp);
+  font-size: 16px;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+  transition: filter 200ms ease, opacity 200ms ease;
+}
+/* Language switch touches ~50 scattered text nodes at once via a hard
+   display:none/inline swap (see [data-i18n-lang] below) — no single element
+   crossfades cleanly. A brief blur+dim veil over the whole page masks the
+   swap instant, the same way blurring a crossfade hides two overlapping
+   states from the eye. script.js adds this right before swapping, removes
+   it right after. */
+body.is-lang-switching {
+  filter: blur(6px);
+  opacity: 0.7;
+}
 
-  :root[data-theme="dark"] {
-    --ink: #f3ede0;
-    --ink-soft: #cbbfa3;
-    --paper: #3a3224;
-    --paper-raised: #453b2a;
-    --brand: #cf8a5e;
-    --brand-deep: #b97652;
-    --brand-on-dark: #d99b78;
-    --surface-strong: #3c2a1c;
-    --surface-strong-text: #f3ede0;
-    --line: rgba(243, 237, 224, 0.14);
-    --shadow: rgba(0, 0, 0, 0.5);
-    color-scheme: dark;
-  }
+/* Wood-texture backdrop as a real fixed element, not background-attachment:
+   fixed. A background-attachment:fixed value is repainted by the main thread
+   on every scroll frame (and is inconsistently supported on iOS Safari) —
+   exactly the kind of jank this site needs to avoid on low-end mobile. A
+   position:fixed element gets its own compositor layer, so it costs nothing
+   during scroll on any device. */
+.bg-texture {
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  background-image: var(--bg-texture);
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+}
 
-  :root[data-theme="light"] {
-    --ink: #211c14;
-    --ink-soft: #5c5342;
-    --paper: #faf7ee;
-    --paper-raised: #fffdf8;
-    --brand: #845036;
-    --brand-deep: #5f3a27;
-    --brand-on-dark: #d99b78;
-    --surface-strong: #2e2015;
-    --surface-strong-text: #f3ede0;
-    --line: rgba(33, 28, 20, 0.14);
-    --shadow: rgba(46, 32, 21, 0.2);
-    color-scheme: light;
-  }
+h1, h2, h3, h4 {
+  font-family: var(--font-display);
+  color: var(--press-black);
+  font-weight: 700;
+  letter-spacing: 0.01em;
+  line-height: 1.05;
+  text-transform: uppercase;
+}
 
-  * { box-sizing: border-box; }
+h1 { font-size: clamp(2.6rem, 6vw, 5rem); }
+h2 { font-size: clamp(2rem, 4.2vw, 3.2rem); }
+h3 { font-size: clamp(1.25rem, 2vw, 1.6rem); text-transform: none; }
 
-  body {
-    margin: 0;
-    background-color: var(--paper);
-    background-repeat: repeat;
-    color: var(--ink);
-    font-family: var(--font-body);
-    font-size: 1.0625rem;
-    line-height: 1.65;
-    -webkit-font-smoothing: antialiased;
-  }
+p.lead { font-size: clamp(1.05rem, 1.6vw, 1.25rem); color: var(--ink-grey); }
 
-  img, svg, canvas { display: block; max-width: 100%; }
-  a { color: inherit; }
-  p { margin: 0; }
+.container {
+  width: 100%;
+  max-width: var(--container-w);
+  margin-inline: auto;
+  padding-inline: var(--gutter);
+}
 
-  h1, h2, h3 {
-    font-family: var(--font-display);
-    font-weight: 500;
-    text-wrap: balance;
-    margin: 0;
-    letter-spacing: -0.01em;
-  }
+.skip-link {
+  position: absolute;
+  left: -9999px;
+  top: 0;
+  background: var(--press-black);
+  color: var(--pulp-white);
+  padding: 0.75em 1.25em;
+  z-index: 1000;
+}
+.skip-link:focus {
+  left: 1rem;
+  top: 1rem;
+}
 
-  .wrap {
-    max-width: 74rem;
-    margin: 0 auto;
-    padding-inline: var(--space-4);
-  }
+:focus-visible {
+  outline: 2px solid var(--registration-cyan);
+  outline-offset: 2px;
+}
 
-  .eyebrow {
-    display: inline-flex;
-    align-items: center;
-    gap: 0.6em;
-    font-family: var(--font-display);
-    font-size: 0.75rem;
-    font-weight: 600;
-    letter-spacing: 0.14em;
-    text-transform: uppercase;
-    color: var(--brand-deep);
-  }
+/* ---------- Registration mark / eyebrow device ---------- */
+.eyebrow {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5em;
+  font-family: var(--font-mono);
+  font-size: 0.8rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--registration-cyan);
+  margin-bottom: 1rem;
+}
+.eyebrow--dark { color: var(--shell-eyebrow); }
 
-  .eyebrow::before {
-    content: "";
-    width: 1.6em;
-    height: 1px;
-    background: currentColor;
-    opacity: 0.7;
-  }
+.crosshair {
+  position: relative;
+  width: 14px;
+  height: 14px;
+  flex: none;
+}
+.crosshair::before,
+.crosshair::after {
+  content: '';
+  position: absolute;
+  background: currentColor;
+}
+.crosshair::before { left: 6px; top: 0; width: 2px; height: 14px; }
+.crosshair::after { left: 0; top: 6px; width: 14px; height: 2px; }
 
-  .btn {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    gap: 0.6em;
-    padding: 0.9em 1.9em;
-    border-radius: 3px;
-    border: 1px solid transparent;
-    text-decoration: none;
-    font-family: var(--font-display);
-    font-size: 0.9375rem;
-    font-weight: 600;
-    letter-spacing: 0.04em;
-    text-transform: uppercase;
-    transition: transform 0.25s ease, box-shadow 0.25s ease, background 0.25s ease, color 0.25s ease;
-  }
+/* Registration resolve: the two bars start slightly out of true (as if the
+   print plates haven't registered yet) and snap into alignment with a small
+   overshoot — the same alignment check a rotogravure press runs on every
+   sheet, played out in the eyebrow mark itself rather than left a static
+   glyph. One detail, repeated consistently at every section, not a new
+   competing signature moment alongside the layer press. */
+.reveal .crosshair::before {
+  opacity: 0;
+  transform: translateX(-4px);
+  transition: transform 480ms cubic-bezier(0.34, 1.56, 0.64, 1) 60ms, opacity 300ms ease-out 60ms;
+}
+.reveal .crosshair::after {
+  opacity: 0;
+  transform: translateY(4px);
+  transition: transform 480ms cubic-bezier(0.34, 1.56, 0.64, 1) 150ms, opacity 300ms ease-out 150ms;
+}
+.reveal.is-visible .crosshair::before,
+.reveal.is-visible .crosshair::after {
+  opacity: 1;
+  transform: translate(0, 0);
+}
 
-  .btn:focus-visible { outline: 2px solid var(--brand-deep); outline-offset: 3px; }
+/* The hero eyebrow isn't inside a .reveal (hero is visible immediately on
+   load), so it gets the same resolve as a one-time load animation instead,
+   sequenced just after the logo settles in. */
+.hero .crosshair::before {
+  animation: crosshair-snap-v 480ms cubic-bezier(0.34, 1.56, 0.64, 1) 800ms both;
+}
+.hero .crosshair::after {
+  animation: crosshair-snap-h 480ms cubic-bezier(0.34, 1.56, 0.64, 1) 900ms both;
+}
+@keyframes crosshair-snap-v {
+  from { opacity: 0; transform: translateX(-4px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+@keyframes crosshair-snap-h {
+  from { opacity: 0; transform: translateY(4px); }
+  to { opacity: 1; transform: translateY(0); }
+}
 
-  .btn-primary {
-    background: var(--ink);
-    color: var(--paper);
-  }
-  :root[data-theme="dark"] .btn-primary { background: var(--brand); color: var(--surface-strong); }
-  @media (prefers-color-scheme: dark) {
-    .btn-primary { background: var(--brand); color: var(--surface-strong); }
-  }
+/* ---------- Buttons ---------- */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5em;
+  font-family: var(--font-mono);
+  font-size: 0.9rem;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  padding: 0.9em 1.6em;
+  border-radius: var(--radius-card);
+  border: 1px solid transparent;
+  transition: transform 200ms var(--ease-out), background 200ms, color 200ms, border-color 200ms;
+}
+.btn:hover { transform: translateY(-2px); }
+.btn:active { transform: scale(0.97); transition-duration: 100ms; }
 
-  .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 14px 28px -14px var(--shadow); }
+.btn-primary {
+  background-color: var(--kraft-brown);
+  background-image: var(--bg-texture);
+  background-size: cover;
+  background-position: center;
+  background-blend-mode: multiply;
+  /* Pure black, not --press-black — needed for AA contrast (4.98:1) against
+     the lightened kraft-brown; press-black only reaches 4.10:1 here. */
+  color: #000000;
+  box-shadow: 0 2px 0 rgba(74, 41, 26, 0.35);
+  transition: transform 200ms var(--ease-out), background-color 200ms, color 200ms, border-color 200ms, box-shadow 150ms var(--ease-out);
+}
+.btn-primary:hover { background-color: var(--kraft-brown-dark); }
+/* Letterpress impression on the primary CTA specifically (the one button
+   that matters most) rather than the generic scale-down every button gets —
+   sinks in and loses its resting shadow, like a plate stamping into paper. */
+.btn-primary:active {
+  transform: translateY(1px) scale(0.98);
+  box-shadow: inset 0 2px 3px rgba(74, 41, 26, 0.45);
+  transition-duration: 90ms;
+}
 
-  .btn-ghost {
-    background: transparent;
-    border-color: var(--line);
-    color: var(--ink);
-  }
-  .btn-ghost:hover { border-color: var(--brand-deep); color: var(--brand-deep); }
+.btn-outline {
+  border-color: currentColor;
+  background: transparent;
+}
+.btn-outline:hover { background: rgba(255,255,255,0.08); }
 
-  .btn-on-strong {
-    background: var(--brand);
-    color: #fff8f0;
-  }
-  :root[data-theme="dark"] .btn-on-strong { color: var(--surface-strong); }
-  @media (prefers-color-scheme: dark) {
-    .btn-on-strong { color: var(--surface-strong); }
-  }
-  .btn-on-strong:hover { transform: translateY(-2px); box-shadow: 0 14px 28px -14px rgba(0,0,0,0.5); }
+.btn-outline-dark { color: var(--press-black); border-color: var(--press-black); }
+.btn-outline-dark:hover { background: rgba(0,0,0,0.05); }
 
-  /* ---------- Header ---------- */
+.btn-outline-light { border-color: var(--shell-ink); }
 
-  header.site {
-    position: sticky;
-    top: 0;
-    z-index: 20;
-    background: color-mix(in srgb, var(--paper) 90%, transparent);
-    backdrop-filter: blur(8px);
-    border-bottom: 1px solid var(--line);
-  }
+.btn-link {
+  padding: 0.9em 0.2em;
+  color: inherit;
+  border-bottom: 1px solid currentColor;
+  border-radius: 0;
+}
 
-  .nav {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    padding-block: var(--space-2);
-  }
+/* nowrap + flex-shrink:0 so the header CTA doesn't get squeezed by its
+   nav-island siblings and wrap the longer Russian label ("Запросить
+   образец") onto two lines — let it size to its natural (longer) width
+   instead. */
+.btn-sm { padding: 0.6em 1.1em; font-size: 0.78rem; white-space: nowrap; flex-shrink: 0; }
 
-  .brand-mark {
-    font-family: var(--font-display);
-    font-size: 1.2rem;
-    font-weight: 700;
-    letter-spacing: 0.06em;
-    text-decoration: none;
-    color: var(--ink);
-  }
-  .brand-mark span { color: var(--brand-deep); }
+/* ---------- Header ----------
+   Three floating "island" pills — logo, nav links, and a third pill
+   bundling the CTA + language switch + day/night toggle (+ the mobile nav
+   toggle) — instead of a full-width bar. Modeled on tasteskill.dev's
+   header (translucent, blurred pills riding above the page, not attached
+   to a section). Because the pills are always a light glass surface
+   regardless of what scrolls beneath them (dark hero, light sections,
+   day/night toggle), header ink is pinned to --press-black rather than the
+   --shell-ink day/night token — a dark bar over a dark hero would
+   otherwise vanish. --header-clearance compensates the space the old
+   in-flow sticky bar used to reserve; see its use on .hero padding-top and
+   the section/footer scroll-margin-top below, both of which are needed
+   now that the header is removed from layout flow. */
+:root {
+  --header-clearance: 6.5rem;
+}
 
-  .nav-links {
-    display: none;
-    align-items: center;
-    gap: var(--space-4);
-    list-style: none;
-    margin: 0;
-    padding: 0;
-    font-family: var(--font-display);
-    font-size: 0.8125rem;
-    letter-spacing: 0.04em;
-    text-transform: uppercase;
-  }
+.site-header {
+  position: fixed;
+  inset-inline: 0;
+  top: 0;
+  z-index: 500;
+  pointer-events: none;
+}
 
-  @media (min-width: 800px) { .nav-links { display: flex; } }
+.header-inner {
+  --header-pad: clamp(0.75rem, 2vw, 1.25rem);
+  display: flex;
+  /* stretch (not center) so the shorter logo pill is forced to the same
+     height as the taller nav-island pill instead of floating at its own
+     shorter natural height next to it. */
+  align-items: stretch;
+  /* Fixed --header-pad gap between islands (matches the inset to every
+     edge) instead of letting justify-content:space-between push leftover
+     row width into the gaps — the three islands grow to fill that
+     leftover width themselves instead (flex-grow:1 below), so the gap
+     between islands stays the same size as the gap to the top border
+     regardless of viewport width. */
+  gap: var(--header-pad);
+  padding: var(--header-pad);
+  position: relative;
+}
 
-  .nav-links a { text-decoration: none; color: var(--ink-soft); transition: color 0.2s ease; }
-  .nav-links a:hover { color: var(--brand-deep); }
+.logo,
+.nav-island,
+.action-island {
+  pointer-events: auto;
+  /* Grow to soak up the row's leftover width instead of leaving it in the
+     gaps (see .header-inner) — on request, so the pills read as one
+     continuous stretched bar rather than three content-sized chips with
+     wide gaps between them. */
+  flex: 1 1 auto;
+  /* Fully transparent fill, on request — only the border marks the pill's
+     edge, no backdrop-filter either since saturate() tints whatever shows
+     through even with no background-color of its own. Ink is fixed
+     --press-black (not theme-following) because with nothing behind it to
+     control, the pill shows raw page content as the user scrolls — hero
+     photo, light paper-stock sections, dark shell sections — and a fixed
+     dark ink is the one choice that stays legible-ish across all of them,
+     same as the mobile dropdown assumes. */
+  background: transparent;
+  /* Bolder on request now that background is gone — the border is the
+     pill's only visible edge, so 1px/0.16 read as too faint on its own. */
+  border: 1.5px solid rgba(30, 26, 23, 0.32);
+  /* Squared off to match the CTA button's --radius-card, on request —
+     was a full 999px pill/oval. */
+  border-radius: var(--radius-card);
+  box-shadow: 0 6px 18px -6px rgba(30, 26, 23, 0.22), 0 1px 2px rgba(0, 0, 0, 0.05);
+  color: var(--press-black);
+  transition: box-shadow 200ms var(--ease-out), border-color 200ms, background-color 200ms, color 200ms;
+}
+.logo:hover,
+.nav-island:hover,
+.action-island:hover {
+  border-color: rgba(30, 26, 23, 0.44);
+  box-shadow: 0 14px 30px -8px rgba(30, 26, 23, 0.32), 0 1px 2px rgba(0, 0, 0, 0.05);
+}
 
-  .nav-cta { display: none; }
-  @media (min-width: 800px) { .nav-cta { display: inline-flex; } }
+.logo {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  /* Centers the mark now that the pill grows wider than its content (see
+     flex:1 1 auto above) — left-aligned (the old default) would strand it
+     against the left edge with empty space trailing off to the right. */
+  justify-content: center;
+  /* Padding split unevenly (less on top, more on bottom) rather than
+     centering the mark in the pill's true geometric middle — the star's
+     point-up silhouette carries more visual weight low, so a geometric
+     center reads as sitting slightly low; this nudges it up to look
+     centered. Shrunk from 0.35/0.65rem (same ~1:2 ratio) to make room for a
+     bigger logo-img without growing the pill itself — .logo's height is
+     stretched to match .nav-island (see align-items:stretch above), so this
+     is the only lever that controls how large the mark can render inside
+     that fixed box. */
+  padding: 0.2rem 1.1rem 0.4rem;
+}
+.logo-img {
+  height: 38px;
+  width: auto;
+  /* width/height attributes on the <img> (see index.html) reserve the
+     correct box from first paint via the browser's default aspect-ratio
+     mapping — without them the element had no intrinsic size to lay out
+     with, so it popped to full width the instant the PNG finished
+     decoding, stomping on the entrance animation below (which assumes a
+     stable box and only ever transforms/fades). That layout jump, not the
+     animation itself, was the "broken" part. */
+  transform-origin: 14% 50%;
+  /* linear, deliberately — any ease-in/ease-out curve on the shorthand
+     remaps elapsed time before it ever reaches the keyframe percentages
+     below, and an ease-out curve in particular reaches ~90% of its output
+     range in the first third of the duration. That collapsed this
+     multi-stage animation's whole rotate/scale/brightness sequence into
+     its first ~300ms regardless of the keyframes' own percentages — the
+     "bounce" is already authored into the keyframe values themselves, so
+     the timing function just needs to get out of the way and let real
+     time map straight to keyframe position. */
+  animation: logo-press-in 1100ms linear both;
+}
 
-  /* ---------- Hero ---------- */
-
-  .hero { padding-block: var(--space-6) var(--space-6); }
-
-  .hero-grid {
-    display: grid;
-    gap: var(--space-6);
-    align-items: center;
-    grid-template-columns: 1fr;
-  }
-
-  @media (min-width: 900px) {
-    .hero-grid { grid-template-columns: 1.05fr 0.95fr; gap: var(--space-5); }
-  }
-
-  .hero-copy { display: flex; flex-direction: column; gap: var(--space-3); }
-
-  .hero h1 {
-    font-size: clamp(2.1rem, 4.6vw, 3.4rem);
-    line-height: 1.08;
-  }
-
-  .hero p.lede { font-size: 1.125rem; color: var(--ink-soft); max-width: 32rem; }
-
-  .hero-actions { display: flex; flex-wrap: wrap; gap: var(--space-2); margin-top: var(--space-1); }
-
-  .reveal {
+.nav-island {
+  display: flex;
+  align-items: center;
+  gap: 1.25rem;
+  /* Spreads the 5 links across the pill's now-wider box (see flex:1 1 auto
+     above) instead of leaving them clumped at the left — reads like an
+     actual nav bar spanning its container rather than a left-anchored
+     cluster with dead space trailing off to the right. */
+  justify-content: space-between;
+  /* Symmetric now that this pill holds only the nav links (the CTA button
+     that used to sit at its right edge is its own island now). */
+  padding: 0.55rem 1.5rem;
+}
+/* One-time entrance on page load — a plate dropping in slightly askew,
+   oversized and hot off the press, then stamping down and settling into
+   registration with a small rebound. Same spring curve as the crosshair
+   snap below, so the two read as one language instead of two competing
+   entrance styles; the brightness flash at the impact frame sells the
+   "stamp hitting paper" moment the site's Layer Press motif is built on. */
+@keyframes logo-press-in {
+  0% {
     opacity: 0;
-    transform: translateY(16px);
-    animation: rise 0.7s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+    transform: scale(1.55) rotate(-9deg) translateY(-20px);
+    filter: brightness(1.7) saturate(0.4);
+    animation-timing-function: cubic-bezier(0.16, 1, 0.3, 1);
   }
-  @keyframes rise { to { opacity: 1; transform: translateY(0); } }
-  @media (prefers-reduced-motion: reduce) { .reveal { opacity: 1; transform: none; animation: none; } }
-
-  /* Swatch fan */
-
-  .swatch-fan {
-    display: grid;
-    grid-template-columns: repeat(2, 1fr);
-    gap: var(--space-3);
+  42% {
+    opacity: 1;
+    transform: scale(0.93) rotate(2.5deg) translateY(2px);
+    filter: brightness(1.2) saturate(1);
+    animation-timing-function: cubic-bezier(0.34, 1.56, 0.64, 1);
   }
-
-  .swatch {
-    position: relative;
-    aspect-ratio: 4 / 5;
-    border-radius: 4px;
-    overflow: hidden;
-    border: 1px solid var(--line);
-    box-shadow: 0 18px 34px -20px var(--shadow);
-    transition: transform 0.35s ease;
+  70% {
+    transform: scale(1.04) rotate(-0.8deg) translateY(-1px);
+    filter: brightness(1) saturate(1);
+    animation-timing-function: cubic-bezier(0.34, 1.56, 0.64, 1);
   }
-  .swatch:hover { transform: translateY(-6px); }
-  .swatch:nth-child(2) { margin-top: var(--space-4); }
-  .swatch:nth-child(4) { margin-top: calc(var(--space-4) * -1); }
+  100% {
+    opacity: 1;
+    transform: scale(1) rotate(0deg) translateY(0);
+    filter: brightness(1) saturate(1);
+  }
+}
 
-  .swatch canvas { width: 100%; height: 100%; }
-  .swatch-photo { width: 100%; height: 100%; object-fit: cover; }
+/* Left-to-right underline sweep + bold-down, used for the main nav links
+   (the logo used to share this via an image wordmark, dropped since it
+   became an <img> — an underline sweeping under a logo image read as a
+   glitch rather than an intentional hover state). A ::after bar scaled
+   from 0 (transform-origin: left) reads as "drawing" the line
+   left-to-right, which a plain text-decoration toggle can't do. */
+.main-nav a::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  bottom: -3px;
+  width: 100%;
+  height: 1px;
+  background: currentColor;
+  transform: scaleX(0);
+  transform-origin: left;
+  transition: transform 250ms var(--ease-out);
+}
+.main-nav a:hover::after { transform: scaleX(1); }
+.main-nav a:hover { font-weight: 700; }
 
-  .swatch-label {
+.main-nav {
+  display: flex;
+  gap: 1.75rem;
+  font-size: 0.92rem;
+}
+.main-nav a {
+  position: relative;
+  opacity: 0.85;
+  text-decoration: none;
+  font-weight: 400;
+  transition: opacity 150ms;
+  /* White ink coated in a black outline (reversed from black-on-white, on
+     request) — the header islands have no background of their own (see
+     .nav-island), so this text sits directly over whatever's scrolled
+     underneath. White fill reads on the dark hero/process/certificates/CTA
+     sections; the black coating is what stays legible over the light
+     paper-stock sections instead. */
+  color: var(--pulp-white);
+  text-shadow:
+    -1px -1px 0 var(--press-black),
+     1px -1px 0 var(--press-black),
+    -1px  1px 0 var(--press-black),
+     1px  1px 0 var(--press-black);
+}
+.main-nav a:hover { opacity: 1; }
+
+/* Third island: CTA + language switch + day/night toggle (+ mobile nav
+   toggle) bundled into one glass pill, sharing the .logo/.nav-island
+   background/border/shadow via the selector above. */
+.action-island {
+  display: flex;
+  align-items: center;
+  /* Centered, not spread — CTA/lang-switch/toggle/burger are a single
+     related control cluster, not a list like .nav-island's links, so
+     space-between would visually disconnect them once this pill grows
+     wider than its content (see flex:1 1 auto above). */
+  justify-content: center;
+  gap: 0.75rem;
+  padding: 0.45rem 0.6rem;
+}
+
+/* Three-way language switch: RU / EN / UZ. A single "current/next" toggle
+   button doesn't scale past two languages, so this is a segmented control —
+   each code is its own button, the active one is visually distinct. */
+.lang-switch {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.2rem;
+  /* Same fill as .logo/.nav-island/.action-island, on request — unlike
+     .theme-toggle (a plain icon button with no background of its own),
+     this control gets the island tint so its segmented buttons read
+     clearly. Kept in step with the islands' transparent fill above. */
+  background: transparent;
+  color: var(--pulp-white);
+  border: 1px solid currentColor;
+  /* Black halo on the border, reversed from black-on-white — see
+     .main-nav a for why this control needs the dual-color treatment at
+     all (it's transparent, so it sits over both light and dark sections). */
+  box-shadow: 0 0 0 1px var(--press-black);
+  border-radius: var(--radius-card);
+  padding: 2px;
+  opacity: 0.85;
+}
+.lang-switch:hover { opacity: 1; }
+
+.lang-option {
+  background: transparent;
+  border: none;
+  color: inherit;
+  font-family: var(--font-mono);
+  font-size: 0.78rem;
+  letter-spacing: 0.02em;
+  padding: 0.32em 0.55em;
+  border-radius: 2px;
+  opacity: 0.6;
+  transition: opacity 150ms, background 150ms, color 150ms;
+  /* White ink coated in black — see .main-nav a for why. */
+  text-shadow:
+    -1px -1px 0 var(--press-black),
+     1px -1px 0 var(--press-black),
+    -1px  1px 0 var(--press-black),
+     1px  1px 0 var(--press-black);
+}
+.lang-option:hover { opacity: 1; color: var(--registration-cyan); }
+.lang-option.is-active {
+  opacity: 1;
+  background: var(--registration-cyan);
+  color: var(--pulp-white);
+}
+
+/* ---------- Day/night toggle (header) ----------
+   Two pre-rendered pill-switch graphics (assets/img/process-flow/theme-toggle-{night,day}.*,
+   cropped from assets/img/day-night_toggle.avif) are stacked in the same slot
+   and cross-faded by the html[data-theme] attribute — same mechanism the
+   theme tokens above key off, so the icon state and the actual palette can
+   never drift apart. */
+.theme-toggle {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 52px;
+  height: 26px;
+  padding: 0;
+  border: none;
+  background: transparent;
+  opacity: 0.9;
+  transition: opacity 150ms, transform 150ms var(--ease-out);
+}
+.theme-toggle:hover { opacity: 1; }
+.theme-toggle:active { transform: scale(0.94); }
+
+.theme-toggle__icon {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  transition: opacity 300ms var(--ease-out);
+}
+.theme-toggle__icon--night { opacity: 1; }
+.theme-toggle__icon--day { opacity: 0; }
+html[data-theme="day"] .theme-toggle__icon--night { opacity: 0; }
+html[data-theme="day"] .theme-toggle__icon--day { opacity: 1; }
+
+@media (prefers-reduced-motion: reduce) {
+  .theme-toggle__icon { transition-duration: 1ms; }
+}
+
+.nav-toggle {
+  display: none;
+  align-items: center;
+  justify-content: center;
+  min-width: 44px;
+  min-height: 44px;
+  margin-inline: -0.5rem;
+  background: none;
+  border: none;
+  color: inherit;
+  font-size: 1.4rem;
+  line-height: 1;
+}
+
+@media (max-width: 1024px) {
+  /* Raised from 860px: once the header CTA stopped shrinking/wrapping
+     (see .btn-sm's white-space:nowrap), the full nav-island — links +
+     lang-switch + theme-toggle + CTA, all now rigid-width — no longer fits
+     in the 861-1023px range and was clipping off the right edge of the
+     viewport. Collapsing to the compact hamburger layout earlier avoids
+     that; verified no overflow at 1024px (~40px to spare). */
+  /* Mobile dropdown stays its own fixed light-glass panel rather than the
+     desktop pills' transparent-with-border treatment — a fully transparent
+     panel here would show raw page content through the open dropdown with
+     no separation from the links stacked on top of it. color is pinned
+     (not just inherited) so it stays --press-black regardless of what the
+     shared island rule above does to its own ink. */
+  .main-nav {
     position: absolute;
-    left: 0; right: 0; bottom: 0;
-    padding: 0.55em 0.8em;
-    font-family: var(--font-display);
-    font-size: 0.6875rem;
-    letter-spacing: 0.08em;
-    text-transform: uppercase;
-    color: #fff8ec;
-    background: linear-gradient(to top, rgba(20,14,8,0.72), transparent);
-  }
-
-  /* ---------- Sections shared ---------- */
-
-  section { padding-block: var(--space-6); }
-
-  .section-head {
-    max-width: 40rem;
-    margin: 0 auto var(--space-5);
-    text-align: center;
-    display: flex;
+    top: calc(100% + 0.6rem);
+    left: var(--gutter);
+    right: var(--gutter);
     flex-direction: column;
-    gap: var(--space-1);
-  }
-
-  .section-head.left { text-align: left; margin-inline: 0; }
-
-  .section-head h2 { font-size: clamp(1.6rem, 3vw, 2.25rem); }
-  .section-head p { color: var(--ink-soft); }
-
-  /* ---------- Benefits ---------- */
-
-  .benefits-grid {
-    display: grid;
-    grid-template-columns: 1fr;
-    gap: 1px;
-    background: var(--line);
-    border: 1px solid var(--line);
-  }
-
-  @media (min-width: 640px) { .benefits-grid { grid-template-columns: repeat(2, 1fr); } }
-  @media (min-width: 1024px) { .benefits-grid { grid-template-columns: repeat(4, 1fr); } }
-
-  .benefit-card {
-    background: var(--paper-raised);
-    padding: var(--space-4);
+    background: rgba(200, 191, 172, 0.94);
+    color: var(--press-black);
+    backdrop-filter: saturate(140%) blur(12px);
+    -webkit-backdrop-filter: saturate(140%) blur(12px);
+    border: 1px solid rgba(30, 26, 23, 0.1);
+    /* Matches the desktop pills' squared --radius-card. */
+    border-radius: var(--radius-card);
+    box-shadow: 0 14px 30px -8px rgba(30, 26, 23, 0.28), 0 1px 2px rgba(0, 0, 0, 0.04);
+    padding: 1rem 1.25rem 1.25rem;
+    gap: 1rem;
     display: flex;
-    flex-direction: column;
-    gap: var(--space-2);
+    /* Fade + slide instead of instant show/hide (state changes should
+       animate, not snap). visibility (not just opacity) keeps closed-state
+       links out of the tab order, matching the display:none behavior this
+       replaces. */
+    opacity: 0;
+    transform: translateY(-8px);
+    visibility: hidden;
+    pointer-events: none;
+    transition: opacity 220ms var(--ease-out), transform 220ms var(--ease-out), visibility 220ms;
   }
-
-  .benefit-icon {
-    width: 2.5rem;
-    height: 2.5rem;
-    display: grid;
-    place-items: center;
-    color: var(--brand-deep);
-    border: 1px solid var(--line);
-    border-radius: 50%;
+  .main-nav.is-open {
+    opacity: 1;
+    transform: translateY(0);
+    visibility: visible;
+    pointer-events: auto;
   }
-
-  .benefit-card h3 { font-size: 1.1rem; font-weight: 600; }
-  .benefit-card p { color: var(--ink-soft); font-size: 0.9375rem; }
-
-  /* ---------- Social proof ---------- */
-
-  .proof { border-block: 1px solid var(--line); }
-
-  .proof-row {
-    display: flex;
-    flex-wrap: wrap;
-    justify-content: center;
-    align-items: center;
-    gap: var(--space-5);
+  .nav-toggle { display: flex; }
+  .header-cta { display: none; }
+  /* nav-island now holds only .main-nav, which goes position:absolute
+     right above — with no in-flow content left, strip the pill's own
+     chrome so it doesn't render as an empty translucent box between the
+     logo and the plain controls. */
+  .nav-island {
+    background: none;
+    border-color: transparent;
+    box-shadow: none;
+    padding: 0;
   }
+}
 
-  .proof-logo {
-    font-family: var(--font-display);
-    font-size: 1.1rem;
-    font-weight: 700;
-    letter-spacing: 0.04em;
-    color: var(--ink);
-    opacity: 0.42;
-    filter: grayscale(1);
-    transition: opacity 0.3s ease, filter 0.3s ease, color 0.3s ease;
-    white-space: nowrap;
+/* ---------- Hero ---------- */
+.hero {
+  background-color: var(--shell-bg);
+  /* Same-hue scrim over the photo (not instead of it) — the swatch photo has
+     finer, busier detail than the sitewide wood-grain texture, so it needs
+     more coverage to keep hero-copy text legible regardless of whether the
+     photo ends up beside the text (desktop) or above it (mobile, where
+     hero-visual reorders first — see the 900px breakpoint below). */
+  background-image: linear-gradient(rgba(var(--shell-scrim-rgb), 0.72), rgba(var(--shell-scrim-rgb), 0.72)), var(--certificates-bg-photo);
+  background-size: cover, cover;
+  background-position: center, center;
+  background-blend-mode: normal, multiply;
+  color: var(--shell-ink);
+  /* Extra top clearance for the fixed floating header (see --header-clearance)
+     — the header no longer sits in normal flow, so this replaces the space
+     the old sticky bar used to reserve above the hero. Base value here is
+     --gutter, not --section-vgap like every other section's top/bottom
+     (see .section) — hero's top is intentionally smaller than its own
+     bottom and smaller than other sections' top/bottom, on request, since
+     --section-vgap alone already grows quite large on wide screens before
+     --header-clearance is even added on top of it. Bottom is untouched. */
+  padding-top: calc(var(--gutter) + var(--header-clearance));
+  padding-bottom: var(--section-vgap);
+  overflow: clip;
+  transition: background-color 300ms, color 300ms;
+}
+@media (max-width: 760px) {
+  .hero {
+    background-image: linear-gradient(rgba(var(--shell-scrim-rgb), 0.72), rgba(var(--shell-scrim-rgb), 0.72)), url('assets/img/process-flow/certificates-belayakorona-768.jpg');
   }
-  .proof-logo:hover { opacity: 1; filter: grayscale(0); color: var(--brand-deep); }
+}
 
-  /* ---------- Collections ---------- */
+.hero-grid {
+  display: grid;
+  grid-template-columns: 1.1fr 0.9fr;
+  gap: clamp(2rem, 5vw, 4rem);
+  align-items: center;
+}
 
-  .collection-grid {
-    display: grid;
-    grid-template-columns: 1fr;
-    gap: var(--space-3);
+@media (max-width: 900px) {
+  .hero-grid { grid-template-columns: 1fr; }
+  .hero-visual { order: -1; }
+}
+
+.hero-copy h1 { color: var(--shell-ink); margin-bottom: 1.25rem; }
+/* Thesis emphasis: one word carries the claim (trust), set off in the
+   "working" registration-cyan ink rather than left the same flat white as
+   the rest of the headline — the hero should read as an argument, not a
+   uniform block of type. */
+.hero-accent {
+  font-style: normal;
+  color: var(--registration-cyan);
+}
+.hero-copy .lead { color: var(--shell-muted); max-width: 42ch; margin-bottom: 2rem; }
+
+.hero-actions {
+  display: flex;
+  align-items: center;
+  gap: 1.75rem;
+  flex-wrap: wrap;
+}
+
+/* Signature element: The Layer Press (decor-card corner — see CLAUDE.md;
+   the production-process stack-bar that used to be this motif's other
+   instance was replaced first by a per-language process-flow-img diagram,
+   then by the .process-card 5-step flow — see .process-track). The hero
+   now uses its own quieter motif, Swatch Float, below. */
+
+/* ---------- Hero visual: Swatch Float ----------
+   A loose scatter of real paper-sample photos that settle into place on
+   load, then drift with an independent, slow ease-in-out bob per card
+   (different duration/delay each, so the motion reads as organic rather
+   than four things animating in lockstep). Entrance uses a transition
+   (interruptible) rather than a keyframe; the ambient bob is a keyframe
+   because it's decorative, continuous, and never needs to be interrupted
+   mid-flight. Both are neutralised by the sitewide prefers-reduced-motion
+   rule above (animation/transition durations collapse to ~0). */
+.swatch-float {
+  position: relative;
+  aspect-ratio: 4 / 5;
+  max-width: 460px;
+  margin-inline: auto;
+}
+
+.swatch-card {
+  position: absolute;
+  border-radius: var(--radius-card);
+  overflow: hidden;
+  box-shadow: 0 30px 60px -20px rgba(30, 26, 23, 0.6);
+  opacity: 0;
+  will-change: transform, opacity;
+  transition: opacity 700ms var(--ease-out), transform 700ms var(--ease-out);
+}
+.swatch-card img { width: 100%; height: 100%; object-fit: cover; }
+
+.swatch-card--1 { top: 2%;    left: 0;    width: 46%; z-index: 2; transform: translateY(18px) scale(0.96) rotate(-6deg); transition-delay: 0ms; }
+.swatch-card--2 { top: 28%;   right: 0;   width: 52%; z-index: 3; transform: translateY(18px) scale(0.96) rotate(4deg);  transition-delay: 70ms; }
+.swatch-card--3 { bottom: 4%; left: 10%;  width: 48%; z-index: 1; transform: translateY(18px) scale(0.96) rotate(3deg);  transition-delay: 140ms; }
+.swatch-card--4 { bottom: 14%; right: 8%; width: 40%; z-index: 4; transform: translateY(18px) scale(0.96) rotate(-4deg); transition-delay: 210ms; }
+.swatch-card--5 { top: 40%;   left: 32%;  width: 30%; z-index: 5; transform: translateY(18px) scale(0.96) rotate(8deg);  transition-delay: 280ms; }
+.swatch-card--6 { top: -6%;   right: -2%; width: 34%; z-index: 6; transform: translateY(18px) scale(0.96) rotate(12deg); transition-delay: 350ms; }
+.swatch-card--7 { bottom: -8%; right: 26%; width: 32%; z-index: 2; transform: translateY(18px) scale(0.96) rotate(-10deg); transition-delay: 420ms; }
+.swatch-card--8 { top: 58%;   left: -6%;  width: 34%; z-index: 3; transform: translateY(18px) scale(0.96) rotate(9deg);  transition-delay: 490ms; }
+
+.swatch-float.is-visible .swatch-card--1 { opacity: 1; transform: rotate(-6deg) translateY(0); animation: swatch-bob-1 5.3s var(--ease-in-out) 0.9s infinite; }
+.swatch-float.is-visible .swatch-card--2 { opacity: 1; transform: rotate(4deg) translateY(0);  animation: swatch-bob-2 6s   var(--ease-in-out) 1.6s infinite; }
+.swatch-float.is-visible .swatch-card--3 { opacity: 1; transform: rotate(3deg) translateY(0);  animation: swatch-bob-3 6.3s var(--ease-in-out) 1.1s infinite; }
+.swatch-float.is-visible .swatch-card--4 { opacity: 1; transform: rotate(-4deg) translateY(0); animation: swatch-bob-4 5.5s var(--ease-in-out) 2s   infinite; }
+.swatch-float.is-visible .swatch-card--5 { opacity: 1; transform: rotate(8deg) translateY(0);  animation: swatch-bob-5 5.7s var(--ease-in-out) 2.4s infinite; }
+.swatch-float.is-visible .swatch-card--6 { opacity: 1; transform: rotate(12deg) translateY(0); animation: swatch-bob-6 6.2s var(--ease-in-out) 1.3s infinite; }
+.swatch-float.is-visible .swatch-card--7 { opacity: 1; transform: rotate(-10deg) translateY(0); animation: swatch-bob-7 5.5s var(--ease-in-out) 1.9s infinite; }
+.swatch-float.is-visible .swatch-card--8 { opacity: 1; transform: rotate(9deg) translateY(0);  animation: swatch-bob-8 6.5s var(--ease-in-out) 0.6s infinite; }
+
+@keyframes swatch-bob-1 { 0%, 100% { transform: rotate(-6deg) translateY(0); } 50% { transform: rotate(-6deg) translateY(-7px); } }
+@keyframes swatch-bob-2 { 0%, 100% { transform: rotate(4deg) translateY(0); }  50% { transform: rotate(4deg) translateY(-10px); } }
+@keyframes swatch-bob-3 { 0%, 100% { transform: rotate(3deg) translateY(0); }  50% { transform: rotate(3deg) translateY(-6px); } }
+@keyframes swatch-bob-4 { 0%, 100% { transform: rotate(-4deg) translateY(0); } 50% { transform: rotate(-4deg) translateY(-9px); } }
+@keyframes swatch-bob-5 { 0%, 100% { transform: rotate(8deg) translateY(0); }  50% { transform: rotate(8deg) translateY(-8px); } }
+@keyframes swatch-bob-6 { 0%, 100% { transform: rotate(12deg) translateY(0); } 50% { transform: rotate(12deg) translateY(-9px); } }
+@keyframes swatch-bob-7 { 0%, 100% { transform: rotate(-10deg) translateY(0); } 50% { transform: rotate(-10deg) translateY(-6px); } }
+@keyframes swatch-bob-8 { 0%, 100% { transform: rotate(9deg) translateY(0); }  50% { transform: rotate(9deg) translateY(-10px); } }
+
+/* ---------- Generic section rhythm ---------- */
+.section {
+  /* Top/bottom aligned to --section-vgap, which mirrors the *actual*
+     visual left/right gap from a section's edge to its content — the
+     container's auto-margin past --container-w plus --gutter — not just
+     the --gutter clamp on its own. Matching --gutter alone left top/bottom
+     far smaller than left/right on wide screens, since the container's
+     centering margin grows past 1200px but a plain --gutter padding-top
+     doesn't. */
+  padding-top: var(--section-vgap);
+  padding-bottom: var(--section-vgap);
+}
+/* Translucent tints (not solid fills) so the wood-texture backdrop shows
+   through consistently across sections. */
+.section--pulp-white,
+.section--pulp {
+  position: relative;
+  isolation: isolate;
+}
+/* Darkened alongside --raw-pulp/--raw-pulp-dark above, same reasoning:
+   narrows the light/dark section gap instead of leaving these two literals
+   (independent of the tokens since they're translucent tints layered over
+   .bg-texture, not flat fills) at the old, much lighter values. */
+.section--pulp-white { background: rgba(235,231,222,0.55); }
+.section--pulp { background: rgba(217,210,196,0.55); }
+/* Darker in night/dark mode, on request — scoped to these 3 IDs (not the
+   shared .section--pulp-white/.section--pulp classes) since #clients also
+   uses .section--pulp-white and should keep the original lighter tone.
+   Capped around rgb(186,178,165) rather than going as dark as the true
+   .section--dark shell surfaces: #decors' lead paragraph and .advantage p
+   both render --ink-grey directly on this background (not inside an
+   opaque card, unlike .decor-card/.sustain-card), and --ink-grey needs
+   ~180+ lightness behind it to clear 4.5:1 AA — going darker would take
+   those below AA. html[data-theme="day"] restores the original lighter
+   tint, since day theme is uniformly light by design (see the day/night
+   theme comment near --shell-bg above). */
+#decors, #advantages { background: rgba(186, 178, 165, 0.85); }
+#sustainability { background: rgba(168, 158, 142, 0.85); }
+html[data-theme="day"] #decors,
+html[data-theme="day"] #advantages { background: rgba(235, 231, 222, 0.55); }
+html[data-theme="day"] #sustainability { background: rgba(217, 210, 196, 0.55); }
+.section--pulp-white::before,
+.section--pulp::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background-image: var(--paper-grain);
+  background-size: 220px 220px;
+  opacity: 0.05;
+  mix-blend-mode: multiply;
+  pointer-events: none;
+}
+.section-head--center { text-align: center; max-width: none; }
+.section-head--center .eyebrow { justify-content: center; }
+.section--dark {
+  background-color: var(--shell-bg);
+  background-image: var(--bg-texture);
+  background-size: cover;
+  background-position: center;
+  background-blend-mode: multiply;
+  color: var(--shell-ink);
+  transition: background-color 300ms, color 300ms;
+}
+.section--dark h2 { color: var(--shell-ink); }
+
+/* Production process gets its own background photo instead of the shared
+   .section--dark wood-grain texture — same-hue scrim + multiply so text
+   contrast stays anchored the same way as everywhere else this pattern is
+   used (hero, CTA). Certificates/stats gets its own photo too
+   (see #certificates below); only these two override the shared texture. */
+.process {
+  background-image: linear-gradient(rgba(var(--shell-scrim-rgb), 0.75), rgba(var(--shell-scrim-rgb), 0.75)), var(--process-bg-photo);
+  background-size: cover, cover;
+  background-position: center, center;
+  background-blend-mode: normal, multiply;
+}
+@media (max-width: 760px) {
+  .process {
+    background-image: linear-gradient(rgba(var(--shell-scrim-rgb), 0.75), rgba(var(--shell-scrim-rgb), 0.75)), url('assets/img/process-flow/process-ldsp2-768.jpg');
   }
-  @media (min-width: 640px) { .collection-grid { grid-template-columns: repeat(2, 1fr); } }
-  @media (min-width: 1100px) { .collection-grid { grid-template-columns: repeat(4, 1fr); } }
+}
 
-  .collection-card {
-    border: 1px solid var(--line);
-    border-radius: 6px;
-    overflow: hidden;
-    background: var(--paper-raised);
-    transition: transform 0.3s ease, box-shadow 0.3s ease;
+/* Certificates/stats gets its own background photo — same scrim opacity as
+   .process/.cta-section since it's the same kind of single-hue wood photo. */
+#certificates {
+  background-image: linear-gradient(rgba(var(--shell-scrim-rgb), 0.75), rgba(var(--shell-scrim-rgb), 0.75)), var(--certificates-bg-photo);
+  background-size: cover, cover;
+  background-position: center, center;
+  background-blend-mode: normal, multiply;
+}
+@media (max-width: 760px) {
+  #certificates {
+    background-image: linear-gradient(rgba(var(--shell-scrim-rgb), 0.75), rgba(var(--shell-scrim-rgb), 0.75)), url('assets/img/process-flow/certificates-belayakorona-768.jpg');
   }
-  .collection-card:hover { transform: translateY(-4px); box-shadow: 0 20px 36px -20px var(--shadow); }
+}
 
-  .collection-swatch { aspect-ratio: 16/10; }
-  .collection-swatch canvas { width: 100%; height: 100%; }
+.section-head {
+  max-width: 62ch;
+  margin-bottom: clamp(2rem, 5vw, 3.5rem);
+}
+.section-head p.lead { margin-top: 0.75rem; }
 
-  .collection-body { padding: var(--space-3); display: flex; flex-direction: column; gap: 0.4em; }
-  .collection-body h3 { font-size: 1.05rem; }
-  .collection-body p { color: var(--ink-soft); font-size: 0.9rem; }
-  .collection-spec {
-    font-family: var(--font-display);
-    font-size: 0.6875rem;
-    letter-spacing: 0.06em;
-    text-transform: uppercase;
-    color: var(--brand-deep);
-    margin-top: 0.3em;
+.decor-nav {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.6rem;
+  flex-shrink: 0;
+  /* margin-left:auto (not .decor-filters' justify-content) pushes this to
+     the row's right edge — it keeps working if .decor-filters__list wraps
+     and .decor-nav drops to its own line, where space-between would
+     otherwise leave a lone item flush left instead of right. */
+  margin-left: auto;
+}
+.decor-nav__btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  /* 36px = .decor-filter's own rendered height (0.82rem text over 1.5
+     line-height, plus its 0.55em padding-block and 1px border) — matched
+     by measurement rather than shared box-model math, since an icon-only
+     button and a text button don't arrive at a height the same way. If
+     .decor-filter's font-size/padding/border ever change, re-measure and
+     update this. */
+  width: 36px;
+  height: 36px;
+  padding: 0;
+  background: transparent;
+  border: 1.5px solid var(--press-black);
+  border-radius: var(--radius-card);
+  color: var(--press-black);
+  transition: background 150ms, opacity 150ms, transform 150ms var(--ease-out);
+}
+.decor-nav__btn svg { width: 16px; height: 16px; }
+.decor-nav__btn:hover:not(:disabled) { background: rgba(30, 26, 23, 0.06); }
+.decor-nav__btn:active:not(:disabled) { transform: scale(0.94); }
+.decor-nav__btn:disabled {
+  opacity: 0.3;
+  cursor: default;
+}
+
+.reveal {
+  opacity: 0;
+  transform: translateY(20px);
+}
+.reveal.is-visible {
+  opacity: 1;
+  transform: translateY(0);
+  transition: opacity var(--dur-reveal) var(--ease-out), transform var(--dur-reveal) var(--ease-out);
+}
+
+/* Staggered grid reveal: the grid container itself (already a .reveal target
+   the JS observer toggles .is-visible on) skips its own fade and instead
+   passes the motion down to each child, offset a beat apart — reads as one
+   coordinated entrance rather than a flat block appearing at once. Capped at
+   10 explicit steps; anything past that enters with the 10th item's delay
+   rather than growing unbounded. */
+.reveal.stagger { opacity: 1; transform: none; }
+.stagger > * {
+  opacity: 0;
+  transform: translateY(14px);
+  transition: opacity 450ms var(--ease-out), transform 450ms var(--ease-out);
+}
+.stagger.is-visible > * { opacity: 1; transform: translateY(0); }
+.stagger.is-visible > *:nth-child(1) { transition-delay: 0ms; }
+.stagger.is-visible > *:nth-child(2) { transition-delay: 40ms; }
+.stagger.is-visible > *:nth-child(3) { transition-delay: 80ms; }
+.stagger.is-visible > *:nth-child(4) { transition-delay: 120ms; }
+.stagger.is-visible > *:nth-child(5) { transition-delay: 160ms; }
+.stagger.is-visible > *:nth-child(6) { transition-delay: 200ms; }
+.stagger.is-visible > *:nth-child(7) { transition-delay: 240ms; }
+.stagger.is-visible > *:nth-child(8) { transition-delay: 280ms; }
+.stagger.is-visible > *:nth-child(9) { transition-delay: 320ms; }
+.stagger.is-visible > *:nth-child(n+10) { transition-delay: 360ms; }
+
+/* ---------- Decor catalog ---------- */
+/* Row holds the filter pills and the carousel's prev/next buttons on one
+   line, nav pinned to the right via space-between — align-items:stretch
+   (the default) is what makes .decor-nav__btn match .decor-filter height
+   below, not a hardcoded number that could drift out of sync. */
+.decor-filters {
+  display: flex;
+  flex-wrap: wrap;
+  /* flex-start, not the stretch default — .decor-filters__list can wrap to
+     a second row on narrow screens (long filter labels), and stretch would
+     then force .decor-nav to match that taller 2-row height instead of
+     staying pinned to the first line. */
+  align-items: flex-start;
+  gap: 0.75rem 1rem;
+  margin-bottom: 2.25rem;
+}
+.decor-filters__list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+}
+
+.decor-filter {
+  font-family: var(--font-mono);
+  font-size: 0.82rem;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  padding: 0.55em 1em;
+  border: 1px solid var(--raw-pulp-dark);
+  border-radius: var(--radius-card);
+  background: var(--pulp-white);
+  color: var(--ink-grey);
+  transition: background 150ms, color 150ms, border-color 150ms, transform 100ms var(--ease-out);
+}
+.decor-filter:hover { border-color: var(--registration-cyan); }
+.decor-filter:active { transform: scale(0.96); }
+.decor-filter.is-active {
+  background: var(--press-black);
+  color: var(--pulp-white);
+  border-color: var(--press-black);
+  /* A rubber date-stamp hitting paper, not a flat color swap — plays once
+     when a filter becomes active (re-clicking the same filter doesn't
+     retrigger it, matching how a stamp only lands once per impression). */
+  animation: filter-stamp 320ms var(--ease-out);
+}
+@keyframes filter-stamp {
+  0% { transform: scale(1); }
+  35% { transform: scale(0.9); }
+  65% { transform: scale(1.05); }
+  100% { transform: scale(1); }
+}
+
+/* Horizontal carousel, 4 cards visible at a time on desktop (see
+   .decor-nav for the prev/next controls that drive it) — a fixed 4-up
+   flex-basis rather than the old wrapping auto-fill grid. --decor-gap is
+   a variable, not a bare 1.5rem, so script.js's scroll-by-page math
+   reads the same number the layout actually uses. scroll-snap keeps a
+   card's left edge flush with the container after every scroll/button
+   press instead of leaving one half-visible at the seam. Scrollbar is
+   hidden since .decor-nav is the intended way to move the carousel —
+   drag/swipe/trackpad scrolling still works, just without a visible
+   track. */
+.decor-grid {
+  --decor-gap: 1.5rem;
+  --decor-nav-basis: 4;
+  display: flex;
+  gap: var(--decor-gap);
+  overflow-x: auto;
+  scroll-snap-type: x mandatory;
+  scroll-padding-left: 0;
+  scrollbar-width: none;
+  -webkit-overflow-scrolling: touch;
+}
+.decor-grid::-webkit-scrollbar { display: none; }
+@media (max-width: 1024px) {
+  /* 2 cards visible, on request's spirit of a partial-peek carousel at
+     narrower widths — the 4-up basis would squeeze cards under the
+     230px floor .decor-card sets below. */
+  .decor-grid { --decor-nav-basis: 2; }
+}
+@media (max-width: 640px) {
+  /* 1 card + a peek of the next, standard mobile-carousel affordance
+     that hints there's more to scroll to. */
+  .decor-grid { --decor-nav-basis: 1.15; }
+}
+
+.decor-card {
+  position: relative;
+  /* --decor-nav-basis cards per screenful, minus the gaps between them —
+     same formula at every breakpoint, only the basis variable (set on
+     .decor-grid) changes. min-width keeps cards readable if a future
+     basis value would otherwise squeeze them past legibility. */
+  flex: 0 0 calc((100% - (var(--decor-nav-basis) - 1) * var(--decor-gap)) / var(--decor-nav-basis));
+  min-width: 210px;
+  scroll-snap-align: start;
+  background: var(--pulp-white);
+  border-radius: var(--radius-card);
+  overflow: hidden;
+  isolation: isolate;
+  /* Tinted warm (ink-grey) rather than flat black, to match the paper-stock
+     surfaces these cards sit on. */
+  box-shadow: 0 1px 0 rgba(74, 67, 60, 0.14);
+  transition: opacity 280ms var(--ease-out), transform 280ms var(--ease-out);
+}
+/* Filter show/hide: fade + settle instead of an instant display swap —
+   "elements appearing or disappearing without transition feel broken."
+   Exit is shorter than enter (180ms vs 280ms) — quick to leave, considered
+   to arrive. script.js toggles this class, waits it out, then sets
+   display:none/'' so filtered-out cards actually leave the grid flow. */
+.decor-card.is-filtered-out {
+  opacity: 0;
+  transform: scale(0.95) translateY(8px);
+  transition-duration: 180ms;
+  pointer-events: none;
+}
+
+.decor-card figure {
+  position: relative;
+  aspect-ratio: 4 / 3;
+  overflow: hidden;
+  background: var(--raw-pulp-dark);
+}
+
+.decor-card img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.decor-card__texture {
+  position: absolute;
+  inset: 0;
+  background-size: cover;
+  background-position: center;
+}
+
+/* signature "lifted corner" hover — reuses the layer-press language.
+   At rest it reads as a small dog-ear tab (affordance); on hover it grows
+   into a full lifted flap. It must NOT be fully visible at rest, or it
+   reads as a stray triangle rather than an interaction hint. */
+.decor-card__corner {
+  position: absolute;
+  top: 0; right: 0;
+  width: 16%;
+  height: 16%;
+  background: linear-gradient(225deg, var(--pulp-white) 0 50%, transparent 51%);
+  transform-origin: top right;
+  transform: rotate(0deg);
+  transition: width 320ms var(--ease-out), height 320ms var(--ease-out), transform 320ms var(--ease-out), box-shadow 320ms var(--ease-out);
+  pointer-events: none;
+}
+.decor-card:focus-within .decor-card__corner {
+  width: 46%;
+  height: 46%;
+  transform: rotate(-14deg) translate(2px, -2px);
+  box-shadow: -6px 6px 14px -6px rgba(74, 67, 60, 0.35);
+}
+/* Hover-only devices get the lift on :hover too — gated so a tap on touch
+   doesn't leave the corner "stuck" lifted until the user taps elsewhere. */
+@media (hover: hover) and (pointer: fine) {
+  .decor-card:hover .decor-card__corner {
+    width: 46%;
+    height: 46%;
+    transform: rotate(-14deg) translate(2px, -2px);
+    box-shadow: -6px 6px 14px -6px rgba(74, 67, 60, 0.35);
   }
+}
 
-  /* ---------- CTA band ---------- */
+.decor-card__body {
+  padding: 1rem 1.1rem 1.25rem;
+}
 
-  .cta-band {
-    background: var(--surface-strong);
-    color: var(--surface-strong-text);
-    text-align: center;
+.decor-card__code {
+  font-family: var(--font-mono);
+  font-size: 0.78rem;
+  color: var(--registration-cyan);
+  display: block;
+  margin-bottom: 0.2rem;
+}
+
+.decor-card__name { font-weight: 600; font-size: 0.98rem; color: var(--press-black); }
+
+.decor-empty {
+  font-family: var(--font-mono);
+  font-size: 0.9rem;
+  color: var(--ink-grey);
+  padding: 2rem 0;
+}
+
+.section-cta { margin-top: 2.5rem; }
+
+/* ---------- Process ---------- */
+/* Five-card flow diagram, replacing the earlier per-language baked-text GIF
+   + separate scroll-highlighted stage list. Content is real i18n spans now
+   (no raster text), so applyLang needs no special-casing for this section
+   any more. Entrance rides the sitewide .reveal/.stagger system (see
+   style.css's generic rules) — .process-flow gets .is-visible from the same
+   IntersectionObserver as every other .reveal target, which also gates the
+   connector-line draw-in below; the continuous travelling dot is the one
+   piece that needs its own JS (see initProcessFlowDots in script.js),
+   started once off that same .is-visible moment. */
+.process-track {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 1.25rem;
+  position: relative;
+}
+
+/* Connectors are grid siblings of .process-card but position:absolute lifts
+   them out of grid flow entirely, so the 5 .process-card items still land
+   one-per-column via auto-placement — same trick as the reference markup,
+   just with left/width authored per nth-of-type instead of inline styles
+   from a JS layout loop (content here is static, not templated). */
+.process-connector {
+  position: absolute;
+  top: 34px;
+  height: 40px;
+  pointer-events: none;
+  z-index: 0;
+}
+.process-connector svg { width: 100%; height: 100%; display: block; overflow: visible; }
+.process-connector:nth-of-type(1) { left: 10%; width: 20%; }
+.process-connector:nth-of-type(2) { left: 30%; width: 20%; }
+.process-connector:nth-of-type(3) { left: 50%; width: 20%; }
+.process-connector:nth-of-type(4) { left: 70%; width: 20%; }
+
+.process-connector__line { fill: none; stroke: var(--shell-border-strong); stroke-width: 1.5; }
+.process-connector__progress {
+  fill: none;
+  stroke: var(--registration-cyan);
+  stroke-width: 1.5;
+  stroke-dasharray: 100;
+  stroke-dashoffset: 100;
+}
+/* Gated by .is-visible (added by the shared reveal observer, see
+   style.css's .reveal/.stagger) rather than firing on page load — this
+   section is well below the fold, so animating it immediately would mean
+   it finishes long before it's ever seen. */
+.process-flow.is-visible .process-connector__progress { animation: process-draw 900ms var(--ease-out) forwards; }
+.process-connector:nth-of-type(1) .process-connector__progress { animation-delay: 160ms; }
+.process-connector:nth-of-type(2) .process-connector__progress { animation-delay: 300ms; }
+.process-connector:nth-of-type(3) .process-connector__progress { animation-delay: 440ms; }
+.process-connector:nth-of-type(4) .process-connector__progress { animation-delay: 580ms; }
+@keyframes process-draw { to { stroke-dashoffset: 0; } }
+
+.process-connector__dot { fill: var(--registration-cyan); opacity: 0; }
+
+.process-card {
+  position: relative;
+  z-index: 1;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid var(--shell-border);
+  border-radius: var(--radius-card);
+  padding: 1.5rem 1.1rem 1.25rem;
+  text-align: center;
+  transition: transform 300ms var(--ease-out), border-color 300ms, background 300ms;
+}
+.process-card:hover {
+  transform: translateY(-4px);
+  border-color: var(--registration-cyan);
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.process-card__badge {
+  width: 30px;
+  height: 30px;
+  margin: 0 auto 0.9rem;
+  border-radius: 50%;
+  border: 1.5px solid var(--registration-cyan);
+  color: var(--registration-cyan);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--font-mono);
+  font-size: 0.78rem;
+  transition: background 300ms, color 300ms;
+}
+/* Same fill/ink pairing as .lang-option.is-active — already vetted for
+   contrast on this exact accent color, so reused rather than guessed. */
+.process-card:hover .process-card__badge { background: var(--registration-cyan); color: var(--pulp-white); }
+
+.process-card__icon {
+  width: 52px;
+  height: 52px;
+  margin: 0 auto 0.9rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(255, 255, 255, 0.06);
+  border-radius: var(--radius-card);
+  transition: background 300ms;
+}
+.process-card__icon svg { width: 26px; height: 26px; stroke: var(--shell-ink); fill: none; stroke-width: 1.5; }
+.process-card:hover .process-card__icon { background: var(--registration-cyan); }
+.process-card:hover .process-card__icon svg { stroke: var(--pulp-white); }
+
+.process-card h3 { color: var(--shell-ink); font-size: 1.02rem; margin-bottom: 0.4rem; }
+.process-card p { color: var(--shell-muted); font-size: 0.86rem; line-height: 1.5; }
+
+@media (max-width: 760px) {
+  .process-track { grid-template-columns: 1fr; gap: 1.75rem; }
+  .process-connector { display: none; }
+}
+
+/* ---------- Advantages (no numbering — see PRD §3.5) ---------- */
+.advantages-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 2rem;
+}
+
+.advantage-icon {
+  width: 44px;
+  height: 44px;
+  color: var(--kraft-brown);
+  margin-bottom: 1rem;
+}
+
+.advantage h3 { margin-bottom: 0.5rem; }
+.advantage p { font-size: 0.95rem; }
+
+/* ---------- Sustainability ---------- */
+.sustain-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 2rem;
+}
+.sustain-card {
+  border: 1px solid var(--raw-pulp-dark);
+  background: var(--pulp-white);
+  border-radius: var(--radius-card);
+  padding: 1.75rem;
+}
+.sustain-card h3 { margin-bottom: 0.6rem; }
+.sustain-card p { font-size: 0.94rem; }
+
+/* ---------- Certificates / stats ---------- */
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 2rem;
+  margin-bottom: 3rem;
+}
+
+.stat-value {
+  font-family: var(--font-display);
+  font-size: clamp(2.4rem, 5vw, 3.6rem);
+  color: var(--shell-ink);
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+}
+.stat-value span { display: inline-block; }
+.stat-value span.is-ticking {
+  animation: stat-tick 110ms var(--ease-out);
+}
+@keyframes stat-tick {
+  0% { transform: translateY(-6%); opacity: 0.75; }
+  100% { transform: translateY(0); opacity: 1; }
+}
+.stat-label {
+  font-family: var(--font-mono);
+  font-size: 0.78rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--shell-muted-soft);
+  margin-top: 0.5rem;
+}
+
+.cert-badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+}
+.cert-badge {
+  font-family: var(--font-mono);
+  font-size: 0.82rem;
+  border: 1px dashed var(--shell-border-strong);
+  color: var(--shell-muted);
+  padding: 0.7em 1.1em;
+  border-radius: var(--radius-card);
+}
+
+/* ---------- Social proof ---------- */
+.logo-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: clamp(1.5rem, 5vw, 3.5rem);
+}
+.logo-row .client-logo {
+  filter: grayscale(1);
+  opacity: 0.5;
+  transition: filter 250ms, opacity 250ms;
+  font-family: var(--font-display);
+  font-size: 1.3rem;
+  letter-spacing: 0.03em;
+  color: var(--ink-grey);
+}
+/* Gated to real hover devices — on touch, a tap would otherwise leave a
+   client logo "stuck" in full color until the user taps elsewhere. */
+@media (hover: hover) and (pointer: fine) {
+  .logo-row .client-logo:hover {
+    filter: grayscale(0);
+    opacity: 1;
+    color: var(--kraft-brown);
   }
-  .cta-band .eyebrow { color: var(--brand-on-dark); }
-  .cta-band h2 { color: var(--surface-strong-text); }
-  .cta-band p { color: color-mix(in srgb, var(--surface-strong-text) 78%, transparent); }
+}
 
-  .cta-final {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: var(--space-2);
-    margin-top: var(--space-3);
+/* ---------- CTA form ---------- */
+.cta-section {
+  background-color: var(--shell-bg);
+  /* Matches .process: same scrim color/opacity and same photo, so the two
+     dark photo sections read as one consistent treatment. */
+  background-image: linear-gradient(rgba(var(--shell-scrim-rgb), 0.75), rgba(var(--shell-scrim-rgb), 0.75)), var(--process-bg-photo);
+  background-size: cover, cover;
+  background-position: center, center;
+  background-blend-mode: normal, multiply;
+  color: var(--shell-ink);
+}
+@media (max-width: 760px) {
+  .cta-section {
+    background-image: linear-gradient(rgba(var(--shell-scrim-rgb), 0.75), rgba(var(--shell-scrim-rgb), 0.75)), url('assets/img/process-flow/process-ldsp2-768.jpg');
   }
+}
+.cta-section .eyebrow { color: var(--shell-cta-eyebrow); }
+.cta-section h2 { color: var(--shell-ink); }
+.cta-section .lead { color: var(--shell-cta-lead); }
 
-  .cta-fine { font-size: 0.85rem; opacity: 0.75; }
+.cta-layout {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: clamp(2rem, 5vw, 4rem);
+  align-items: start;
+}
+@media (max-width: 860px) {
+  .cta-layout { grid-template-columns: 1fr; }
+}
 
-  /* ---------- Footer ---------- */
+.form-grid { display: grid; gap: 1rem; }
 
-  footer.site { padding-block: var(--space-6) var(--space-4); border-top: 1px solid var(--line); }
+.form-field { display: flex; flex-direction: column; gap: 0.4rem; }
+.form-field label {
+  font-family: var(--font-mono);
+  font-size: 0.78rem;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  color: var(--shell-cta-eyebrow);
+}
+.form-field input,
+.form-field select,
+.form-field textarea {
+  background: var(--shell-form-fill);
+  color: var(--shell-form-ink);
+  border: 1px solid transparent;
+  border-radius: var(--radius-card);
+  padding: 0.75em 0.9em;
+}
+.form-field input:focus,
+.form-field select:focus,
+.form-field textarea:focus {
+  outline: 2px solid var(--shell-form-ink);
+}
 
-  .footer-grid { display: grid; gap: var(--space-4); grid-template-columns: 1fr; }
-  @media (min-width: 800px) { .footer-grid { grid-template-columns: 1.4fr 1fr 1fr; } }
+.form-note { font-size: 0.82rem; color: var(--shell-cta-lead); margin-top: 0.75rem; }
 
-  .footer-grid h4 {
-    font-family: var(--font-display);
-    font-size: 0.75rem;
-    letter-spacing: 0.1em;
-    text-transform: uppercase;
-    color: var(--ink-soft);
-    margin: 0 0 var(--space-2);
+/* Modern enter-animation with no JS mount flag needed: only :not(:empty)
+   (i.e. once script.js has actually inserted the confirmation text) gets a
+   transition, and @starting-style supplies the "from" state for that first
+   frame. Unsupported browsers just skip @starting-style and show the text
+   immediately — a safe no-animation fallback, not a broken one. */
+.cta-status {
+  margin-top: 0.75rem;
+  font-family: var(--font-mono);
+  font-size: 0.85rem;
+}
+.cta-status:not(:empty) {
+  opacity: 1;
+  transform: translateY(0);
+  transition: opacity 300ms var(--ease-out), transform 300ms var(--ease-out);
+  @starting-style {
+    opacity: 0;
+    transform: translateY(6px);
   }
+}
 
-  .footer-grid ul { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 0.6em; font-size: 0.9375rem; }
-  .footer-grid a { text-decoration: none; color: var(--ink); }
-  .footer-grid a:hover { color: var(--brand-deep); }
+/* ---------- Footer / Colophon ---------- */
+.site-footer {
+  background-color: var(--footer-bg);
+  background-image: var(--bg-texture);
+  background-size: cover;
+  background-position: center;
+  background-blend-mode: multiply;
+  color: var(--shell-ink);
+  transition: background-color 300ms, color 300ms;
+}
 
-  .footer-desc { color: var(--ink-soft); max-width: 26rem; font-size: 0.9375rem; }
+.colophon {
+  font-family: var(--font-mono);
+  font-size: 0.85rem;
+  color: var(--shell-muted);
+  padding-block: 1.75rem;
+  border-bottom: 1px solid var(--shell-border);
+  line-height: 1.8;
+}
+.colophon strong { color: var(--shell-ink); }
 
-  .certs {
-    display: flex;
-    gap: var(--space-2);
-    margin-top: var(--space-2);
-    font-family: var(--font-display);
-    font-size: 0.6875rem;
-    letter-spacing: 0.06em;
-    text-transform: uppercase;
-    color: var(--ink-soft);
-  }
+.footer-lower {
+  display: grid;
+  /* 3 columns now that the language column moved to the header (it's the
+     only way to switch language, so removing it from the footer doesn't
+     drop functionality — just the duplicate control). */
+  grid-template-columns: repeat(3, auto);
+  gap: 2rem;
+  padding-block: 2.5rem;
+  justify-content: space-between;
+}
+@media (max-width: 760px) {
+  .footer-lower { grid-template-columns: 1fr 1fr; }
+}
 
-  .socials { display: flex; gap: var(--space-2); margin-top: var(--space-3); }
-  .socials a {
-    width: 2.1rem; height: 2.1rem; border-radius: 50%;
-    border: 1px solid var(--line);
-    display: grid; place-items: center;
-    transition: border-color 0.2s ease, color 0.2s ease;
-  }
-  .socials a:hover { border-color: var(--brand-deep); color: var(--brand-deep); }
+.footer-col h4 {
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--shell-muted-soft);
+  margin-bottom: 0.9rem;
+}
+.footer-col ul { list-style: none; padding: 0; display: flex; flex-direction: column; gap: 0.55rem; font-size: 0.92rem; }
+.footer-col a:hover { color: var(--registration-cyan); }
 
-  .footer-bottom {
-    margin-top: var(--space-5);
-    padding-top: var(--space-3);
-    border-top: 1px solid var(--line);
-    display: flex;
-    flex-wrap: wrap;
-    justify-content: space-between;
-    gap: var(--space-2);
-    font-size: 0.8rem;
-    color: var(--ink-soft);
-  }
+.footer-col ul.social-list { flex-direction: row; align-items: center; gap: 0.9rem; }
+.social-link {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 44px;
+  min-height: 44px;
+  margin: -11px;
+  color: var(--shell-muted);
+  transition: color 150ms;
+}
+.social-link svg { width: 22px; height: 22px; }
+.social-link:hover { color: var(--registration-cyan); }
 
-  .skip-link {
-    position: absolute; left: -999px; top: 0;
-    background: var(--brand-deep); color: #fff;
-    padding: 0.6em 1em; z-index: 100;
-  }
-  .skip-link:focus { left: var(--space-2); }
+.footer-bottom {
+  border-top: 1px solid var(--shell-border);
+  padding-block: 1.25rem;
+  font-size: 0.8rem;
+  color: var(--shell-muted-soft);
+  display: flex;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 1rem;
+}
+
+/* ---------- i18n visibility ----------
+   All translatable nodes are <span data-i18n-lang="ru|en|uz"> inline elements
+   living alongside static markup (buttons, headings, list items) — display
+   must stay inline or it breaks the surrounding flow. */
+[data-i18n-lang] { display: none; }
+html[lang="ru"] [data-i18n-lang="ru"],
+html[lang="en"] [data-i18n-lang="en"],
+html[lang="uz"] [data-i18n-lang="uz"] { display: inline; }

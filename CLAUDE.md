@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project
 
-STARWOOD — a trilingual (RU/EN/UZ-Latin) B2B marketing site for a decor-paper mill (decorative paper for
+DECOSTAR — a trilingual (RU/EN/UZ-Latin) B2B marketing site for a decor-paper mill (decorative paper for
 particleboard/MDF laminate). Static site, no build step, no framework, no test suite.
 
 **Read before making design or content decisions:**

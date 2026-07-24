@@ -1,161 +1,364 @@
-  (function () {
-    function paintGrain(canvas) {
-      var style = canvas.dataset.style || "grain";
-      var base = canvas.dataset.base || "#845036";
-      var dpr = Math.min(window.devicePixelRatio || 1, 2);
-      var w = canvas.clientWidth || 200;
-      var h = canvas.clientHeight || 240;
-      canvas.width = w * dpr;
-      canvas.height = h * dpr;
-      var ctx = canvas.getContext("2d");
-      ctx.scale(dpr, dpr);
+(function () {
+  'use strict';
 
-      function hexToRgb(hex) {
-        var v = hex.replace("#", "");
-        return [parseInt(v.substr(0,2),16), parseInt(v.substr(2,2),16), parseInt(v.substr(4,2),16)];
+  var reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  /* ---------- Language switch: RU / EN / UZ ---------- */
+  var LANG_KEY = 'decostar-lang';
+  var LANGS = ['ru', 'en', 'uz'];
+  var html = document.documentElement;
+  var langOptionButtons = document.querySelectorAll('.lang-option');
+
+  var META = {
+    ru: {
+      title: 'DECOSTAR — Декоративная бумага для ламината ДСП/МДФ',
+      description: 'DECOSTAR производит декоративную бумагу для ламинирования ДСП и МДФ: коллекции декоров, контроль качества, поставка образцов.'
+    },
+    en: {
+      title: 'DECOSTAR — Decor Paper for Particleboard & MDF Laminate',
+      description: 'DECOSTAR manufactures decor paper for particleboard and MDF lamination: decor collections, quality control, sample requests.'
+    },
+    uz: {
+      title: "DECOSTAR — DSP va MDF laminati uchun dekorativ qog'oz",
+      description: "DECOSTAR DSP va MDF laminatsiyasi uchun dekorativ qog'oz ishlab chiqaradi: dekor to'plamlari, sifat nazorati, namuna so'rovlari."
+    }
+  };
+
+  function applyLang(lang) {
+    if (LANGS.indexOf(lang) === -1) lang = 'ru';
+    html.setAttribute('lang', lang);
+    html.setAttribute('data-lang', lang);
+    document.title = META[lang].title;
+    var metaDesc = document.querySelector('meta[name="description"]');
+    if (metaDesc) metaDesc.setAttribute('content', META[lang].description);
+    langOptionButtons.forEach(function (btn) {
+      btn.classList.toggle('is-active', btn.dataset.langSet === lang);
+    });
+    document.querySelectorAll('option[data-ru]').forEach(function (opt) {
+      opt.textContent = opt.dataset[lang] || opt.dataset.ru;
+    });
+    try { localStorage.setItem(LANG_KEY, lang); } catch (e) {}
+  }
+
+  var savedLang = null;
+  try { savedLang = localStorage.getItem(LANG_KEY); } catch (e) {}
+  applyLang(LANGS.indexOf(savedLang) !== -1 ? savedLang : 'ru');
+
+  langOptionButtons.forEach(function (btn) {
+    btn.addEventListener('click', function () {
+      var lang = btn.dataset.langSet;
+      if (lang === html.getAttribute('lang') || reduceMotion) {
+        applyLang(lang);
+        return;
       }
-      var rgb = hexToRgb(base);
+      /* Blur/dim veil masks the instant text swap (~50 scattered nodes,
+         no single element to crossfade) — see body.is-lang-switching. */
+      document.body.classList.add('is-lang-switching');
+      setTimeout(function () {
+        applyLang(lang);
+        requestAnimationFrame(function () {
+          document.body.classList.remove('is-lang-switching');
+        });
+      }, 140);
+    });
+  });
 
-      ctx.fillStyle = base;
-      ctx.fillRect(0, 0, w, h);
+  /* ---------- Day/night theme ---------- */
+  var THEME_KEY = 'decostar-theme';
+  var themeToggle = document.getElementById('theme-toggle');
 
-      function shade(amount) {
-        var r = Math.max(0, Math.min(255, rgb[0] + amount));
-        var g = Math.max(0, Math.min(255, rgb[1] + amount));
-        var b = Math.max(0, Math.min(255, rgb[2] + amount));
-        return "rgb(" + r + "," + g + "," + b + ")";
+  function applyTheme(theme) {
+    if (theme !== 'day' && theme !== 'night') theme = 'night';
+    html.setAttribute('data-theme', theme);
+    if (themeToggle) themeToggle.setAttribute('aria-pressed', theme === 'day' ? 'true' : 'false');
+    try { localStorage.setItem(THEME_KEY, theme); } catch (e) {}
+  }
+
+  var savedTheme = null;
+  try { savedTheme = localStorage.getItem(THEME_KEY); } catch (e) {}
+  applyTheme(savedTheme === 'day' ? 'day' : 'night');
+
+  if (themeToggle) {
+    themeToggle.addEventListener('click', function () {
+      applyTheme(html.getAttribute('data-theme') === 'day' ? 'night' : 'day');
+    });
+  }
+
+  /* ---------- Mobile nav ---------- */
+  var navToggle = document.getElementById('nav-toggle');
+  var mainNav = document.getElementById('main-nav');
+  if (navToggle && mainNav) {
+    var closeNav = function () {
+      mainNav.classList.remove('is-open');
+      navToggle.setAttribute('aria-expanded', 'false');
+    };
+    navToggle.addEventListener('click', function () {
+      var isOpen = mainNav.classList.toggle('is-open');
+      navToggle.setAttribute('aria-expanded', String(isOpen));
+    });
+    mainNav.querySelectorAll('a').forEach(function (a) {
+      a.addEventListener('click', closeNav);
+    });
+    /* Close on outside click/tap or on scroll — an absolutely positioned
+       menu left open otherwise sits on top of the page content. */
+    document.addEventListener('click', function (e) {
+      if (mainNav.classList.contains('is-open') && !mainNav.contains(e.target) && e.target !== navToggle) {
+        closeNav();
       }
+    });
+    window.addEventListener('scroll', function () {
+      if (mainNav.classList.contains('is-open')) closeNav();
+    }, { passive: true });
+  }
 
-      if (style === "grain") {
-        var lines = 26;
-        for (var i = 0; i < lines; i++) {
-          var y = (h / lines) * i + Math.random() * 3;
-          var amp = 3 + Math.random() * 6;
-          var freq = 0.02 + Math.random() * 0.03;
-          var phase = Math.random() * 10;
-          ctx.beginPath();
-          ctx.strokeStyle = shade((Math.random() - 0.5) * 70);
-          ctx.globalAlpha = 0.12 + Math.random() * 0.18;
-          ctx.lineWidth = 0.6 + Math.random() * 1.4;
-          for (var x = 0; x <= w; x += 4) {
-            var yy = y + Math.sin(x * freq + phase) * amp;
-            if (x === 0) ctx.moveTo(x, yy); else ctx.lineTo(x, yy);
-          }
-          ctx.stroke();
+  /* ---------- Progressive reveal (IntersectionObserver, no GSAP dependency) ---------- */
+  var revealEls = document.querySelectorAll('.reveal');
+  if ('IntersectionObserver' in window && !reduceMotion) {
+    var revealObserver = new IntersectionObserver(function (entries) {
+      entries.forEach(function (entry) {
+        if (entry.isIntersecting) {
+          entry.target.classList.add('is-visible');
+          revealObserver.unobserve(entry.target);
         }
-      } else if (style === "stone") {
-        ctx.globalAlpha = 1;
-        for (var v = 0; v < 9; v++) {
-          ctx.beginPath();
-          ctx.strokeStyle = shade((Math.random() - 0.5) * 50);
-          ctx.globalAlpha = 0.15 + Math.random() * 0.2;
-          ctx.lineWidth = 0.8 + Math.random() * 1.6;
-          var sx = Math.random() * w, sy = 0;
-          ctx.moveTo(sx, sy);
-          var cx1 = sx + (Math.random() - 0.5) * 60, cy1 = h * 0.33;
-          var cx2 = sx + (Math.random() - 0.5) * 60, cy2 = h * 0.66;
-          var ex = sx + (Math.random() - 0.5) * 80, ey = h;
-          ctx.bezierCurveTo(cx1, cy1, cx2, cy2, ex, ey);
-          ctx.stroke();
-        }
-      } else if (style === "shimmer") {
-        for (var s = 0; s < 30; s++) {
-          ctx.beginPath();
-          ctx.strokeStyle = shade((Math.random() - 0.3) * 90);
-          ctx.globalAlpha = 0.08 + Math.random() * 0.14;
-          ctx.lineWidth = 1;
-          var x0 = Math.random() * w * 1.4 - w * 0.2;
-          ctx.moveTo(x0, 0);
-          ctx.lineTo(x0 - h * 0.6, h);
-          ctx.stroke();
-        }
+      });
+    }, { threshold: 0.15, rootMargin: '0px 0px -40px 0px' });
+    revealEls.forEach(function (el) { revealObserver.observe(el); });
+  } else {
+    revealEls.forEach(function (el) { el.classList.add('is-visible'); });
+  }
+
+  /* ---------- Decor catalog carousel ----------
+     Prev/next buttons drive the same horizontal scroller a trackpad or
+     touch swipe would — buttons just call scrollBy, scroll-snap (see
+     .decor-grid) handles landing on a card edge either way. */
+  var decorGrid = document.getElementById('decor-grid');
+  var decorNavButtons = document.querySelectorAll('[data-decor-nav]');
+
+  function updateDecorNav() {
+    if (!decorGrid) return;
+    var maxScroll = decorGrid.scrollWidth - decorGrid.clientWidth;
+    decorNavButtons.forEach(function (btn) {
+      if (btn.dataset.decorNav === 'prev') {
+        btn.disabled = decorGrid.scrollLeft <= 1;
       } else {
-        ctx.globalAlpha = 0.06;
-        for (var p = 0; p < 400; p++) {
-          ctx.fillStyle = shade((Math.random() - 0.5) * 60);
-          ctx.fillRect(Math.random() * w, Math.random() * h, 1, 1);
+        btn.disabled = decorGrid.scrollLeft >= maxScroll - 1;
+      }
+    });
+  }
+
+  if (decorGrid) {
+    decorNavButtons.forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        var direction = btn.dataset.decorNav === 'prev' ? -1 : 1;
+        decorGrid.scrollBy({
+          left: direction * decorGrid.clientWidth * 0.92,
+          behavior: reduceMotion ? 'auto' : 'smooth'
+        });
+      });
+    });
+
+    var decorNavTicking = false;
+    decorGrid.addEventListener('scroll', function () {
+      if (decorNavTicking) return;
+      decorNavTicking = true;
+      requestAnimationFrame(function () {
+        updateDecorNav();
+        decorNavTicking = false;
+      });
+    }, { passive: true });
+
+    window.addEventListener('resize', updateDecorNav);
+    updateDecorNav();
+  }
+
+  /* ---------- Decor catalog filter ---------- */
+  var filterButtons = document.querySelectorAll('.decor-filter');
+  var decorCards = document.querySelectorAll('.decor-card');
+  var decorEmpty = document.querySelector('.decor-empty');
+
+  function applyFilter(category) {
+    var visibleCount = 0;
+    decorCards.forEach(function (card) {
+      if (category === 'all' || card.dataset.category === category) visibleCount++;
+    });
+    if (decorEmpty) decorEmpty.hidden = visibleCount !== 0;
+
+    if (reduceMotion) {
+      decorCards.forEach(function (card) {
+        var match = category === 'all' || card.dataset.category === category;
+        card.style.display = match ? '' : 'none';
+      });
+      return;
+    }
+
+    var enterIndex = 0;
+    decorCards.forEach(function (card) {
+      var match = category === 'all' || card.dataset.category === category;
+      var isHidden = card.style.display === 'none';
+      if (match && isHidden) {
+        /* Entering: unhide, start from the faded/scaled-down state, force a
+           reflow so the browser registers it, then transition to normal —
+           staggered a beat apart per card. */
+        card.style.display = '';
+        card.classList.add('is-filtered-out');
+        void card.offsetWidth;
+        (function (el, delay) {
+          setTimeout(function () { el.classList.remove('is-filtered-out'); }, delay);
+        })(card, enterIndex * 40);
+        enterIndex++;
+      } else if (!match && !isHidden) {
+        /* Leaving: fade out, then drop from layout once the transition
+           finishes. Guarded in case the same card gets re-matched by a
+           rapid second click before the timeout fires. */
+        card.classList.add('is-filtered-out');
+        setTimeout(function () {
+          if (card.classList.contains('is-filtered-out')) card.style.display = 'none';
+        }, 180);
+      }
+    });
+  }
+
+  filterButtons.forEach(function (btn) {
+    btn.addEventListener('click', function () {
+      filterButtons.forEach(function (b) { b.classList.remove('is-active'); });
+      btn.classList.add('is-active');
+      applyFilter(btn.dataset.filter);
+      if (decorGrid) {
+        decorGrid.scrollTo({ left: 0, behavior: reduceMotion ? 'auto' : 'smooth' });
+        /* Cards leaving the flow do so on a 180ms fade (see applyFilter) —
+           scrollWidth isn't settled until that finishes, so re-check nav
+           state after it instead of only on the pre-filter layout. */
+        setTimeout(updateDecorNav, 220);
+      }
+    });
+  });
+
+  /* ---------- Kinetic counters ----------
+     Ticks at a fixed ~40ms cadence rather than every animation frame, and
+     bumps a short-lived CSS class on each digit change — reads as a
+     mechanical tally counter (the real batch-count hardware on a production
+     line) advancing, not a generic smooth-interpolation count-up. */
+  var counters = document.querySelectorAll('[data-count-to]');
+  function animateCounter(el) {
+    var target = parseFloat(el.dataset.countTo);
+    var suffix = el.dataset.countSuffix || '';
+    if (reduceMotion) {
+      el.textContent = target + suffix;
+      return;
+    }
+    var duration = 1400;
+    var tickInterval = 40;
+    var start = null;
+    var lastVal = null;
+
+    function render(ts) {
+      if (!start) start = ts;
+      var progress = Math.min((ts - start) / duration, 1);
+      var eased = 1 - Math.pow(1 - progress, 3);
+      var val = Math.round(target * eased);
+      if (val !== lastVal) {
+        lastVal = val;
+        el.textContent = val + suffix;
+        el.classList.remove('is-ticking');
+        void el.offsetWidth; /* force reflow so the animation restarts */
+        el.classList.add('is-ticking');
+      }
+      if (progress < 1) {
+        setTimeout(function () { requestAnimationFrame(render); }, tickInterval);
+      }
+    }
+    requestAnimationFrame(render);
+  }
+
+  if ('IntersectionObserver' in window) {
+    var counterObserver = new IntersectionObserver(function (entries) {
+      entries.forEach(function (entry) {
+        if (entry.isIntersecting) {
+          animateCounter(entry.target);
+          counterObserver.unobserve(entry.target);
         }
+      });
+    }, { threshold: 0.6 });
+    counters.forEach(function (el) { counterObserver.observe(el); });
+  } else {
+    counters.forEach(animateCounter);
+  }
+
+  /* ---------- CTA form (no backend — placeholder submit) ---------- */
+  var CTA_STATUS_MESSAGE = {
+    ru: 'Заявка принята. Мы свяжемся с вами в течение рабочего дня.',
+    en: 'Request received. Our team will contact you within one business day.',
+    uz: "So'rov qabul qilindi. Bir ish kuni ichida siz bilan bog'lanamiz."
+  };
+  var ctaForm = document.getElementById('sample-form');
+  if (ctaForm) {
+    ctaForm.addEventListener('submit', function (e) {
+      e.preventDefault();
+      var status = document.getElementById('cta-status');
+      if (status) {
+        var lang = html.getAttribute('lang');
+        status.textContent = CTA_STATUS_MESSAGE[lang] || CTA_STATUS_MESSAGE.ru;
       }
-      ctx.globalAlpha = 1;
+      ctaForm.reset();
+    });
+  }
+
+  /* ---------- Hero visual: Swatch Float ---------- */
+  var swatchFloat = document.getElementById('swatch-float');
+
+  function runSwatchFloat() {
+    if (!swatchFloat) return;
+    if (reduceMotion) {
+      swatchFloat.classList.add('is-visible');
+      return;
     }
+    requestAnimationFrame(function () {
+      setTimeout(function () { swatchFloat.classList.add('is-visible'); }, 200);
+    });
+  }
+  runSwatchFloat();
 
-    var canvases = document.querySelectorAll("canvas.grain");
-    canvases.forEach(paintGrain);
+  /* ---------- Process flow: connector dots ----------
+     The draw-in stroke on .process-connector__progress is plain CSS gated
+     by .process-flow.is-visible (see style.css — same class the shared
+     reveal observer above already adds). The continuous travelling dot
+     can't be pure CSS since it needs to loop indefinitely without ever
+     re-triggering the entrance, so it's a one-shot Web Animations API
+     loop per connector, started the first time the section scrolls into
+     view — same one-shot IntersectionObserver shape as the kinetic
+     counters above, just animating a dot instead of a number. */
+  function initProcessFlowDots() {
+    var flow = document.querySelector('.process-flow');
+    if (!flow || reduceMotion || !('IntersectionObserver' in window)) return;
 
-    function paintPageTexture() {
-      var tile = 240;
-      var canvas = document.createElement("canvas");
-      canvas.width = tile;
-      canvas.height = tile;
-      var ctx = canvas.getContext("2d");
-
-      var base = getComputedStyle(document.documentElement).getPropertyValue("--paper").trim() || "#faf7ee";
-      var v = base.replace("#", "");
-      if (v.length === 3) v = v.split("").map(function (c) { return c + c; }).join("");
-      var rgb = [parseInt(v.substr(0, 2), 16), parseInt(v.substr(2, 2), 16), parseInt(v.substr(4, 2), 16)];
-
-      function tint(amount, alpha) {
-        var r = Math.max(0, Math.min(255, rgb[0] + amount));
-        var g = Math.max(0, Math.min(255, rgb[1] + amount));
-        var b = Math.max(0, Math.min(255, rgb[2] + amount));
-        return "rgba(" + r + "," + g + "," + b + "," + alpha + ")";
-      }
-
-      ctx.fillStyle = base;
-      ctx.fillRect(0, 0, tile, tile);
-
-      // fine paper fibres: short random-angle dashes, tileable via wrapped placement
-      for (var i = 0; i < 220; i++) {
-        var x = Math.random() * tile;
-        var y = Math.random() * tile;
-        var len = 3 + Math.random() * 9;
-        var angle = Math.random() * Math.PI;
-        var dx = Math.cos(angle) * len;
-        var dy = Math.sin(angle) * len;
-        ctx.strokeStyle = tint((Math.random() - 0.5) * 60, 0.05 + Math.random() * 0.07);
-        ctx.lineWidth = 0.6 + Math.random() * 0.7;
-        [[0, 0], [tile, 0], [-tile, 0], [0, tile], [0, -tile]].forEach(function (off) {
-          ctx.beginPath();
-          ctx.moveTo(x + off[0], y + off[1]);
-          ctx.lineTo(x + dx + off[0], y + dy + off[1]);
-          ctx.stroke();
-        });
-      }
-
-      // sparse flecks, like recycled-fibre paper
-      for (var j = 0; j < 50; j++) {
-        var fx = Math.random() * tile;
-        var fy = Math.random() * tile;
-        ctx.fillStyle = tint((Math.random() - 0.5) * 90, 0.04 + Math.random() * 0.05);
-        ctx.beginPath();
-        ctx.arc(fx, fy, 0.5 + Math.random() * 1.1, 0, Math.PI * 2);
-        ctx.fill();
-      }
-
-      document.body.style.backgroundImage = "url(" + canvas.toDataURL() + ")";
-      document.body.style.backgroundSize = tile + "px " + tile + "px";
-    }
-
-    paintPageTexture();
-    if (window.matchMedia) {
-      window.matchMedia("(prefers-color-scheme: dark)").addEventListener("change", paintPageTexture);
-    }
-    new MutationObserver(paintPageTexture).observe(document.documentElement, { attributes: true, attributeFilter: ["data-theme"] });
-
-    var reveals = document.querySelectorAll(".benefit-card, .proof-logo, .collection-card");
-    if ("IntersectionObserver" in window) {
-      var io = new IntersectionObserver(function (entries) {
-        entries.forEach(function (entry) {
-          if (entry.isIntersecting) {
-            entry.target.style.animation = "rise 0.7s cubic-bezier(.16,1,.3,1) forwards";
-            io.unobserve(entry.target);
-          }
-        });
-      }, { threshold: 0.15 });
-      reveals.forEach(function (el) {
-        el.style.opacity = "0";
-        el.style.transform = "translateY(14px)";
-        io.observe(el);
+    function runDots() {
+      flow.querySelectorAll('.process-connector').forEach(function (conn, idx) {
+        var dot = conn.querySelector('.process-connector__dot');
+        setTimeout(function () {
+          dot.style.opacity = '1';
+          dot.animate(
+            [
+              { transform: 'translateX(0px)', opacity: 0 },
+              { transform: 'translateX(0px)', opacity: 1, offset: 0.08 },
+              { transform: 'translateX(96px)', opacity: 1, offset: 0.92 },
+              { transform: 'translateX(100px)', opacity: 0 }
+            ],
+            { duration: 1600, easing: 'cubic-bezier(0.65,0,0.35,1)', iterations: Infinity, delay: 300 }
+          );
+        }, idx * 550);
       });
     }
-  })();
+
+    var flowObserver = new IntersectionObserver(function (entries) {
+      entries.forEach(function (entry) {
+        if (entry.isIntersecting) {
+          setTimeout(runDots, 700);
+          flowObserver.unobserve(entry.target);
+        }
+      });
+    }, { threshold: 0.4 });
+    flowObserver.observe(flow);
+  }
+
+  window.addEventListener('DOMContentLoaded', initProcessFlowDots);
+})();

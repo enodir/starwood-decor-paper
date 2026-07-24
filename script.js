@@ -4,30 +4,24 @@
   var reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
   /* ---------- Language switch: RU / EN / UZ ---------- */
-  var LANG_KEY = 'starwood-lang';
+  var LANG_KEY = 'decostar-lang';
   var LANGS = ['ru', 'en', 'uz'];
   var html = document.documentElement;
   var langOptionButtons = document.querySelectorAll('.lang-option');
 
   var META = {
     ru: {
-      title: 'STARWOOD — Декоративная бумага для ламината ДСП/МДФ',
-      description: 'STARWOOD производит декоративную бумагу для ламинирования ДСП и МДФ: коллекции декоров, контроль качества, поставка образцов.'
+      title: 'DECOSTAR — Декоративная бумага для ламината ДСП/МДФ',
+      description: 'DECOSTAR производит декоративную бумагу для ламинирования ДСП и МДФ: коллекции декоров, контроль качества, поставка образцов.'
     },
     en: {
-      title: 'STARWOOD — Decor Paper for Particleboard & MDF Laminate',
-      description: 'STARWOOD manufactures decor paper for particleboard and MDF lamination: decor collections, quality control, sample requests.'
+      title: 'DECOSTAR — Decor Paper for Particleboard & MDF Laminate',
+      description: 'DECOSTAR manufactures decor paper for particleboard and MDF lamination: decor collections, quality control, sample requests.'
     },
     uz: {
-      title: "STARWOOD — DSP va MDF laminati uchun dekorativ qog'oz",
-      description: "STARWOOD DSP va MDF laminatsiyasi uchun dekorativ qog'oz ishlab chiqaradi: dekor to'plamlari, sifat nazorati, namuna so'rovlari."
+      title: "DECOSTAR — DSP va MDF laminati uchun dekorativ qog'oz",
+      description: "DECOSTAR DSP va MDF laminatsiyasi uchun dekorativ qog'oz ishlab chiqaradi: dekor to'plamlari, sifat nazorati, namuna so'rovlari."
     }
-  };
-
-  var PROCESS_FLOW_ALT = {
-    ru: 'Схема процесса: сырьё, печать, пропитка, прессование, контроль качества',
-    en: 'Process diagram: raw material, printing, impregnation, pressing, quality control',
-    uz: 'Jarayon sxemasi: xom ashyo, chop etish, shimdirish, presslash, nazorat'
   };
 
   function applyLang(lang) {
@@ -43,19 +37,6 @@
     document.querySelectorAll('option[data-ru]').forEach(function (opt) {
       opt.textContent = opt.dataset[lang] || opt.dataset.ru;
     });
-    /* Each language has its own baked-in-text process-flow GIF (see
-       assets/img/process-flow/) — src/srcset are swapped here rather than
-       shipping all three and hiding two with CSS, since display:none
-       doesn't reliably stop a browser from fetching an <img>'s src. */
-    var flowImg = document.querySelector('.process-flow-img');
-    if (flowImg) {
-      flowImg.src = 'assets/img/process-flow/process-flow-' + lang + '.gif';
-      flowImg.alt = PROCESS_FLOW_ALT[lang];
-    }
-    var flowReducedSrc = document.querySelector('.process-flow-reduced-src');
-    if (flowReducedSrc) {
-      flowReducedSrc.srcset = 'assets/img/process-flow/process-flow-' + lang + '-static.png';
-    }
     try { localStorage.setItem(LANG_KEY, lang); } catch (e) {}
   }
 
@@ -83,7 +64,7 @@
   });
 
   /* ---------- Day/night theme ---------- */
-  var THEME_KEY = 'starwood-theme';
+  var THEME_KEY = 'decostar-theme';
   var themeToggle = document.getElementById('theme-toggle');
 
   function applyTheme(theme) {
@@ -337,45 +318,47 @@
   }
   runSwatchFloat();
 
-  /* ---------- Process pinned scroll scene ---------- */
-  function initProcessScene() {
-    var stages = document.querySelectorAll('.process-stage');
-    if (!stages.length) return;
+  /* ---------- Process flow: connector dots ----------
+     The draw-in stroke on .process-connector__progress is plain CSS gated
+     by .process-flow.is-visible (see style.css — same class the shared
+     reveal observer above already adds). The continuous travelling dot
+     can't be pure CSS since it needs to loop indefinitely without ever
+     re-triggering the entrance, so it's a one-shot Web Animations API
+     loop per connector, started the first time the section scrolls into
+     view — same one-shot IntersectionObserver shape as the kinetic
+     counters above, just animating a dot instead of a number. */
+  function initProcessFlowDots() {
+    var flow = document.querySelector('.process-flow');
+    if (!flow || reduceMotion || !('IntersectionObserver' in window)) return;
 
-    var hasGSAP = window.gsap && window.ScrollTrigger;
-
-    if (hasGSAP && !reduceMotion) {
-      gsap.registerPlugin(ScrollTrigger);
-      var processSection = document.querySelector('.process');
-
-      stages.forEach(function (stage, i) {
-        ScrollTrigger.create({
-          trigger: stage,
-          start: 'top center',
-          end: 'bottom center',
-          onEnter: function () { setActiveStage(i); },
-          onEnterBack: function () { setActiveStage(i); }
-        });
+    function runDots() {
+      flow.querySelectorAll('.process-connector').forEach(function (conn, idx) {
+        var dot = conn.querySelector('.process-connector__dot');
+        setTimeout(function () {
+          dot.style.opacity = '1';
+          dot.animate(
+            [
+              { transform: 'translateX(0px)', opacity: 0 },
+              { transform: 'translateX(0px)', opacity: 1, offset: 0.08 },
+              { transform: 'translateX(96px)', opacity: 1, offset: 0.92 },
+              { transform: 'translateX(100px)', opacity: 0 }
+            ],
+            { duration: 1600, easing: 'cubic-bezier(0.65,0,0.35,1)', iterations: Infinity, delay: 300 }
+          );
+        }, idx * 550);
       });
-    } else {
-      /* Fallback: IntersectionObserver-based stage activation, no pinning */
-      if ('IntersectionObserver' in window) {
-        var stageObserver = new IntersectionObserver(function (entries) {
-          entries.forEach(function (entry) {
-            var idx = Array.prototype.indexOf.call(stages, entry.target);
-            if (entry.isIntersecting) setActiveStage(idx);
-          });
-        }, { threshold: 0.5 });
-        stages.forEach(function (s) { stageObserver.observe(s); });
-      } else {
-        setActiveStage(0);
-      }
     }
 
-    function setActiveStage(index) {
-      stages.forEach(function (s, i) { s.classList.toggle('is-active', i <= index); });
-    }
+    var flowObserver = new IntersectionObserver(function (entries) {
+      entries.forEach(function (entry) {
+        if (entry.isIntersecting) {
+          setTimeout(runDots, 700);
+          flowObserver.unobserve(entry.target);
+        }
+      });
+    }, { threshold: 0.4 });
+    flowObserver.observe(flow);
   }
 
-  window.addEventListener('DOMContentLoaded', initProcessScene);
+  window.addEventListener('DOMContentLoaded', initProcessFlowDots);
 })();
