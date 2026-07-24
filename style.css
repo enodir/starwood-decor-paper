@@ -424,11 +424,12 @@ p.lead { font-size: clamp(1.05rem, 1.6vw, 1.25rem); color: var(--ink-grey); }
      height as the taller nav-island pill instead of floating at its own
      shorter natural height next to it. */
   align-items: stretch;
-  /* Islands no longer stretch to fill the row (see .logo/.nav-island/
-     .action-island below), so justify-content spreads their natural
-     content width across the row instead — logo pinned left, action
-     island pinned right, nav-island centered in the space between. */
-  justify-content: space-between;
+  /* No justify-content needed — the islands grow to fill 100% of the
+     leftover row width themselves (flex-grow, see .logo/.nav-island/
+     .action-island below), so there's no leftover space left for
+     justify-content to distribute. That's what keeps the interval between
+     islands down to exactly --header-pad (this gap) instead of ballooning
+     into whatever space is left over on wide viewports. */
   gap: var(--header-pad);
   /* Vertical padding only — horizontal inset comes from .container's own
      padding-inline (var(--section-vgap), shared with every other section)
@@ -444,11 +445,12 @@ p.lead { font-size: clamp(1.05rem, 1.6vw, 1.25rem); color: var(--ink-grey); }
 .nav-island,
 .action-island {
   pointer-events: auto;
-  /* Size to content, not stretched — .header-inner's justify-content:
-     space-between spreads the three natural-width pills across the row
-     instead. flex-shrink stays on so they can still compress on narrower
-     viewports before wrapping/hiding behavior takes over. */
-  flex: 0 1 auto;
+  /* Grow to soak up the row's leftover width instead of leaving it in the
+     gaps — narrows the interval between islands down to a fixed
+     --header-pad regardless of viewport width, rather than each pill
+     sitting at its own content width with a large, viewport-dependent gap
+     opening up between them on wide screens. */
+  flex: 1 1 auto;
   /* Fully transparent fill, on request — only the border marks the pill's
      edge, no backdrop-filter either since saturate() tints whatever shows
      through even with no background-color of its own. Ink is fixed
