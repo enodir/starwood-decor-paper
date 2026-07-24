@@ -42,14 +42,18 @@
 
   --container-w: 1200px;
   --gutter: clamp(1.25rem, 4vw, 3rem);
-  /* The actual visual left/right gap from a section's edge to its content:
-     .container centers at --container-w, so past that width the browser
-     adds an auto-margin on top of --gutter that just being the same
-     padding value doesn't capture (see .container). Section top/bottom
-     padding uses this same formula so vertical spacing tracks the real
-     horizontal gap — including that auto-margin — at every viewport width,
-     not just a single breakpoint. */
-  --section-vgap: calc(max(0px, (100vw - var(--container-w)) / 2) + var(--gutter));
+  /* The visual gap from a section's edge to its content, shared by all four
+     sides (see .container's padding-inline and .section's padding-top/
+     bottom). Past --container-w this grows like a centered container's
+     auto-margin would — but capped at 150px instead of growing forever,
+     since an uncapped version made the gap balloon past 400px on wide
+     monitors (e.g. ~408px at 1920px, ~730px on a 2560px screen), which
+     read as too much dead space. 150px was picked so it matches what an
+     uncapped auto-margin gives at ~1440px width (the point this system was
+     tuned to look right) — screens up to ~1440px still get the growing
+     open feel; wider screens plateau there instead of continuing to open
+     up. */
+  --section-vgap: calc(min(150px, max(0px, (100vw - var(--container-w)) / 2)) + var(--gutter));
   --radius-card: 4px;
 
   --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
@@ -227,10 +231,14 @@ h3 { font-size: clamp(1.25rem, 2vw, 1.6rem); text-transform: none; }
 p.lead { font-size: clamp(1.05rem, 1.6vw, 1.25rem); color: var(--ink-grey); }
 
 .container {
+  /* padding-inline alone (no max-width/margin:auto) — a capped padding on a
+     full-width box is already visually centered, since equal insets on
+     both sides read the same as a centered column. Using --section-vgap
+     here (not --gutter alone) is what keeps this in sync with .section's
+     top/bottom padding, including the same 150px cap past --container-w —
+     see --section-vgap. */
   width: 100%;
-  max-width: var(--container-w);
-  margin-inline: auto;
-  padding-inline: var(--gutter);
+  padding-inline: var(--section-vgap);
 }
 
 .skip-link {
