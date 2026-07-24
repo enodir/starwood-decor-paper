@@ -424,14 +424,19 @@ p.lead { font-size: clamp(1.05rem, 1.6vw, 1.25rem); color: var(--ink-grey); }
      height as the taller nav-island pill instead of floating at its own
      shorter natural height next to it. */
   align-items: stretch;
-  /* Fixed --header-pad gap between islands (matches the inset to every
-     edge) instead of letting justify-content:space-between push leftover
-     row width into the gaps — the three islands grow to fill that
-     leftover width themselves instead (flex-grow:1 below), so the gap
-     between islands stays the same size as the gap to the top border
-     regardless of viewport width. */
+  /* Islands no longer stretch to fill the row (see .logo/.nav-island/
+     .action-island below), so justify-content spreads their natural
+     content width across the row instead — logo pinned left, action
+     island pinned right, nav-island centered in the space between. */
+  justify-content: space-between;
   gap: var(--header-pad);
-  padding: var(--header-pad);
+  /* Vertical padding only — horizontal inset comes from .container's own
+     padding-inline (var(--section-vgap), shared with every other section)
+     since this element also carries the .container class in index.html.
+     A plain `padding: var(--header-pad)` shorthand here would reset
+     padding-left/right too, overriding .container's and leaving the header
+     row noticeably wider than every section below it. */
+  padding-block: var(--header-pad);
   position: relative;
 }
 
@@ -439,11 +444,11 @@ p.lead { font-size: clamp(1.05rem, 1.6vw, 1.25rem); color: var(--ink-grey); }
 .nav-island,
 .action-island {
   pointer-events: auto;
-  /* Grow to soak up the row's leftover width instead of leaving it in the
-     gaps (see .header-inner) — on request, so the pills read as one
-     continuous stretched bar rather than three content-sized chips with
-     wide gaps between them. */
-  flex: 1 1 auto;
+  /* Size to content, not stretched — .header-inner's justify-content:
+     space-between spreads the three natural-width pills across the row
+     instead. flex-shrink stays on so they can still compress on narrower
+     viewports before wrapping/hiding behavior takes over. */
+  flex: 0 1 auto;
   /* Fully transparent fill, on request — only the border marks the pill's
      edge, no backdrop-filter either since saturate() tints whatever shows
      through even with no background-color of its own. Ink is fixed
