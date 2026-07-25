@@ -477,6 +477,19 @@ p.lead { font-size: clamp(1.05rem, 1.6vw, 1.25rem); color: var(--ink-grey); }
   box-shadow: 0 14px 30px -8px rgba(30, 26, 23, 0.32), 0 1px 2px rgba(0, 0, 0, 0.05);
 }
 
+/* All three header islands go borderless on request — box-shadow still
+   marks their edge. */
+.logo,
+.nav-island,
+.action-island {
+  border-color: transparent;
+}
+.logo:hover,
+.nav-island:hover,
+.action-island:hover {
+  border-color: transparent;
+}
+
 .logo {
   position: relative;
   display: inline-flex;
