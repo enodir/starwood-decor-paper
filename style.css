@@ -390,7 +390,11 @@ p.lead { font-size: clamp(1.05rem, 1.6vw, 1.25rem); color: var(--ink-grey); }
    nav-island siblings and wrap the longer Russian label ("Запросить
    образец") onto two lines — let it size to its natural (longer) width
    instead. */
-.btn-sm { padding: 0.6em 1.1em; font-size: 0.78rem; white-space: nowrap; flex-shrink: 0; }
+/* font-weight 500 (not the .btn default's unset/400) — sharper on request
+   for the header CTA specifically, the heaviest real weight IBM Plex Mono
+   is loaded at (see assets/fonts.generated.css); .btn-sm is only used on
+   the header CTA, so this doesn't touch other buttons sitewide. */
+.btn-sm { padding: 0.6em 1.1em; font-size: 0.78rem; font-weight: 500; white-space: nowrap; flex-shrink: 0; }
 
 /* ---------- Header ----------
    Three floating "island" pills — logo, nav links, and a third pill
@@ -607,7 +611,10 @@ p.lead { font-size: clamp(1.05rem, 1.6vw, 1.25rem); color: var(--ink-grey); }
   position: relative;
   opacity: 0.85;
   text-decoration: none;
-  font-weight: 400;
+  /* 600 at rest (not 400) — sharper on request; still has 700 on hover as
+     headroom to distinguish the hover state. Both weights are real hinted
+     files (see assets/fonts.generated.css), not synthetic/faux-bold. */
+  font-weight: 600;
   transition: opacity 150ms;
   /* White ink coated in a black outline (reversed from black-on-white, on
      request) — the header islands have no background of their own (see
@@ -677,6 +684,9 @@ p.lead { font-size: clamp(1.05rem, 1.6vw, 1.25rem); color: var(--ink-grey); }
   color: inherit;
   font-family: var(--font-mono);
   font-size: 0.78rem;
+  /* 500, sharper on request — the heaviest real (non-synthetic) weight
+     IBM Plex Mono is loaded at, see assets/fonts.generated.css. */
+  font-weight: 500;
   letter-spacing: 0.02em;
   padding: 0.32em 0.55em;
   border-radius: 2px;
