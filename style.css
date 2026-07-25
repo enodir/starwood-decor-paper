@@ -523,11 +523,12 @@ p.lead { font-size: clamp(1.05rem, 1.6vw, 1.25rem); color: var(--ink-grey); }
   display: flex;
   align-items: center;
   gap: 1.25rem;
-  /* Spreads the 5 links across the pill's now-wider box (see flex:1 1 auto
-     above) instead of leaving them clumped at the left — reads like an
-     actual nav bar spanning its container rather than a left-anchored
-     cluster with dead space trailing off to the right. */
-  justify-content: space-between;
+  /* .main-nav is this pill's only flex child, so space-between had nothing
+     to distribute — it just placed that single block at the start,
+     leaving the 5 links clumped at the left with dead space trailing off
+     to the right on the now-wider (flex:1 1 auto) pill. center fixes that
+     by centering .main-nav as a whole within the pill. */
+  justify-content: center;
   /* Symmetric now that this pill holds only the nav links (the CTA button
      that used to sit at its right edge is its own island now). */
   padding: 0.55rem 1.5rem;
@@ -746,6 +747,11 @@ html[data-theme="day"] .theme-toggle__icon--day { opacity: 1; }
     left: var(--gutter);
     right: var(--gutter);
     flex-direction: column;
+    /* Links default to align-items:stretch (flex-direction:column's
+       initial value) — each <a> would span the dropdown's full width with
+       its text sitting at the left edge. center shrinks each link to its
+       own text width and centers that within the panel instead. */
+    align-items: center;
     background: rgba(200, 191, 172, 0.94);
     color: var(--press-black);
     backdrop-filter: saturate(140%) blur(12px);
