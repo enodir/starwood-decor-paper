@@ -617,13 +617,21 @@ p.lead { font-size: clamp(1.05rem, 1.6vw, 1.25rem); color: var(--ink-grey); }
 .action-island {
   display: flex;
   align-items: center;
-  /* Centered, not spread — CTA/lang-switch/toggle/burger are a single
-     related control cluster, not a list like .nav-island's links, so
-     space-between would visually disconnect them once this pill grows
-     wider than its content (see flex:1 1 auto above). */
-  justify-content: center;
-  gap: 0.75rem;
-  padding: 0.45rem 0.6rem;
+  /* space-evenly, not space-between/center — CTA/lang-switch/toggle should
+     sit equally distanced from each other AND from the pill's left/right
+     edges once it grows wider than its content (see flex:1 1 auto above),
+     not clumped in the middle with dead space at the edges, and not flush
+     against the edges with tighter gaps between items (space-between). No
+     explicit `gap` alongside it — gap adds a fixed minimum between items
+     on top of whatever space-evenly distributes, which would make the
+     between-item spacing larger than the edge spacing; leaving it at 0
+     lets space-evenly alone keep every interval equal. */
+  justify-content: space-evenly;
+  /* padding-block only — a horizontal padding-inline would add fixed space
+     at the edges on top of what space-evenly already distributes there,
+     making the edge gaps bigger than the between-item gaps instead of
+     equal to them. */
+  padding-block: 0.45rem;
 }
 
 /* Three-way language switch: RU / EN / UZ. A single "current/next" toggle
