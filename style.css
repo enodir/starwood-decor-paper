@@ -890,61 +890,57 @@ html[data-theme="day"] .theme-toggle__icon--day { opacity: 1; }
    the production-process stack-bar that used to be this motif's other
    instance was replaced first by a per-language process-flow-img diagram,
    then by the .process-card 5-step flow — see .process-track). The hero
-   now uses its own quieter motif, Swatch Float, below. */
+   has its own motif, the laminated-MDF stack, below. */
 
-/* ---------- Hero visual: Swatch Float ----------
-   A loose scatter of real paper-sample photos that settle into place on
-   load, then drift with an independent, slow ease-in-out bob per card
-   (different duration/delay each, so the motion reads as organic rather
-   than four things animating in lockstep). Entrance uses a transition
-   (interruptible) rather than a keyframe; the ambient bob is a keyframe
-   because it's decorative, continuous, and never needs to be interrupted
-   mid-flight. Both are neutralised by the sitewide prefers-reduced-motion
-   rule above (animation/transition durations collapse to ~0). */
-.swatch-float {
+/* ---------- Hero visual: laminated MDF stack ----------
+   The Swatch Float scatter of sample photos was replaced by a real-time
+   three.js scene (assets/mdf-stack.js): six boards fly in from the edges
+   of the frame, fan out, then compress into an aligned stack as the hero
+   scrolls away. Nothing here animates — all motion lives in the module,
+   which respects prefers-reduced-motion by rendering a single frame.
+
+   The canvas is transparent and sits directly on the hero photo, so the
+   only job of this block is to give the module a correctly-sized box and
+   to keep the error-path fallback out of the way. */
+.mdf-stack {
   position: relative;
-  aspect-ratio: 4 / 5;
-  max-width: 460px;
+  /* Square rather than the 4:3 the source scene used: the camera's field of
+     view is vertical, so height is what sets how large the boards read, and
+     the hero's headline is tall enough that a letterboxed frame left the
+     stack looking like a thumbnail beside it. */
+  aspect-ratio: 1 / 1;
+  max-width: 620px;
   margin-inline: auto;
 }
 
-.swatch-card {
+.mdf-stack > canvas,
+.mdf-stack__fallback img {
   position: absolute;
-  border-radius: var(--radius-card);
-  overflow: hidden;
-  box-shadow: 0 30px 60px -20px rgba(30, 26, 23, 0.6);
-  opacity: 0;
-  will-change: transform, opacity;
-  transition: opacity 700ms var(--ease-out), transform 700ms var(--ease-out);
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  display: block;
 }
-.swatch-card img { width: 100%; height: 100%; object-fit: cover; }
 
-.swatch-card--1 { top: 2%;    left: 0;    width: 46%; z-index: 2; transform: translateY(18px) scale(0.96) rotate(-6deg); transition-delay: 0ms; }
-.swatch-card--2 { top: 28%;   right: 0;   width: 52%; z-index: 3; transform: translateY(18px) scale(0.96) rotate(4deg);  transition-delay: 70ms; }
-.swatch-card--3 { bottom: 4%; left: 10%;  width: 48%; z-index: 1; transform: translateY(18px) scale(0.96) rotate(3deg);  transition-delay: 140ms; }
-.swatch-card--4 { bottom: 14%; right: 8%; width: 40%; z-index: 4; transform: translateY(18px) scale(0.96) rotate(-4deg); transition-delay: 210ms; }
-.swatch-card--5 { top: 40%;   left: 32%;  width: 30%; z-index: 5; transform: translateY(18px) scale(0.96) rotate(8deg);  transition-delay: 280ms; }
-.swatch-card--6 { top: -6%;   right: -2%; width: 34%; z-index: 6; transform: translateY(18px) scale(0.96) rotate(12deg); transition-delay: 350ms; }
-.swatch-card--7 { bottom: -8%; right: 26%; width: 32%; z-index: 2; transform: translateY(18px) scale(0.96) rotate(-10deg); transition-delay: 420ms; }
-.swatch-card--8 { top: 58%;   left: -6%;  width: 34%; z-index: 3; transform: translateY(18px) scale(0.96) rotate(9deg);  transition-delay: 490ms; }
+/* The canvas is opaque from the start and the frame simply begins empty:
+   the boards enter from outside it, so a poster image swapping out under
+   them would read as a flash on every load. The fallback only appears if
+   script.js decides the scene can't run (no WebGL, or not live after a few
+   seconds) or if there's no JS at all — see the <noscript> in index.html. */
+.mdf-stack__fallback { display: none; }
+.mdf-stack.is-fallback .mdf-stack__fallback { display: block; }
 
-.swatch-float.is-visible .swatch-card--1 { opacity: 1; transform: rotate(-6deg) translateY(0); animation: swatch-bob-1 5.3s var(--ease-in-out) 0.9s infinite; }
-.swatch-float.is-visible .swatch-card--2 { opacity: 1; transform: rotate(4deg) translateY(0);  animation: swatch-bob-2 6s   var(--ease-in-out) 1.6s infinite; }
-.swatch-float.is-visible .swatch-card--3 { opacity: 1; transform: rotate(3deg) translateY(0);  animation: swatch-bob-3 6.3s var(--ease-in-out) 1.1s infinite; }
-.swatch-float.is-visible .swatch-card--4 { opacity: 1; transform: rotate(-4deg) translateY(0); animation: swatch-bob-4 5.5s var(--ease-in-out) 2s   infinite; }
-.swatch-float.is-visible .swatch-card--5 { opacity: 1; transform: rotate(8deg) translateY(0);  animation: swatch-bob-5 5.7s var(--ease-in-out) 2.4s infinite; }
-.swatch-float.is-visible .swatch-card--6 { opacity: 1; transform: rotate(12deg) translateY(0); animation: swatch-bob-6 6.2s var(--ease-in-out) 1.3s infinite; }
-.swatch-float.is-visible .swatch-card--7 { opacity: 1; transform: rotate(-10deg) translateY(0); animation: swatch-bob-7 5.5s var(--ease-in-out) 1.9s infinite; }
-.swatch-float.is-visible .swatch-card--8 { opacity: 1; transform: rotate(9deg) translateY(0);  animation: swatch-bob-8 6.5s var(--ease-in-out) 0.6s infinite; }
+.mdf-stack__fallback img {
+  object-fit: cover;
+  border-radius: var(--radius-card);
+  box-shadow: 0 30px 60px -20px rgba(30, 26, 23, 0.6);
+}
 
-@keyframes swatch-bob-1 { 0%, 100% { transform: rotate(-6deg) translateY(0); } 50% { transform: rotate(-6deg) translateY(-7px); } }
-@keyframes swatch-bob-2 { 0%, 100% { transform: rotate(4deg) translateY(0); }  50% { transform: rotate(4deg) translateY(-10px); } }
-@keyframes swatch-bob-3 { 0%, 100% { transform: rotate(3deg) translateY(0); }  50% { transform: rotate(3deg) translateY(-6px); } }
-@keyframes swatch-bob-4 { 0%, 100% { transform: rotate(-4deg) translateY(0); } 50% { transform: rotate(-4deg) translateY(-9px); } }
-@keyframes swatch-bob-5 { 0%, 100% { transform: rotate(8deg) translateY(0); }  50% { transform: rotate(8deg) translateY(-8px); } }
-@keyframes swatch-bob-6 { 0%, 100% { transform: rotate(12deg) translateY(0); } 50% { transform: rotate(12deg) translateY(-9px); } }
-@keyframes swatch-bob-7 { 0%, 100% { transform: rotate(-10deg) translateY(0); } 50% { transform: rotate(-10deg) translateY(-6px); } }
-@keyframes swatch-bob-8 { 0%, 100% { transform: rotate(9deg) translateY(0); }  50% { transform: rotate(9deg) translateY(-10px); } }
+/* Portrait frame under the hero's single-column breakpoint — the module
+   widens the camera FOV to match (see resize() in assets/mdf-stack.js). */
+@media (max-width: 900px) {
+  .mdf-stack { max-width: 460px; }
+}
 
 /* ---------- Generic section rhythm ---------- */
 .section {
@@ -1503,15 +1499,61 @@ html[data-theme="day"] #sustainability { background: rgba(217, 210, 196, 0.55); 
   border-radius: var(--radius-card);
 }
 
-/* ---------- Social proof ---------- */
-.logo-row {
+/* ---------- Social proof ----------
+   The client list drifts right-to-left forever instead of sitting still.
+   Four copies of the five clients form one flat run of spans inside the
+   track, and the track travels exactly one copy plus one gap, so a copy
+   always lands where the previous one began and the loop has no seam.
+   With N copies the track is (N copies + (N-1) gaps) wide, which makes one
+   step (100% + gap) / N — hence the keyframe below. Two invariants keep
+   that arithmetic true: --marquee-gap is the gap for the whole flat track,
+   and --marquee-copies matches how many times the list is repeated in
+   index.html. Change either and change both. */
+.logo-marquee {
+  --marquee-gap: clamp(1.5rem, 5vw, 3.5rem);
+  --marquee-copies: 4;
+  overflow: hidden;
+  /* Logos dissolve at the edges instead of being guillotined by the
+     container, so the row reads as a continuous belt passing through. */
+  mask-image: linear-gradient(90deg, transparent, #000 7%, #000 93%, transparent);
+}
+
+.logo-marquee__track {
   display: flex;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
   align-items: center;
   justify-content: center;
-  gap: clamp(1.5rem, 5vw, 3.5rem);
+  width: max-content;
+  gap: var(--marquee-gap);
+  /* The duration covers one step (one copy), not the whole track: ~40px/s,
+     so a name takes about half a minute to cross the container. Ambient
+     drift rather than a news ticker. */
+  animation: logo-marquee 20s linear infinite;
 }
-.logo-row .client-logo {
+
+@keyframes logo-marquee {
+  to { transform: translateX(calc((-100% - var(--marquee-gap)) / var(--marquee-copies))); }
+}
+
+/* Hover pauses the belt so a name can actually be read (and so the
+   per-logo hover colour below is reachable). Gated to real pointers for
+   the same reason the logo hover itself is. */
+@media (hover: hover) and (pointer: fine) {
+  .logo-marquee:hover .logo-marquee__track { animation-play-state: paused; }
+}
+
+/* No motion: stop the belt, drop the repeats, and let the five remaining
+   logos centre themselves — exactly the static arrangement this section
+   had before. The sitewide reduced-motion rule collapses durations but
+   would leave the track parked mid-travel, so this is spelled out. */
+@media (prefers-reduced-motion: reduce) {
+  .logo-marquee { overflow: visible; mask-image: none; }
+  .logo-marquee__track { width: auto; flex-wrap: wrap; animation: none; }
+  .logo-marquee__track .client-logo:nth-child(n+6) { display: none; }
+}
+
+.logo-marquee .client-logo {
+  flex: none;
   filter: grayscale(1);
   opacity: 0.5;
   transition: filter 250ms, opacity 250ms;
@@ -1520,10 +1562,20 @@ html[data-theme="day"] #sustainability { background: rgba(217, 210, 196, 0.55); 
   letter-spacing: 0.03em;
   color: var(--ink-grey);
 }
+
+/* Alternating weight — every second logo sits darker on the page, so the
+   belt has a rhythm instead of reading as one uniform grey line. This is
+   why the track is a flat run of spans: five clients is an odd count, so
+   nth-child scoped per copy would restart the pattern at each seam and
+   collide two light logos. Across 20 spans the parity simply continues,
+   and the same client alternates between passes — which is the point, not
+   a glitch. */
+.logo-marquee .client-logo:nth-child(even) { opacity: 0.78; }
+
 /* Gated to real hover devices — on touch, a tap would otherwise leave a
    client logo "stuck" in full color until the user taps elsewhere. */
 @media (hover: hover) and (pointer: fine) {
-  .logo-row .client-logo:hover {
+  .logo-marquee .client-logo:hover {
     filter: grayscale(0);
     opacity: 1;
     color: var(--kraft-brown);

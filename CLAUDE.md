@@ -26,7 +26,8 @@ read or updated.
 Plain HTML5 + CSS3 + vanilla JS, GSAP/ScrollTrigger loaded from CDN (`unpkg.com/gsap@3.12.5`) with a
 non-GSAP fallback (IntersectionObserver) for reduced-motion / library-load-failure cases. Chosen over a
 framework because this is a single static page with no app state — a framework runtime would only add
-weight against the LCP budget that matters most for B2B buyers (see research §2).
+weight against the LCP budget that matters most for B2B buyers (see research §2). One more CDN library,
+three.js (`unpkg.com/three@0.184.0`), is loaded only for the hero motif — see `assets/mdf-stack.js` below.
 
 - `index.html` — the entire page, all ten PRD sections in one file.
 - `style.css` — single stylesheet. Design tokens as CSS custom properties at the top; sections follow in
@@ -34,6 +35,12 @@ weight against the LCP budget that matters most for B2B buyers (see research §2
 - `script.js` — single IIFE, no modules/bundler. Independent feature blocks: language switch, mobile nav,
   scroll-reveal, decor filter, kinetic counters, CTA form, the "layer press" signature animation, and the
   process ScrollTrigger scene.
+- `assets/mdf-stack.js` — the **one** ES module in the project (three.js is ESM-only, so it can't live in
+  `script.js`). Renders the hero's laminated-MDF board stack; `index.html` carries the import map for it in
+  `<head>` (import maps must be parsed before any module loads) and the `<script type="module">` tag at the
+  bottom. It reads `prefers-reduced-motion` itself rather than sharing `script.js`'s `reduceMotion`. Don't
+  convert the rest of the site to modules on account of this file — it's an isolated exception, and
+  `script.js` still has to run in browsers that would otherwise skip a module.
 - `assets/fonts.generated.css` + `assets/fonts/*.woff2` — self-hosted, subsetted (cyrillic + latin only —
   Uzbek Latin uses the latin subset) webfonts. Linked directly in `<head>` (not `@import`-ed from
   `style.css`) so the browser preloader fetches it in parallel with `style.css` instead of discovering it
@@ -42,10 +49,10 @@ weight against the LCP budget that matters most for B2B buyers (see research §2
   decor texture, used in the decor catalog), `uludag-mese-bg.jpg` (oak wood-grain, the sitewide texture
   backdrop — see `--bg-texture` in `style.css`), `hero-decor-swatches-{768,1920}.jpg` (fanned laminate/veneer
   sample photo, hero-section background — see `--hero-bg-photo`; "Samples of Wooden Floor" by cottonbro
-  studio via Pexels, free for commercial use, no attribution required), and `hero-swatch-{1..4}-{480,960}.
-  {webp,jpg}` (the four Swatch Float cards — square center-crops of real mill samples from
-  `assets/img/Papers/` via a one-off Pillow script, not yet re-run as a documented pipeline step below).
-  Everything else in the decor catalog is a CSS gradient placeholder (see "Content placeholders" below).
+  studio via Pexels, free for commercial use, no attribution required), and `hero-swatch-{1..8}-{480,960}.
+  {webp,jpg}` (square center-crops of real mill samples from `assets/img/Papers/` via a one-off Pillow
+  script — these fed the retired Swatch Float hero motif and are currently **unreferenced**; keep them
+  only if a future section wants sample thumbnails). Everything else in the decor catalog is a CSS gradient placeholder (see "Content placeholders" below).
 - `deploy/` — a separate Vercel deployment target (has its own `.vercel/`). It is **not** auto-synced with
   the root files — copy `index.html`/`style.css`/`script.js` into it manually before deploying.
 
@@ -133,19 +140,67 @@ static PNG fallback per language for `prefers-reduced-motion`). `.process-stage`
 is unchanged and still drives scroll-linked activation via `initProcessScene()`; it just no longer also
 toggles a `.stack-bar` sibling since that element is gone.
 
-It no longer appears in the hero — that slot was deliberately handed to a different motif, **"Swatch
-Float"** (`#swatch-float`, `.swatch-card`, `assets/img/hero-swatch-{1..4}-{480,960}.{webp,jpg}` sourced
-from `assets/img/Papers/`): four real paper-sample photos that settle into a loose scatter on load
-(interruptible CSS transition, staggered 70ms per card) and then drift with an independent, slow
-ease-in-out bob per card (`--ease-in-out`, 7.5–9s cycles, distinct delays) so the motion reads as organic
-rather than synced. Modeled after the floating hero preview cards on tasteskill.dev, re-themed with this
-site's own assets, radius (`--radius-card`, not tasteskill's rounder 18px), and shadow language.
+It no longer appears in the hero — that slot has its own motif, the **laminated-MDF stack** (`.mdf-stack`,
+`#mdf-stage`, `assets/mdf-stack.js`): a real-time three.js scene of six boards, each faced with one of the
+mill's decors, that fly in from the edges of the frame on load (staggered 110ms, easeBack overshoot so each
+board settles rather than stopping dead), hold in a loose fan, then compress into an aligned stack as the
+hero scrolls away. Scroll progress is mapped onto the first **34%** of the hero's exit (`SPAN` in the
+module), not its full height — the hero is a normal in-flow section, not the 200vh sticky track the scene
+was first designed against, so a 1:1 mapping would have finished the compression after the hero had
+already gone. `SPAN` is the whole feel of the interaction: smaller means the boards start moving sooner
+and are stacked sooner. The follow smoothing (`0.12`) is the other half of that — lower values read as the
+animation starting late rather than as weight. Everything
+in the scene is procedural (canvas-generated wood-grain and chipboard-core textures, ~10 hex values per
+finish), so it ships no image assets and a finish is retuned by editing `FINISHES`. The lights are keyed to
+the site palette rather than a neutral studio rig: raw-pulp sky / surface-dark ground bounce, and a
+kraft-brown rim so the boards carry the brand accent along one edge.
+
+This motif replaced Swatch Float (a CSS scatter of `hero-swatch-*` sample photos), which is gone from
+`index.html`, `style.css` and `script.js`. Its degradation ladder is the point of most of the module's
+complexity, so keep it intact when editing:
+
+- **The hero frame starts empty and that is deliberate** — the boards enter from outside it, so anything
+  shown first reads as a flash on every reload. The `<picture>` in `.mdf-stack` is `display: none` by
+  default and is an *error* path, not a poster frame. Do not "fix" the empty first moment by revealing it
+  earlier.
+- Who reveals it: `script.js` (not the module). It adds `.is-fallback` immediately when there's no WebGL
+  context at all, or after `MDF_GIVE_UP_MS` (5s) if the module still hasn't reported in — which covers a
+  blocked CDN, a failed import map, and old browsers that ignore `type="module"`. The module adds
+  `.is-live` after its first successful render; **that class is the handshake between the two files**, so
+  don't remove it as "unused CSS". With no JS at all, a `<noscript><style>` in the markup reveals the
+  image instead. The fallback `<img>` is `loading="lazy"` precisely so the normal path never fetches it.
+- `prefers-reduced-motion` → one static frame at p=0.35, no rAF loop and no scroll link.
+- Hero off screen → the rAF loop idles, since the pinned process scene further down wants the frame budget
+  more than an invisible canvas does. Sizing comes from a `ResizeObserver`, never from reading
+  `clientWidth` inside the loop.
 
 Do not add a showpiece to every section — the design brief for this project explicitly calls for *one bold
-moment per major section slot* (Swatch Float in the hero, the animated process-flow-img diagram in
+moment per major section slot* (the MDF stack in the hero, the animated process-flow-img diagram in
 process, Layer Press on decor cards) and quiet, disciplined motion everywhere else (progressive
 fade/translateY reveals,
 grayscale→color logo hovers, kinetic counters).
+
+**Client marquee** (`.logo-marquee`, `#clients`): the "trusted by" list drifts right-to-left forever
+instead of sitting still, with **every second logo set darker** (`opacity: .78` against the base `.5`) so
+the belt has a rhythm rather than reading as one uniform grey line. Four copies of the five clients form a
+single **flat** run of 20 spans in the track — not four nested rows — and the track travels exactly one
+copy plus one gap, so a copy always lands where the previous one began and the loop has no seam. Three
+invariants hold it together and all are easy to break by accident:
+
+1. The track must stay flat. The alternation is `:nth-child(even)` on the track, and five clients is an
+   **odd** count, so nth-child scoped per copy would restart the pattern at every seam and put two light
+   logos side by side. Flat, the parity carries through the wrap. (A given client therefore alternates
+   between passes — that's the intent, not a glitch.)
+2. `--marquee-copies` in `style.css` must equal how many times the list is repeated in `index.html`, since
+   the keyframe's step is `(100% + gap) / copies`.
+3. `(copies − 1) × copy width` must exceed the container width, or a hole opens at the right edge partway
+   through the cycle. Five short client names give a ~770px copy against a 1200px container, which is why
+   it takes four copies and not the usual two.
+
+The repeats are `aria-hidden` so the five clients are announced once. Hover pauses the belt (hover-capable
+pointers only, matching the per-logo hover rule), and `prefers-reduced-motion` stops the track and hides
+the repeats (`:nth-child(n+6)`), landing back on the plain centered row the section used to have — the sitewide reduced-motion
+rule alone would leave the track parked mid-travel, so that case is spelled out explicitly.
 
 **Registration-mark eyebrow device** (`.eyebrow` + `.crosshair`): a small crosshair + mono-font label
 before every section heading, standing in for generic "eyebrow" labels. Numbering (`01`/`02`/...) is
@@ -193,7 +248,7 @@ one-at-a-time edits anchored on enough surrounding context to be unique, not a b
 
 When adding new translatable copy, always add all three spans together — there's no fallback/missing-key
 handling, an element missing a language's span will simply be blank in that language. A few accessibility
-attributes (`aria-label` on the mobile nav, the decor-filter group, the swatch-float illustration) are still
+attributes (`aria-label` on the mobile nav, the decor-filter group, the hero MDF-stack illustration) are still
 Russian-only regardless of active language — a known gap, not a bug, if you have time to close it follow
 the `META`-object pattern used for title/description.
 

@@ -16,9 +16,20 @@
 <meta name="twitter:image" content="assets/img/process-flow/decor-wood-1024.jpg">
 <link rel="icon" type="image/png" href="assets/favicon.png">
 <link rel="preload" as="font" href="assets/fonts/pt-sans-narrow-700-cyrillic.woff2" type="font/woff2" crossorigin>
-<link rel="preload" as="image" href="assets/img/process-flow/hero-swatch-2-480.webp" imagesrcset="assets/img/process-flow/hero-swatch-2-480.webp 480w, assets/img/process-flow/hero-swatch-2-960.webp 960w" imagesizes="200px" type="image/webp">
+<link rel="preconnect" href="https://unpkg.com" crossorigin>
 <link rel="stylesheet" href="assets/fonts.generated.css">
 <link rel="stylesheet" href="style.css">
+<!-- three.js for the hero's laminated-MDF stack (assets/mdf-stack.js). Same CDN
+     and pinned-version policy as GSAP at the bottom of this file. The import map
+     must be parsed before any module loads, hence its place here in <head>. -->
+<script type="importmap">
+{
+  "imports": {
+    "three": "https://unpkg.com/three@0.184.0/build/three.module.js",
+    "three/": "https://unpkg.com/three@0.184.0/"
+  }
+}
+</script>
 </head>
 <body>
 <div class="bg-texture" aria-hidden="true"></div>
@@ -96,55 +107,21 @@
       </div>
 
       <div class="hero-visual">
-        <div class="swatch-float" id="swatch-float" role="img" aria-label="Образцы декоративной бумаги: эбен, орех, светлый капа-нарост, венге, дуб, белая корона, дуб вотан и интерьерный золотой">
-          <figure class="swatch-card swatch-card--1">
-            <picture>
-              <source type="image/webp" srcset="assets/img/process-flow/hero-swatch-1-480.webp 480w, assets/img/process-flow/hero-swatch-1-960.webp 960w" sizes="180px">
-              <img src="assets/img/process-flow/hero-swatch-1-480.jpg" srcset="assets/img/process-flow/hero-swatch-1-480.jpg 480w, assets/img/process-flow/hero-swatch-1-960.jpg 960w" sizes="180px" width="480" height="480" loading="eager" decoding="async" alt="">
-            </picture>
-          </figure>
-          <figure class="swatch-card swatch-card--2">
-            <picture>
-              <source type="image/webp" srcset="assets/img/process-flow/hero-swatch-2-480.webp 480w, assets/img/process-flow/hero-swatch-2-960.webp 960w" sizes="200px">
-              <img src="assets/img/process-flow/hero-swatch-2-480.jpg" srcset="assets/img/process-flow/hero-swatch-2-480.jpg 480w, assets/img/process-flow/hero-swatch-2-960.jpg 960w" sizes="200px" width="480" height="480" loading="eager" decoding="async" alt="">
-            </picture>
-          </figure>
-          <figure class="swatch-card swatch-card--3">
-            <picture>
-              <source type="image/webp" srcset="assets/img/process-flow/hero-swatch-3-480.webp 480w, assets/img/process-flow/hero-swatch-3-960.webp 960w" sizes="190px">
-              <img src="assets/img/process-flow/hero-swatch-3-480.jpg" srcset="assets/img/process-flow/hero-swatch-3-480.jpg 480w, assets/img/process-flow/hero-swatch-3-960.jpg 960w" sizes="190px" width="480" height="480" loading="eager" decoding="async" alt="">
-            </picture>
-          </figure>
-          <figure class="swatch-card swatch-card--4">
-            <picture>
-              <source type="image/webp" srcset="assets/img/process-flow/hero-swatch-4-480.webp 480w, assets/img/process-flow/hero-swatch-4-960.webp 960w" sizes="170px">
-              <img src="assets/img/process-flow/hero-swatch-4-480.jpg" srcset="assets/img/process-flow/hero-swatch-4-480.jpg 480w, assets/img/process-flow/hero-swatch-4-960.jpg 960w" sizes="170px" width="480" height="480" loading="eager" decoding="async" alt="">
-            </picture>
-          </figure>
-          <figure class="swatch-card swatch-card--5">
-            <picture>
-              <source type="image/webp" srcset="assets/img/process-flow/hero-swatch-5-480.webp 480w, assets/img/process-flow/hero-swatch-5-960.webp 960w" sizes="140px">
-              <img src="assets/img/process-flow/hero-swatch-5-480.jpg" srcset="assets/img/process-flow/hero-swatch-5-480.jpg 480w, assets/img/process-flow/hero-swatch-5-960.jpg 960w" sizes="140px" width="480" height="480" loading="eager" decoding="async" alt="">
-            </picture>
-          </figure>
-          <figure class="swatch-card swatch-card--6">
-            <picture>
-              <source type="image/webp" srcset="assets/img/process-flow/hero-swatch-6-480.webp 480w, assets/img/process-flow/hero-swatch-6-960.webp 960w" sizes="160px">
-              <img src="assets/img/process-flow/hero-swatch-6-480.jpg" srcset="assets/img/process-flow/hero-swatch-6-480.jpg 480w, assets/img/process-flow/hero-swatch-6-960.jpg 960w" sizes="160px" width="480" height="480" loading="eager" decoding="async" alt="">
-            </picture>
-          </figure>
-          <figure class="swatch-card swatch-card--7">
-            <picture>
-              <source type="image/webp" srcset="assets/img/process-flow/hero-swatch-7-480.webp 480w, assets/img/process-flow/hero-swatch-7-960.webp 960w" sizes="150px">
-              <img src="assets/img/process-flow/hero-swatch-7-480.jpg" srcset="assets/img/process-flow/hero-swatch-7-480.jpg 480w, assets/img/process-flow/hero-swatch-7-960.jpg 960w" sizes="150px" width="480" height="480" loading="eager" decoding="async" alt="">
-            </picture>
-          </figure>
-          <figure class="swatch-card swatch-card--8">
-            <picture>
-              <source type="image/webp" srcset="assets/img/process-flow/hero-swatch-8-480.webp 480w, assets/img/process-flow/hero-swatch-8-960.webp 960w" sizes="160px">
-              <img src="assets/img/process-flow/hero-swatch-8-480.jpg" srcset="assets/img/process-flow/hero-swatch-8-480.jpg 480w, assets/img/process-flow/hero-swatch-8-960.jpg 960w" sizes="160px" width="480" height="480" loading="eager" decoding="async" alt="">
-            </picture>
-          </figure>
+        <!-- Signature motif: laminated MDF boards fly in, fan, then compress
+             into a stack as the hero scrolls away (assets/mdf-stack.js).
+             The frame starts empty on purpose — the boards enter from off
+             screen, so showing anything first would read as a flash. The
+             <picture> is therefore hidden until something is known to have
+             gone wrong: no WebGL, or the module still not live after a few
+             seconds (both handled in script.js), or no JS at all (the
+             <noscript> rule below). It is never part of a normal load. -->
+        <div class="mdf-stack" role="img" aria-label="Плиты МДФ, облицованные декоративной бумагой: Астана, Белая корона, Улудаг Меше, Ачик Кок, Венге и Дуб Катания">
+          <canvas id="mdf-stage" aria-hidden="true"></canvas>
+          <picture class="mdf-stack__fallback">
+            <source media="(min-width: 769px)" srcset="assets/img/process-flow/hero-decor-swatches-1920.jpg">
+            <img src="assets/img/process-flow/hero-decor-swatches-768.jpg" width="768" height="512" loading="lazy" decoding="async" alt="">
+          </picture>
+          <noscript><style>.mdf-stack__fallback { display: block; }</style></noscript>
         </div>
       </div>
     </div>
@@ -595,12 +572,50 @@
           <span data-i18n-lang="ru">НАМ ДОВЕРЯЮТ</span><span data-i18n-lang="en">TRUSTED BY</span><span data-i18n-lang="uz">BIZGA ISHONISHADI</span>
         </p>
       </div>
-      <div class="logo-row reveal">
-        <span class="client-logo">MEBEL&nbsp;GROUP</span>
-        <span class="client-logo">PARQUET&nbsp;PRO</span>
-        <span class="client-logo">NORDWOOD</span>
-        <span class="client-logo">FASADE&nbsp;LINE</span>
-        <span class="client-logo">DOMPLIT</span>
+      <!-- Endless right-to-left marquee. The five clients are repeated four
+           times as a single flat run of spans — not four nested rows —
+           because the alternating light/dark rhythm comes from
+           :nth-child(even) on the track, and with an odd number of clients
+           a per-row nth-child would restart the pattern at every seam and
+           put two light logos side by side. Flat, the parity carries
+           straight through the wrap.
+
+           The track slides by exactly one copy, so a copy always arrives
+           where the previous one started and the loop has no seam. Four
+           copies and not two: the track has to stay at least a container
+           width longer than one step, or a hole opens at the right edge
+           mid-cycle — five short client names make one copy only ~770px
+           against a 1200px container. If you add or remove clients, check
+           that (copies - 1) x copy width still exceeds the container, and
+           keep --marquee-copies in style.css in step with the markup.
+
+           Repeats are aria-hidden, so the five clients are announced once.
+           Under prefers-reduced-motion the track stops and the repeats are
+           hidden (see style.css), landing back on the plain centered row
+           this section used to be. -->
+      <div class="logo-marquee reveal">
+        <div class="logo-marquee__track">
+          <span class="client-logo">MEBEL&nbsp;GROUP</span>
+          <span class="client-logo">PARQUET&nbsp;PRO</span>
+          <span class="client-logo">NORDWOOD</span>
+          <span class="client-logo">FASADE&nbsp;LINE</span>
+          <span class="client-logo">DOMPLIT</span>
+          <span class="client-logo" aria-hidden="true">MEBEL&nbsp;GROUP</span>
+          <span class="client-logo" aria-hidden="true">PARQUET&nbsp;PRO</span>
+          <span class="client-logo" aria-hidden="true">NORDWOOD</span>
+          <span class="client-logo" aria-hidden="true">FASADE&nbsp;LINE</span>
+          <span class="client-logo" aria-hidden="true">DOMPLIT</span>
+          <span class="client-logo" aria-hidden="true">MEBEL&nbsp;GROUP</span>
+          <span class="client-logo" aria-hidden="true">PARQUET&nbsp;PRO</span>
+          <span class="client-logo" aria-hidden="true">NORDWOOD</span>
+          <span class="client-logo" aria-hidden="true">FASADE&nbsp;LINE</span>
+          <span class="client-logo" aria-hidden="true">DOMPLIT</span>
+          <span class="client-logo" aria-hidden="true">MEBEL&nbsp;GROUP</span>
+          <span class="client-logo" aria-hidden="true">PARQUET&nbsp;PRO</span>
+          <span class="client-logo" aria-hidden="true">NORDWOOD</span>
+          <span class="client-logo" aria-hidden="true">FASADE&nbsp;LINE</span>
+          <span class="client-logo" aria-hidden="true">DOMPLIT</span>
+        </div>
       </div>
     </div>
   </section>
@@ -710,5 +725,9 @@
 <script src="https://unpkg.com/gsap@3.12.5/dist/gsap.min.js" defer></script>
 <script src="https://unpkg.com/gsap@3.12.5/dist/ScrollTrigger.min.js" defer></script>
 <script src="script.js" defer></script>
+<!-- Hero motif. type="module" is deferred by default; if three.js fails to
+     resolve, or the browser has no WebGL, this simply never runs and the
+     hero keeps its static fallback image. -->
+<script type="module" src="assets/mdf-stack.js"></script>
 </body>
 </html>

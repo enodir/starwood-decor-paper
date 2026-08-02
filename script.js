@@ -303,20 +303,35 @@
     });
   }
 
-  /* ---------- Hero visual: Swatch Float ---------- */
-  var swatchFloat = document.getElementById('swatch-float');
+  /* ---------- Hero visual: laminated-MDF stack, failure path only ----------
+     The scene itself is not driven from here — three.js is ESM-only, so it
+     lives in assets/mdf-stack.js and is loaded as a module from index.html
+     (it reads prefers-reduced-motion itself rather than borrowing this
+     file's `reduceMotion`). What this block owns is the decision to give
+     up on it: the hero frame is meant to start empty and have the boards
+     fly into it, so the static fallback is revealed only once the scene is
+     known not to be coming — no WebGL at all, or nothing rendered after
+     MDF_GIVE_UP_MS (module blocked, CDN down, an old browser ignoring
+     type="module"). Deliberately long: a slow CDN that arrives at second
+     three should still play the animation rather than get pre-empted. */
+  var MDF_GIVE_UP_MS = 5000;
+  var mdfStack = document.querySelector('.mdf-stack');
 
-  function runSwatchFloat() {
-    if (!swatchFloat) return;
-    if (reduceMotion) {
-      swatchFloat.classList.add('is-visible');
-      return;
+  if (mdfStack) {
+    var hasWebGL = false;
+    try {
+      var probe = document.createElement('canvas');
+      hasWebGL = !!(probe.getContext('webgl') || probe.getContext('experimental-webgl'));
+    } catch (e) { /* some privacy modes throw here rather than return null */ }
+
+    if (!hasWebGL) {
+      mdfStack.classList.add('is-fallback');
+    } else {
+      setTimeout(function () {
+        if (!mdfStack.classList.contains('is-live')) mdfStack.classList.add('is-fallback');
+      }, MDF_GIVE_UP_MS);
     }
-    requestAnimationFrame(function () {
-      setTimeout(function () { swatchFloat.classList.add('is-visible'); }, 200);
-    });
   }
-  runSwatchFloat();
 
   /* ---------- Process flow: connector dots ----------
      The draw-in stroke on .process-connector__progress is plain CSS gated
