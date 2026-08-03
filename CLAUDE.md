@@ -176,7 +176,7 @@ complexity, so keep it intact when editing:
 
 Do not add a showpiece to every section — the design brief for this project explicitly calls for *one bold
 moment per major section slot* (the MDF stack in the hero, the animated process-flow-img diagram in
-process, Layer Press on decor cards) and quiet, disciplined motion everywhere else (progressive
+process, Cover Flow in the decor catalog) and quiet, disciplined motion everywhere else (progressive
 fade/translateY reveals,
 grayscale→color logo hovers, kinetic counters).
 
@@ -206,6 +206,46 @@ rule alone would leave the track parked mid-travel, so that case is spelled out 
 before every section heading, standing in for generic "eyebrow" labels. Numbering (`01`/`02`/...) is
 reserved for the production-process section only, because that's the one place content is a real
 sequence — do not add numbering to the advantages grid or other parallel (non-sequential) lists.
+
+**Decor catalog — Cover Flow** (`.decor-grid`, `initDecorCoverflow` block in `script.js`): the catalog is a
+3D Cover Flow. The centre card faces the reader at full size; neighbours rotate toward it, scale down,
+recede and dim with distance. This is now the decor section's bold moment — the Layer Press dog-ear
+(`.decor-card__corner`) is still on the cards but reads as the card-level detail underneath it.
+
+The whole thing is driven by `scrollLeft` and nothing else: no current index, no gesture handling, no
+carousel state. A swipe, a trackpad, the prev/next buttons, click-to-centre and scroll-snap all feed the
+same number, so nothing can drift out of sync, and with JS off or `prefers-reduced-motion` set it is
+simply the flat snap scroller the markup describes. Three traps are already paid for — don't re-introduce
+them:
+
+1. **Never move a card horizontally with `transform`.** CSS scroll-snap measures the *transformed* border
+   box, so a sideways pull moves the snap points with the card: the rail then settles with no card
+   centred, and click-to-centre feeds its own output back in and never converges. Cards are packed via
+   `--decor-overlap` (negative margins, i.e. layout) for exactly this reason. Scale and rotation are safe
+   because they leave the box's centre in place.
+2. **Rotation saturates at one card out** (`Math.min(1, a)`). Scaled linearly, cards beyond two units
+   cross 90° and show their back faces.
+3. **`--decor-overlap` is gated behind `.is-coverflow`**, added by JS only when motion is allowed. The
+   overlap only makes sense once cards are rotated and scaled down to tuck under each other; on flat
+   full-size cards it just hides half of each one.
+
+Measure spacing with `decorStep()` (from `offsetLeft`), never from `--decor-card-w` + gap — the negative
+margins mean the two disagree. And anything the layout function sets on a card (transform, opacity,
+z-index, `.is-decor-focus`, `data-decor-offset`) has to be cleared again in its filtered-out branch, or a
+card hidden while centred keeps its focus shadow forever.
+
+The filter's exit animation is now a fade only, not the old fade-and-settle: `transform` belongs to the
+coverflow and can't be shared with a CSS class.
+
+**Sustainability cards** (`.sustain-card`) carry the one hover in the light sections: a 2px registration
+rule along the top edge — a short kraft tab at rest, drawn to full width in `--registration-cyan` on hover
+— plus a 3px lift, a lighter surface and a warm shadow. It is deliberately *not* a fourth showpiece; it's
+the "quiet, disciplined motion" tier, reusing the registration-mark language rather than inventing a new
+motif. Their surface is `--raw-pulp-dark`, which is one step darker than it looks like it should be for a
+reason: `--raw-pulp` is the same hex as the day theme's `#sustainability` tint, so at that value the cards
+vanish into the section in day theme. `--raw-pulp-dark` separates in both directions — lighter than the
+night section, darker than the day one — and is about as dark as the surface can go while `--ink-grey`
+body copy still clears AA (5.3:1).
 
 **Footer is a "colophon"**, not a generic three-column footer — mono-font production specs
 (`.colophon`) above the standard nav/contact columns, styled after a print-industry colophon block.

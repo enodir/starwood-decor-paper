@@ -130,7 +130,10 @@
   /* ---------- Decor catalog carousel ----------
      Prev/next buttons drive the same horizontal scroller a trackpad or
      touch swipe would — buttons just call scrollBy, scroll-snap (see
-     .decor-grid) handles landing on a card edge either way. */
+     .decor-grid) handles landing on a card edge either way. The Cover Flow
+     3D layer below rides on top of that same scroll position; it never
+     takes over scrolling, which is why swipe, trackpad, the buttons and
+     scroll-snap all keep working untouched. */
   var decorGrid = document.getElementById('decor-grid');
   var decorNavButtons = document.querySelectorAll('[data-decor-nav]');
 
@@ -150,8 +153,11 @@
     decorNavButtons.forEach(function (btn) {
       btn.addEventListener('click', function () {
         var direction = btn.dataset.decorNav === 'prev' ? -1 : 1;
+        /* One card per press, not one screenful: in Cover Flow the centre
+           card is the subject, so the buttons step the subject along. */
+        var step = decorStep();
         decorGrid.scrollBy({
-          left: direction * decorGrid.clientWidth * 0.92,
+          left: direction * step,
           behavior: reduceMotion ? 'auto' : 'smooth'
         });
       });
@@ -163,12 +169,165 @@
       decorNavTicking = true;
       requestAnimationFrame(function () {
         updateDecorNav();
+        layoutCoverflow();
         decorNavTicking = false;
       });
     }, { passive: true });
 
-    window.addEventListener('resize', updateDecorNav);
+    window.addEventListener('resize', function () {
+      updateDecorNav();
+      layoutCoverflow();
+    });
     updateDecorNav();
+  }
+
+  /* ---------- Decor catalog: Cover Flow ----------
+     Each card is rotated, scaled and pushed back in proportion to how far
+     its centre sits from the centre of the scroller. That's the whole
+     model — there is no carousel state, no current index, no gesture
+     handling. Position comes from scrollLeft, which the browser already
+     manages, so a swipe, a trackpad, the prev/next buttons and scroll-snap
+     all feed the same number and nothing can drift out of sync.
+
+     The card's own width is the unit of distance, so the look is identical
+     at every breakpoint even though card width isn't.
+
+     Not applied when the user prefers reduced motion: rotating slabs
+     swinging past on every scroll is exactly the kind of motion that rule
+     exists for. Without it (and without JS) the section is still the plain
+     snap scroller the markup describes. */
+  var DECOR_MAX_ROT = 44;      /* deg, at one card-width from centre */
+  var DECOR_MAX_DEPTH = 180;   /* px pushed back, same distance */
+  var DECOR_MIN_SCALE = 0.68;
+  /* Neighbours dim, they don't ghost. Fading them hard made the rail look
+     like a stack of transparencies rather than physical sample cards; the
+     depth and rotation already say "further away". The floor exists so the
+     cards nearest the scroller's clipped edges dissolve instead of being
+     guillotined by the overflow. */
+  var DECOR_MIN_OPACITY = 0.25;
+  var decorCoverflowCards = [];
+
+  /* Distance between adjacent card centres, measured from layout rather
+     than derived from CSS. The cards overlap by a negative margin, so this
+     is neither the card width nor the gap; taking it from two real
+     offsetLefts means the spacing can be retuned in CSS alone. offsetLeft
+     is layout geometry — unaffected by the transforms applied below. */
+  function decorStep() {
+    var seen = null;
+    for (var i = 0; i < decorCoverflowCards.length; i++) {
+      var el = decorCoverflowCards[i];
+      if (el.style.display === 'none') continue;
+      if (seen) return el.offsetLeft - seen.offsetLeft;
+      seen = el;
+    }
+    return seen ? seen.offsetWidth : decorGrid.clientWidth * 0.9;
+  }
+
+  function layoutCoverflow() {
+    if (!decorGrid || reduceMotion) return;
+    var box = decorGrid.getBoundingClientRect();
+    var mid = box.left + box.width / 2;
+    /* Spacing between adjacent card centres, so d === 1 means "exactly one
+       card away from the middle" at any breakpoint. */
+    var unit = decorStep();
+    if (!unit) return;
+
+    for (var i = 0; i < decorCoverflowCards.length; i++) {
+      var card = decorCoverflowCards[i];
+      if (card.style.display === 'none' || card.classList.contains('is-filtered-out')) {
+        /* Reset everything this function owns, not just the transform — a
+           card that was centred when the filter hid it would otherwise keep
+           its focus shadow and be counted as the centre card forever. */
+        card.style.transform = '';
+        card.style.opacity = '';
+        card.style.zIndex = '';
+        card.classList.remove('is-decor-focus');
+        card.removeAttribute('data-decor-offset');
+        continue;
+      }
+      /* offsetLeft, not getBoundingClientRect: the rect is post-transform,
+         and this card already carries a transform from the previous frame,
+         which would feed its own output back into its input. */
+      var centre = box.left - decorGrid.scrollLeft + card.offsetLeft + card.offsetWidth / 2;
+      var d = (centre - mid) / unit;
+      /* Past ~2.2 cards out the difference is invisible but the maths keeps
+         going; clamping stops far-off cards from collapsing to nothing and
+         from fighting each other for z-index. */
+      var c = Math.max(-2.2, Math.min(2.2, d));
+      var a = Math.abs(c);
+
+      /* Rotation saturates at one card out; past that only depth, scale and
+         opacity keep receding. That's the Cover Flow look — a wall of side
+         cards at a constant angle — and it's also a correctness fix: left
+         to scale linearly, cards beyond two units cross 90° and present
+         their back faces to the viewer. */
+      var rot = (c < 0 ? -1 : 1) * DECOR_MAX_ROT * Math.min(1, a);
+      var depth = -a * DECOR_MAX_DEPTH;
+      var scale = Math.max(DECOR_MIN_SCALE, 1 - a * 0.2);
+      var opacity = Math.max(DECOR_MIN_OPACITY, 1 - a * 0.3);
+
+      /* Order matters: transforms apply right to left — scale, then the
+         rotation, then the push back into the scene.
+
+         Note what is NOT here: a sideways pull toward the centre. Packing
+         the neighbours in that way is tempting and looks right, but CSS
+         scroll-snap computes snap areas from the *transformed* border box,
+         so shifting cards horizontally also shifts their snap points; the
+         rail then settles between two cards with nothing centred, and
+         click-to-centre never converges. The cards are packed in layout
+         instead (negative margins, see --decor-overlap in style.css),
+         which snap measures correctly. Scale and rotation are safe here
+         because they leave the box's centre where it was. */
+      card.style.transform =
+        'translateZ(' + depth.toFixed(1) + 'px) rotateY(' + rot.toFixed(2) + 'deg) scale(' + scale.toFixed(3) + ')';
+      card.style.opacity = opacity.toFixed(3);
+      /* Nearest to the middle paints on top, so the rotated neighbours
+         tuck behind the card being read rather than over it. */
+      card.style.zIndex = String(Math.round(100 - a * 20));
+
+      /* Marks a card as "click me to centre this". The centre card is the
+         one already being read, so it gets no pointer affordance. */
+      var centred = a < 0.4;
+      if (centred) card.removeAttribute('data-decor-offset');
+      else card.setAttribute('data-decor-offset', c > 0 ? 'after' : 'before');
+      /* The card being read gets a real drop shadow, so it reads as lifted
+         off the rail rather than as the same card at a bigger scale. */
+      card.classList.toggle('is-decor-focus', centred);
+    }
+  }
+
+  if (decorGrid) {
+    decorCoverflowCards = Array.prototype.slice.call(decorGrid.querySelectorAll('.decor-card'));
+
+    /* Click an off-centre card to bring it in. Native scrolling again — it
+       drives the same scrollLeft everything else reads.
+
+       Deliberately NOT scrollIntoView({inline:'center'}): that measures the
+       card's *transformed* box, and these cards are pulled inward by the
+       coverflow, so it lands short — then the relayout pulls the card in
+       again, and it converges somewhere off-centre and never focuses.
+       offsetLeft is layout geometry, which transforms don't touch. */
+    decorCoverflowCards.forEach(function (card) {
+      card.addEventListener('click', function () {
+        if (!card.hasAttribute('data-decor-offset')) return;
+        decorGrid.scrollTo({
+          left: card.offsetLeft + card.offsetWidth / 2 - decorGrid.clientWidth / 2,
+          behavior: reduceMotion ? 'auto' : 'smooth'
+        });
+      });
+    });
+
+    /* The class is the switch for everything the coverflow needs from CSS
+       — currently the negative margins that pack the cards. Adding it here
+       rather than in the markup means no-JS and reduced-motion users never
+       get layout that only makes sense once the transforms are running. */
+    if (!reduceMotion) decorGrid.classList.add('is-coverflow');
+
+    layoutCoverflow();
+    /* Images arrive late and can change card height, which moves nothing
+       horizontally but does change the box the transforms are measured
+       against — recompute once everything has loaded. */
+    window.addEventListener('load', layoutCoverflow);
   }
 
   /* ---------- Decor catalog filter ---------- */
@@ -190,6 +349,11 @@
       });
       return;
     }
+
+    /* A filter change reshuffles the whole rail, so the scroller goes back
+       to the start — otherwise the surviving cards slide under a scroll
+       position that was meaningful for a different set. */
+    if (decorGrid) decorGrid.scrollTo({ left: 0, behavior: 'smooth' });
 
     var enterIndex = 0;
     decorCards.forEach(function (card) {
@@ -213,9 +377,17 @@
         card.classList.add('is-filtered-out');
         setTimeout(function () {
           if (card.classList.contains('is-filtered-out')) card.style.display = 'none';
+          /* Dropping a card out of the flow moves every card after it, so
+             the 3D layout has to be recomputed once it's actually gone. */
+          layoutCoverflow();
         }, 180);
       }
     });
+
+    /* And again after the entering cards have all been released, so the
+       last one to arrive lands at its correct depth rather than flat. */
+    setTimeout(layoutCoverflow, enterIndex * 40 + 60);
+    layoutCoverflow();
   }
 
   filterButtons.forEach(function (btn) {

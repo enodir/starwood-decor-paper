@@ -856,10 +856,14 @@ html[data-theme="day"] .theme-toggle__icon--day { opacity: 1; }
   }
 }
 
+/* Even columns and a tight gutter, so the board stack sits close to the
+   headline rather than marooned at the far edge of the container. The copy
+   column loses ~30px against the old 1.1/0.9 split, which the h1 absorbs
+   without picking up a line at any width. */
 .hero-grid {
   display: grid;
-  grid-template-columns: 1.1fr 0.9fr;
-  gap: clamp(2rem, 5vw, 4rem);
+  grid-template-columns: 1fr 1fr;
+  gap: clamp(1rem, 2vw, 1.75rem);
   align-items: center;
 }
 
@@ -909,8 +913,10 @@ html[data-theme="day"] .theme-toggle__icon--day { opacity: 1; }
      the hero's headline is tall enough that a letterboxed frame left the
      stack looking like a thumbnail beside it. */
   aspect-ratio: 1 / 1;
-  max-width: 620px;
-  margin-inline: auto;
+  /* Fills its column, and hugs the column's left edge instead of centring,
+     so the stack reads as belonging to the headline beside it. */
+  max-width: 720px;
+  margin-inline: 0 auto;
 }
 
 .mdf-stack > canvas,
@@ -939,7 +945,9 @@ html[data-theme="day"] .theme-toggle__icon--day { opacity: 1; }
 /* Portrait frame under the hero's single-column breakpoint — the module
    widens the camera FOV to match (see resize() in assets/mdf-stack.js). */
 @media (max-width: 900px) {
-  .mdf-stack { max-width: 460px; }
+  /* Single column here, so the left-hugging margin above has nothing to
+     hug — re-centre it under the copy. */
+  .mdf-stack { max-width: 520px; margin-inline: auto; }
 }
 
 /* ---------- Generic section rhythm ---------- */
@@ -1181,37 +1189,69 @@ html[data-theme="day"] #sustainability { background: rgba(217, 210, 196, 0.55); 
    track. */
 .decor-grid {
   --decor-gap: 1.5rem;
-  --decor-nav-basis: 4;
+  /* Width of one card. Cover Flow trades cards-per-screen for size: the
+     centre card is the subject and the neighbours are context, so this is
+     a single width rather than the old "N cards per screenful" basis. */
+  --decor-card-w: 340px;
+  /* How much each card tucks under its neighbour. Cover Flow wants the
+     cards packed, and this is done in LAYOUT (negative margins on the
+     card) rather than with a horizontal transform, because scroll-snap
+     measures the transformed box — a transform-based pull moves the snap
+     points too, and the rail then settles with no card centred.
+
+     Zero unless .is-coverflow is present. The overlap only makes sense
+     once cards are rotated away and scaled down to sit under each other;
+     with no JS, or under prefers-reduced-motion, the cards stay flat and
+     full-size, and overlapping them would just hide half of each one. */
+  --decor-overlap: 0px;
   display: flex;
   gap: var(--decor-gap);
   overflow-x: auto;
   scroll-snap-type: x mandatory;
-  scroll-padding-left: 0;
   scrollbar-width: none;
   -webkit-overflow-scrolling: touch;
+
+  /* The stage. Cards are transformed by script.js against their distance
+     from this box's centre; everything here just sets up the space they
+     are transformed in. Without JS none of the transforms are applied and
+     this stays exactly what it was before — a plain snap scroller. */
+  perspective: 1400px;
+  perspective-origin: 50% 44%;
+  transform-style: preserve-3d;
+  /* Rotated neighbours lean out of the box; the padding is room for them
+     to lean into, and for the shadow of the centre card. */
+  padding-block: 1.5rem 2.25rem;
 }
 .decor-grid::-webkit-scrollbar { display: none; }
+
+/* Spacers, so the first and last cards can reach the centre of the stage.
+   Pseudo-elements rather than padding on the scroller: trailing padding on
+   a flex scroll container is unreliable across engines, and unlike real
+   spacer divs these can't be caught by the filter's querySelectorAll. */
+.decor-grid::before,
+.decor-grid::after {
+  content: '';
+  /* + overlap cancels the first/last card's own negative outer margin. */
+  flex: 0 0 calc(50% - var(--decor-card-w) / 2 - var(--decor-gap) + var(--decor-overlap));
+}
+
+.decor-grid.is-coverflow { --decor-overlap: 30px; }
+
 @media (max-width: 1024px) {
-  /* 2 cards visible, on request's spirit of a partial-peek carousel at
-     narrower widths — the 4-up basis would squeeze cards under the
-     230px floor .decor-card sets below. */
-  .decor-grid { --decor-nav-basis: 2; }
+  .decor-grid { --decor-card-w: 300px; }
 }
 @media (max-width: 640px) {
-  /* 1 card + a peek of the next, standard mobile-carousel affordance
-     that hints there's more to scroll to. */
-  .decor-grid { --decor-nav-basis: 1.15; }
+  /* Barely any overlap on phones: one card fills most of the screen, so
+     tucking neighbours further under it would hide them completely. */
+  .decor-grid { --decor-card-w: min(74vw, 300px); perspective: 900px; }
+  .decor-grid.is-coverflow { --decor-overlap: 12px; }
 }
 
 .decor-card {
   position: relative;
-  /* --decor-nav-basis cards per screenful, minus the gaps between them —
-     same formula at every breakpoint, only the basis variable (set on
-     .decor-grid) changes. min-width keeps cards readable if a future
-     basis value would otherwise squeeze them past legibility. */
-  flex: 0 0 calc((100% - (var(--decor-nav-basis) - 1) * var(--decor-gap)) / var(--decor-nav-basis));
-  min-width: 210px;
-  scroll-snap-align: start;
+  flex: 0 0 var(--decor-card-w);
+  margin-inline: calc(var(--decor-overlap) * -1);
+  scroll-snap-align: center;
   background: var(--pulp-white);
   border-radius: var(--radius-card);
   overflow: hidden;
@@ -1219,16 +1259,34 @@ html[data-theme="day"] #sustainability { background: rgba(217, 210, 196, 0.55); 
   /* Tinted warm (ink-grey) rather than flat black, to match the paper-stock
      surfaces these cards sit on. */
   box-shadow: 0 1px 0 rgba(74, 67, 60, 0.14);
-  transition: opacity 280ms var(--ease-out), transform 280ms var(--ease-out);
+  /* transform is deliberately NOT transitioned: script.js rewrites it every
+     frame from the card's distance to the centre of the stage, and any
+     transition would smear one frame's target into the next. The motion
+     comes from the scroll itself, which is already smooth. */
+  transition: opacity 280ms var(--ease-out), box-shadow 280ms var(--ease-out);
+  transform-origin: 50% 50%;
+  will-change: transform;
 }
-/* Filter show/hide: fade + settle instead of an instant display swap —
-   "elements appearing or disappearing without transition feel broken."
-   Exit is shorter than enter (180ms vs 280ms) — quick to leave, considered
-   to arrive. script.js toggles this class, waits it out, then sets
-   display:none/'' so filtered-out cards actually leave the grid flow. */
+/* The card at the centre of the stage. script.js toggles this; the shadow
+   is what sells it as lifted forward off the rail. */
+.decor-card.is-decor-focus {
+  box-shadow: 0 26px 50px -22px rgba(30, 26, 23, 0.55), 0 1px 0 rgba(74, 67, 60, 0.14);
+}
+
+/* Off-centre cards are click targets that bring themselves to the centre
+   (see initDecorCoverflow) — say so with the cursor. The centre card has
+   nowhere to go, so script.js clears this on it. */
+.decor-card[data-decor-offset] { cursor: pointer; }
+
+/* Filter show/hide: a fade, not a fade + settle. The old version also
+   scaled and nudged the card on the way out, but transform now belongs to
+   the coverflow and can't be shared. The 3D re-layout that follows a
+   filter change supplies plenty of movement on its own. Exit is shorter
+   than enter (180ms vs 280ms) — quick to leave, considered to arrive.
+   script.js toggles this class, waits it out, then sets display:none/''
+   so filtered-out cards actually leave the grid flow. */
 .decor-card.is-filtered-out {
   opacity: 0;
-  transform: scale(0.95) translateY(8px);
   transition-duration: 180ms;
   pointer-events: none;
 }
@@ -1444,13 +1502,73 @@ html[data-theme="day"] #sustainability { background: rgba(217, 210, 196, 0.55); 
   grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
   gap: 2rem;
 }
+/* Darker stock than the other light-section cards: --raw-pulp-dark, not
+   --pulp-white. It has to be --raw-pulp-dark specifically and not the one
+   step lighter --raw-pulp, because --raw-pulp is the *same hex* as the day
+   theme's #sustainability tint — at that value the cards vanished into the
+   section in day theme with only the border holding them apart. One step
+   darker separates in both directions: lighter than the night section,
+   darker than the day one. Body copy still clears AA at 5.3:1 (headings
+   9.5:1), so this is about as dark as the surface can go. */
 .sustain-card {
-  border: 1px solid var(--raw-pulp-dark);
-  background: var(--pulp-white);
+  position: relative;
+  overflow: hidden;
+  /* Warm-tinted rather than flat black, same as .decor-card's shadow. */
+  border: 1px solid rgba(74, 67, 60, 0.18);
+  background: var(--raw-pulp-dark);
   border-radius: var(--radius-card);
   padding: 1.75rem;
+  /* Named properties, never `all` — and no scale, which would drag the
+     type along with it. 200ms sits in the responsive band for something
+     hovered occasionally rather than constantly. */
+  transition:
+    transform 200ms var(--ease-out),
+    box-shadow 200ms var(--ease-out),
+    border-color 200ms ease,
+    background-color 200ms ease;
 }
-.sustain-card h3 { margin-bottom: 0.6rem; }
+
+/* A registration rule along the top edge: a short tab at rest, so it reads
+   as a mark on the card rather than decoration, and it draws the full
+   width on hover. scaleX from the left is transform-only, so the draw
+   costs nothing to animate. */
+.sustain-card::after {
+  content: '';
+  position: absolute;
+  inset: 0 0 auto 0;
+  height: 2px;
+  background: var(--kraft-brown);
+  transform: scaleX(0.14);
+  transform-origin: left center;
+  transition: transform 240ms var(--ease-out), background-color 200ms ease;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .sustain-card:hover {
+    transform: translateY(-3px);
+    border-color: var(--kraft-brown-light);
+    background: var(--pulp-white);
+    box-shadow: 0 12px 24px -12px rgba(30, 26, 23, 0.35);
+  }
+  .sustain-card:hover::after {
+    transform: scaleX(1);
+    background: var(--registration-cyan);
+  }
+  .sustain-card:hover h3 { color: var(--kraft-brown-dark); }
+}
+
+/* Reduced motion keeps the colour response — it's what carries the
+   meaning — and drops the lift and the draw, which are pure movement. */
+@media (prefers-reduced-motion: reduce) {
+  .sustain-card:hover { transform: none; }
+  .sustain-card::after,
+  .sustain-card:hover::after { transform: scaleX(0.14); }
+}
+
+.sustain-card h3 {
+  margin-bottom: 0.6rem;
+  transition: color 200ms ease;
+}
 .sustain-card p { font-size: 0.94rem; }
 
 /* ---------- Certificates / stats ---------- */

@@ -258,12 +258,19 @@ function layout(p, now, withIntro) {
 
   group.rotation.x = lerp(-0.10, -0.06, e);
   group.rotation.y = lerp(-0.25, -0.85, e);
-  group.scale.setScalar(lerp(0.95, 1.1, e));
+  group.scale.setScalar(lerp(0.95, 1.0, e));
 
-  // Dollied in from the source scene's framing: this canvas is a column of
-  // the hero grid rather than most of a viewport, so the same distance left
-  // the stack reading as a thumbnail.
-  camera.position.set(0, lerp(1.7, 3.0, e), lerp(4.5, 3.9, e));
+  // Dollied well in from the source scene's framing: this canvas is a
+  // column of the hero grid rather than most of a viewport, so the same
+  // distance left the stack reading as a thumbnail.
+  //
+  // The move is now a rise rather than a dolly — z is fixed and only the
+  // height changes. The closed stack is the tight case: it scales up and
+  // swings to -0.85 rad, and a *lower* camera foreshortens it less, so
+  // shaving height off the end (or pulling z in) runs it off the side of
+  // the canvas. Raise the start height or lower the end and re-check the
+  // e=1 framing before assuming there's room.
+  camera.position.set(0, lerp(1.5, 3.15, e), 3.9);
   camera.lookAt(0, 0, 0);
 }
 
