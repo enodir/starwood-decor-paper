@@ -1366,117 +1366,418 @@ html[data-theme="day"] #sustainability { background: rgba(217, 210, 196, 0.55); 
 
 .section-cta { margin-top: 2.5rem; }
 
-/* ---------- Process ---------- */
-/* Five-card flow diagram, replacing the earlier per-language baked-text GIF
-   + separate scroll-highlighted stage list. Content is real i18n spans now
-   (no raster text), so applyLang needs no special-casing for this section
-   any more. Entrance rides the sitewide .reveal/.stagger system (see
-   style.css's generic rules) — .process-flow gets .is-visible from the same
-   IntersectionObserver as every other .reveal target, which also gates the
-   connector-line draw-in below; the continuous travelling dot is the one
-   piece that needs its own JS (see initProcessFlowDots in script.js),
-   started once off that same .is-visible moment. */
+/* ---------- Process — the delivery line ----------
+   Ported from the "Production Process" design file (Claude Design project
+   4c58dab7, file `Production Process.dc.html`). It replaces the earlier
+   five-card flow with connector lines and a travelling cyan dot: a DECOSTAR
+   truck arrives at the inbound gate, unloads three rolls of base paper and
+   leaves, while four line stations — rotogravure, melamine bath, hot press,
+   lab bench — run their own machinery and each step card lights in turn.
+
+   Three things hold the choreography together:
+
+   1. One clock. --pflow-cycle drives the truck, the rolls, the status flags,
+      the diamond nodes and the card highlights, so the truck can never
+      arrive out of step with the card that announces it. The station
+      machinery deliberately runs on its own short loops (a press stroke,
+      a spinning cylinder) — those read as continuous plant noise, not as
+      part of the delivery sequence, and retiming them with the cycle would
+      make the press stroke absurdly slow.
+   2. Percentages, not pixels. Stations sit at 30/50/70/90% of the band and
+      the cards at fifths of the same grid, so the line stays registered
+      with the cards at every container width.
+   3. It only runs when it's on screen (.is-running, added by
+      initProcessLine in script.js). Twenty-odd infinite animations are not
+      something to leave burning while the reader is three sections away.
+
+   The design's own palette (a cool blue-grey "industry" system on light
+   grey) is not this site's, so only its structure came across: every colour
+   below resolves to an existing site token through the --pf-* aliases, which
+   is also what makes the day/night toggle repaint the whole line for free.
+   The blueprint corner marks on each card are drawn as eight gradient
+   layers on one pseudo-element rather than the design's four <i> elements —
+   same registration-mark language the .eyebrow crosshair already speaks,
+   without twenty empty nodes in the markup. */
+
+.process-flow { --pflow-cycle: 9s; }
+
+.process {
+  /* Line art on the dark shell. --pf-accent-line is the *stroke* accent and
+     is deliberately not --registration-cyan: at 1.2px on this background the
+     brand cyan reads as a dark smudge, so strokes use the lighter eyebrow
+     cyan and fills use the brand one. In day theme both collapse back to
+     --registration-cyan, which is what that palette wants. */
+  --pf-ink: var(--shell-ink);
+  --pf-line: var(--shell-border-strong);
+  --pf-line-soft: rgba(255, 255, 255, 0.22);
+  --pf-fill: rgba(255, 255, 255, 0.07);
+  --pf-fill-2: rgba(255, 255, 255, 0.13);
+  --pf-accent: var(--registration-cyan);
+  --pf-accent-line: var(--shell-eyebrow);
+  --pf-accent-soft: rgba(28, 140, 160, 0.45);
+  --pf-accent-tint: rgba(28, 140, 160, 0.28);
+  /* Tyres and chassis are the one thing that can't follow --pf-ink: ink is
+     pulp-white on the night shell, which gave the truck white tyres. Rubber
+     stays dark in both themes and takes its light spoke marks from a fixed
+     pale value rather than a theme token, for the same reason. */
+  --pf-tyre: #2A241E;
+  --pf-tyre-mark: rgba(247, 245, 241, 0.75);
+}
+html[data-theme="day"] .process {
+  --pf-line-soft: rgba(30, 26, 23, 0.22);
+  --pf-fill: rgba(30, 26, 23, 0.05);
+  --pf-fill-2: rgba(30, 26, 23, 0.1);
+  --pf-accent-line: #14697A;
+  --pf-accent-soft: rgba(28, 140, 160, 0.3);
+  --pf-accent-tint: rgba(28, 140, 160, 0.16);
+  --pf-tyre: #1E1A17;
+}
+
+.pflow-lead {
+  max-width: 46ch;
+  margin: -0.75rem 0 2.5rem;
+  color: var(--shell-muted);
+  font-size: 0.98rem;
+}
+
+/* ---------- The band ---------- */
+.pflow-band {
+  position: relative;
+  height: 158px;
+  overflow: hidden;
+  border-bottom: 1px solid var(--pf-ink);
+}
+.pflow-band__label {
+  position: absolute;
+  right: 0;
+  top: 4px;
+  font-family: var(--font-mono);
+  font-size: 0.62rem;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--shell-muted-soft);
+}
+/* Road markings: a dashed centre line the truck drives along. */
+.pflow-band__road {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 7px;
+  height: 1px;
+  background: repeating-linear-gradient(to right, var(--pf-line) 0 14px, transparent 14px 28px);
+}
+
+.pflow-flag {
+  position: absolute;
+  left: 50%;
+  bottom: 92px;
+  transform: translateX(-50%);
+  font-family: var(--font-mono);
+  font-size: 0.62rem;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--pf-accent-line);
+  border: 1px solid var(--pf-accent);
+  padding: 3px 8px;
+  white-space: nowrap;
+  opacity: 0;
+}
+.pflow-flag--gate { left: 10%; bottom: 108px; }
+
+.pflow-station {
+  position: absolute;
+  bottom: 8px;
+  width: 128px;
+  margin-left: -64px;
+}
+.pflow-station svg { display: block; overflow: visible; }
+.pflow-station--print { left: 30%; }
+.pflow-station--resin { left: 50%; }
+.pflow-station--press { left: 70%; }
+.pflow-station--qc    { left: 90%; }
+
+.pflow-rolls { position: absolute; left: 10%; bottom: 8px; width: 0; z-index: 2; }
+.pflow-roll {
+  position: absolute;
+  bottom: 0;
+  width: 22px;
+  height: 22px;
+  border: 1.5px solid var(--pf-accent-line);
+  border-radius: 50%;
+  background: var(--pf-fill);
+  opacity: 0;
+}
+/* The core of the roll — a paper reel read end-on. */
+.pflow-roll::after {
+  content: "";
+  position: absolute;
+  inset: 6.5px;
+  border: 1.5px solid var(--pf-accent);
+  border-radius: 50%;
+}
+.pflow-roll--1 { left: -69px; }
+.pflow-roll--2 { left: -41px; }
+.pflow-roll--3 { left: -13px; }
+
+.pflow-truck {
+  position: absolute;
+  left: 10%;
+  bottom: 8px;
+  width: 134px;
+  margin-left: -73px;
+  /* Parked off the left edge until the line starts running, so the truck is
+     never caught mid-frame on a page that hasn't animated yet. */
+  transform: translateX(-460px);
+}
+.pflow-truck svg { display: block; overflow: visible; }
+
+/* ---------- Stage nodes ---------- */
+.pflow-nodes {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  margin-top: -1px;
+}
+.pflow-node {
+  width: 11px;
+  height: 11px;
+  margin: 0 auto;
+  border: 1px solid var(--pf-ink);
+  background: transparent;
+  transform: rotate(45deg) translateY(-4px);
+}
+
+/* ---------- Step cards ---------- */
 .process-track {
   display: grid;
-  grid-template-columns: repeat(5, 1fr);
+  grid-template-columns: repeat(5, minmax(0, 1fr));
   gap: 1.25rem;
-  position: relative;
+  margin-top: 1.4rem;
 }
-
-/* Connectors are grid siblings of .process-card but position:absolute lifts
-   them out of grid flow entirely, so the 5 .process-card items still land
-   one-per-column via auto-placement — same trick as the reference markup,
-   just with left/width authored per nth-of-type instead of inline styles
-   from a JS layout loop (content here is static, not templated). */
-.process-connector {
-  position: absolute;
-  top: 34px;
-  height: 40px;
-  pointer-events: none;
-  z-index: 0;
-}
-.process-connector svg { width: 100%; height: 100%; display: block; overflow: visible; }
-.process-connector:nth-of-type(1) { left: 10%; width: 20%; }
-.process-connector:nth-of-type(2) { left: 30%; width: 20%; }
-.process-connector:nth-of-type(3) { left: 50%; width: 20%; }
-.process-connector:nth-of-type(4) { left: 70%; width: 20%; }
-
-.process-connector__line { fill: none; stroke: var(--shell-border-strong); stroke-width: 1.5; }
-.process-connector__progress {
-  fill: none;
-  stroke: var(--registration-cyan);
-  stroke-width: 1.5;
-  stroke-dasharray: 100;
-  stroke-dashoffset: 100;
-}
-/* Gated by .is-visible (added by the shared reveal observer, see
-   style.css's .reveal/.stagger) rather than firing on page load — this
-   section is well below the fold, so animating it immediately would mean
-   it finishes long before it's ever seen. */
-.process-flow.is-visible .process-connector__progress { animation: process-draw 900ms var(--ease-out) forwards; }
-.process-connector:nth-of-type(1) .process-connector__progress { animation-delay: 160ms; }
-.process-connector:nth-of-type(2) .process-connector__progress { animation-delay: 300ms; }
-.process-connector:nth-of-type(3) .process-connector__progress { animation-delay: 440ms; }
-.process-connector:nth-of-type(4) .process-connector__progress { animation-delay: 580ms; }
-@keyframes process-draw { to { stroke-dashoffset: 0; } }
-
-.process-connector__dot { fill: var(--registration-cyan); opacity: 0; }
-
 .process-card {
   position: relative;
-  z-index: 1;
-  background: rgba(255, 255, 255, 0.05);
   border: 1px solid var(--shell-border);
-  border-radius: var(--radius-card);
-  padding: 1.5rem 1.1rem 1.25rem;
-  text-align: center;
-  transition: transform 300ms var(--ease-out), border-color 300ms, background 300ms;
+  background: transparent;
+  padding: 1.4rem 1.1rem 1.6rem;
+  transition: border-color 300ms var(--ease-out), background 300ms;
 }
-.process-card:hover {
-  transform: translateY(-4px);
-  border-color: var(--registration-cyan);
-  background: rgba(255, 255, 255, 0.08);
+.process-card:hover { border-color: var(--pf-accent); background: rgba(255, 255, 255, 0.04); }
+/* Blueprint registration marks, one per corner, drawn as eight 1px bars on
+   a single pseudo-element inset past the card edge. */
+.process-card::after {
+  content: "";
+  position: absolute;
+  inset: -6px;
+  pointer-events: none;
+  background-image:
+    linear-gradient(var(--pf-line), var(--pf-line)), linear-gradient(var(--pf-line), var(--pf-line)),
+    linear-gradient(var(--pf-line), var(--pf-line)), linear-gradient(var(--pf-line), var(--pf-line)),
+    linear-gradient(var(--pf-line), var(--pf-line)), linear-gradient(var(--pf-line), var(--pf-line)),
+    linear-gradient(var(--pf-line), var(--pf-line)), linear-gradient(var(--pf-line), var(--pf-line));
+  background-size: 1px 11px, 11px 1px, 1px 11px, 11px 1px, 1px 11px, 11px 1px, 1px 11px, 11px 1px;
+  background-position:
+    left 5px top 0, left 0 top 5px,
+    right 5px top 0, right 0 top 5px,
+    left 5px bottom 0, left 0 bottom 5px,
+    right 5px bottom 0, right 0 bottom 5px;
+  background-repeat: no-repeat;
 }
-
-.process-card__badge {
-  width: 30px;
-  height: 30px;
-  margin: 0 auto 0.9rem;
-  border-radius: 50%;
-  border: 1.5px solid var(--registration-cyan);
-  color: var(--registration-cyan);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-family: var(--font-mono);
-  font-size: 0.78rem;
-  transition: background 300ms, color 300ms;
+.process-card__num {
+  font-family: var(--font-display);
+  font-size: 2.9rem;
+  line-height: 1;
+  color: var(--shell-muted-soft);
 }
-/* Same fill/ink pairing as .lang-option.is-active — already vetted for
-   contrast on this exact accent color, so reused rather than guessed. */
-.process-card:hover .process-card__badge { background: var(--registration-cyan); color: var(--pulp-white); }
-
-.process-card__icon {
-  width: 52px;
-  height: 52px;
-  margin: 0 auto 0.9rem;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: rgba(255, 255, 255, 0.06);
-  border-radius: var(--radius-card);
-  transition: background 300ms;
+.process-card h3 {
+  color: var(--shell-ink);
+  font-size: 1.05rem;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  margin: 0.85rem 0 0.5rem;
 }
-.process-card__icon svg { width: 26px; height: 26px; stroke: var(--shell-ink); fill: none; stroke-width: 1.5; }
-.process-card:hover .process-card__icon { background: var(--registration-cyan); }
-.process-card:hover .process-card__icon svg { stroke: var(--pulp-white); }
-
-.process-card h3 { color: var(--shell-ink); font-size: 1.02rem; margin-bottom: 0.4rem; }
 .process-card p { color: var(--shell-muted); font-size: 0.86rem; line-height: 1.5; }
 
-@media (max-width: 760px) {
-  .process-track { grid-template-columns: 1fr; gap: 1.75rem; }
-  .process-connector { display: none; }
+/* ---------- Choreography ----------
+   Everything below only animates once .is-running is on the flow, which
+   initProcessLine adds when the section scrolls into view and removes when
+   it leaves. Keyframes are the design file's, unchanged. */
+.process-flow.is-running .pflow-truck { animation: pflow-truck-drive var(--pflow-cycle) cubic-bezier(.5,0,.5,1) infinite; }
+.process-flow.is-running .pflow-truck__settle { animation: pflow-truck-settle var(--pflow-cycle) linear infinite; }
+.process-flow.is-running .pflow-wheel { animation: pflow-wheel-spin var(--pflow-cycle) cubic-bezier(.5,0,.5,1) infinite; }
+.process-flow.is-running .pflow-roll--1 { animation: pflow-unload-1 var(--pflow-cycle) linear infinite; }
+.process-flow.is-running .pflow-roll--2 { animation: pflow-unload-2 var(--pflow-cycle) linear infinite; }
+.process-flow.is-running .pflow-roll--3 { animation: pflow-unload-3 var(--pflow-cycle) linear infinite; }
+.process-flow.is-running .pflow-flag--gate { animation: pflow-status-1 var(--pflow-cycle) linear infinite; }
+.process-flow.is-running .pflow-station--print .pflow-flag { animation: pflow-status-2 var(--pflow-cycle) linear infinite; }
+.process-flow.is-running .pflow-station--resin .pflow-flag { animation: pflow-status-3 var(--pflow-cycle) linear infinite; }
+.process-flow.is-running .pflow-station--press .pflow-flag { animation: pflow-status-4 var(--pflow-cycle) linear infinite; }
+.process-flow.is-running .pflow-station--qc .pflow-flag { animation: pflow-status-5 var(--pflow-cycle) linear infinite; }
+.process-flow.is-running .pflow-node:nth-child(1) { animation: pflow-node-1 var(--pflow-cycle) linear infinite; }
+.process-flow.is-running .pflow-node:nth-child(2) { animation: pflow-node-2 var(--pflow-cycle) linear infinite; }
+.process-flow.is-running .pflow-node:nth-child(3) { animation: pflow-node-3 var(--pflow-cycle) linear infinite; }
+.process-flow.is-running .pflow-node:nth-child(4) { animation: pflow-node-4 var(--pflow-cycle) linear infinite; }
+.process-flow.is-running .pflow-node:nth-child(5) { animation: pflow-node-5 var(--pflow-cycle) linear infinite; }
+.process-flow.is-running .process-card:nth-child(1) { animation: pflow-step-1 var(--pflow-cycle) linear infinite; }
+.process-flow.is-running .process-card:nth-child(2) { animation: pflow-step-2 var(--pflow-cycle) linear infinite; }
+.process-flow.is-running .process-card:nth-child(3) { animation: pflow-step-3 var(--pflow-cycle) linear infinite; }
+.process-flow.is-running .process-card:nth-child(4) { animation: pflow-step-4 var(--pflow-cycle) linear infinite; }
+.process-flow.is-running .process-card:nth-child(5) { animation: pflow-step-5 var(--pflow-cycle) linear infinite; }
+.process-flow.is-running .process-card:nth-child(1) .process-card__num { animation: pflow-num-1 var(--pflow-cycle) linear infinite; }
+.process-flow.is-running .process-card:nth-child(2) .process-card__num { animation: pflow-num-2 var(--pflow-cycle) linear infinite; }
+.process-flow.is-running .process-card:nth-child(3) .process-card__num { animation: pflow-num-3 var(--pflow-cycle) linear infinite; }
+.process-flow.is-running .process-card:nth-child(4) .process-card__num { animation: pflow-num-4 var(--pflow-cycle) linear infinite; }
+.process-flow.is-running .process-card:nth-child(5) .process-card__num { animation: pflow-num-5 var(--pflow-cycle) linear infinite; }
+/* Station machinery: the element carries its own name/duration/easing
+   inline (they differ per part); this only switches them on. */
+.process-flow.is-running .pflow-anim { animation-iteration-count: infinite; animation-fill-mode: none; }
+.pflow-anim { animation-duration: 0s; animation-iteration-count: 1; }
+.pflow-spin { transform-box: fill-box; transform-origin: center; }
+
+@keyframes pflow-truck-drive {
+  0%   { transform: translateX(-460px); }
+  19%  { transform: translateX(0); }
+  62%  { transform: translateX(0); }
+  79%  { transform: translateX(-460px); }
+  100% { transform: translateX(-460px); }
+}
+@keyframes pflow-wheel-spin {
+  0%   { transform: rotate(0deg); }
+  19%  { transform: rotate(760deg); }
+  62%  { transform: rotate(760deg); }
+  79%  { transform: rotate(80deg); }
+  100% { transform: rotate(80deg); }
+}
+@keyframes pflow-truck-settle {
+  0%, 17% { transform: translateY(0) rotate(0deg); }
+  21% { transform: translateY(1.5px) rotate(-0.5deg); }
+  25%, 100% { transform: translateY(0) rotate(0deg); }
+}
+@keyframes pflow-unload-1 {
+  0%, 24%   { opacity: 0; transform: translate(36px, -22px); }
+  27%       { opacity: 1; transform: translate(36px, -22px); }
+  36%, 88%  { opacity: 1; transform: translate(0, 0); }
+  95%, 100% { opacity: 0; transform: translate(0, 0); }
+}
+@keyframes pflow-unload-2 {
+  0%, 32%   { opacity: 0; transform: translate(8px, -26px); }
+  35%       { opacity: 1; transform: translate(8px, -26px); }
+  44%, 88%  { opacity: 1; transform: translate(0, 0); }
+  95%, 100% { opacity: 0; transform: translate(0, 0); }
+}
+@keyframes pflow-unload-3 {
+  0%, 40%   { opacity: 0; transform: translate(-22px, -22px); }
+  43%       { opacity: 1; transform: translate(-22px, -22px); }
+  52%, 88%  { opacity: 1; transform: translate(0, 0); }
+  95%, 100% { opacity: 0; transform: translate(0, 0); }
+}
+@keyframes pflow-status-1 { 0%, 14% { opacity: 0; } 20%, 38% { opacity: 1; } 44%, 100% { opacity: 0; } }
+@keyframes pflow-status-2 { 0%, 30% { opacity: 0; } 36%, 50% { opacity: 1; } 56%, 100% { opacity: 0; } }
+@keyframes pflow-status-3 { 0%, 44% { opacity: 0; } 50%, 64% { opacity: 1; } 70%, 100% { opacity: 0; } }
+@keyframes pflow-status-4 { 0%, 58% { opacity: 0; } 64%, 78% { opacity: 1; } 84%, 100% { opacity: 0; } }
+@keyframes pflow-status-5 { 0%, 72% { opacity: 0; } 78%, 94% { opacity: 1; } 99%, 100% { opacity: 0; } }
+@keyframes pflow-node-1 { 0%, 12% { background: transparent; } 18%, 38% { background: var(--pf-accent); } 44%, 100% { background: transparent; } }
+@keyframes pflow-node-2 { 0%, 28% { background: transparent; } 34%, 52% { background: var(--pf-accent); } 58%, 100% { background: transparent; } }
+@keyframes pflow-node-3 { 0%, 42% { background: transparent; } 48%, 66% { background: var(--pf-accent); } 72%, 100% { background: transparent; } }
+@keyframes pflow-node-4 { 0%, 56% { background: transparent; } 62%, 80% { background: var(--pf-accent); } 86%, 100% { background: transparent; } }
+@keyframes pflow-node-5 { 0%, 70% { background: transparent; } 76%, 96% { background: var(--pf-accent); } 100% { background: transparent; } }
+@keyframes pflow-step-1 { 0%, 12% { border-color: var(--shell-border); } 18%, 38% { border-color: var(--pf-accent); } 44%, 100% { border-color: var(--shell-border); } }
+@keyframes pflow-step-2 { 0%, 28% { border-color: var(--shell-border); } 34%, 52% { border-color: var(--pf-accent); } 58%, 100% { border-color: var(--shell-border); } }
+@keyframes pflow-step-3 { 0%, 42% { border-color: var(--shell-border); } 48%, 66% { border-color: var(--pf-accent); } 72%, 100% { border-color: var(--shell-border); } }
+@keyframes pflow-step-4 { 0%, 56% { border-color: var(--shell-border); } 62%, 80% { border-color: var(--pf-accent); } 86%, 100% { border-color: var(--shell-border); } }
+@keyframes pflow-step-5 { 0%, 70% { border-color: var(--shell-border); } 76%, 96% { border-color: var(--pf-accent); } 100% { border-color: var(--shell-border); } }
+@keyframes pflow-num-1 { 0%, 12% { color: var(--shell-muted-soft); } 18%, 38% { color: var(--pf-accent-line); } 44%, 100% { color: var(--shell-muted-soft); } }
+@keyframes pflow-num-2 { 0%, 28% { color: var(--shell-muted-soft); } 34%, 52% { color: var(--pf-accent-line); } 58%, 100% { color: var(--shell-muted-soft); } }
+@keyframes pflow-num-3 { 0%, 42% { color: var(--shell-muted-soft); } 48%, 66% { color: var(--pf-accent-line); } 72%, 100% { color: var(--shell-muted-soft); } }
+@keyframes pflow-num-4 { 0%, 56% { color: var(--shell-muted-soft); } 62%, 80% { color: var(--pf-accent-line); } 86%, 100% { color: var(--shell-muted-soft); } }
+@keyframes pflow-num-5 { 0%, 70% { color: var(--shell-muted-soft); } 76%, 96% { color: var(--pf-accent-line); } 100% { color: var(--shell-muted-soft); } }
+@keyframes pflow-cyl-spin { to { transform: rotate(360deg); } }
+@keyframes pflow-cyl-spin-rev { to { transform: rotate(-360deg); } }
+@keyframes pflow-web-feed { to { transform: translateX(12px); } }
+@keyframes pflow-ink-pulse { 0%, 100% { opacity: .85; } 50% { opacity: .45; } }
+@keyframes pflow-resin-wave { to { transform: translateX(-14px); } }
+@keyframes pflow-drip-1 {
+  0%   { transform: translateY(0); opacity: 0; }
+  12%  { opacity: 1; }
+  58%  { transform: translateY(34px); opacity: 1; }
+  68%, 100% { transform: translateY(34px); opacity: 0; }
+}
+@keyframes pflow-drip-2 {
+  0%, 40% { transform: translateY(0); opacity: 0; }
+  50%  { opacity: 1; }
+  92%  { transform: translateY(34px); opacity: 1; }
+  98%, 100% { transform: translateY(34px); opacity: 0; }
+}
+@keyframes pflow-platen-stroke {
+  0%   { transform: translateY(0); }
+  26%  { transform: translateY(16px); }
+  58%  { transform: translateY(16px); }
+  84%, 100% { transform: translateY(0); }
+}
+@keyframes pflow-panel-squeeze {
+  0%, 22%   { transform: scaleY(1); }
+  30%, 56%  { transform: scaleY(.82); }
+  80%, 100% { transform: scaleY(1); }
+}
+@keyframes pflow-ram-pulse { 0%, 20% { opacity: .35; } 30%, 56% { opacity: 1; } 76%, 100% { opacity: .35; } }
+@keyframes pflow-puff-left {
+  0%, 26%  { opacity: 0; transform: translate(0, 0) scale(.5); }
+  34%      { opacity: .9; }
+  62%, 100% { opacity: 0; transform: translate(-14px, -12px) scale(1.3); }
+}
+@keyframes pflow-puff-right {
+  0%, 30%  { opacity: 0; transform: translate(0, 0) scale(.5); }
+  38%      { opacity: .9; }
+  66%, 100% { opacity: 0; transform: translate(14px, -12px) scale(1.3); }
+}
+@keyframes pflow-heat-rise {
+  0%   { opacity: 0; transform: translateY(4px); }
+  40%  { opacity: .9; }
+  100% { opacity: 0; transform: translateY(-10px); }
+}
+@keyframes pflow-scan-sweep {
+  0%   { transform: translateX(0); }
+  44%  { transform: translateX(50px); }
+  52%  { transform: translateX(50px); }
+  96%, 100% { transform: translateX(0); }
+}
+@keyframes pflow-gloss-blink { 0%, 100% { opacity: .25; } 50% { opacity: 1; } }
+@keyframes pflow-stamp-in {
+  0%, 56%  { opacity: 0; transform: scale(.7); }
+  64%      { opacity: 1; transform: scale(1); }
+  90%      { opacity: 1; transform: scale(1); }
+  98%, 100% { opacity: 0; transform: scale(1); }
+}
+
+/* The sitewide reduced-motion rule collapses every animation to 0.01ms,
+   which would freeze this line on its 0% frame — an empty band with the
+   truck parked off-canvas. Park it at 20% of the cycle instead: truck
+   arrived, first roll down, step 01 live. A still frame that still says
+   what the section says. */
+@media (prefers-reduced-motion: reduce) {
+  .process-flow .pflow-truck,
+  .process-flow .pflow-truck__settle,
+  .process-flow .pflow-wheel,
+  .process-flow .pflow-roll,
+  .process-flow .pflow-flag,
+  .process-flow .pflow-node,
+  .process-flow .process-card,
+  .process-flow .process-card__num {
+    animation-duration: var(--pflow-cycle) !important;
+    animation-delay: calc(var(--pflow-cycle) * -0.2) !important;
+    animation-iteration-count: 1 !important;
+    animation-fill-mode: both !important;
+    animation-play-state: paused !important;
+  }
+  .process-flow .pflow-anim { animation: none !important; }
+}
+
+@media (max-width: 900px) {
+  .process-track { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1.5rem 1.25rem; }
+  /* The band and its stage nodes are one wide illustration; below this it
+     would be a 60px-tall smear, and the cards carry the same content. */
+  .pflow-band, .pflow-nodes { display: none; }
+}
+@media (max-width: 560px) {
+  .process-track { grid-template-columns: 1fr; }
 }
 
 /* ---------- Advantages (no numbering — see PRD §3.5) ---------- */

@@ -505,47 +505,39 @@
     }
   }
 
-  /* ---------- Process flow: connector dots ----------
-     The draw-in stroke on .process-connector__progress is plain CSS gated
-     by .process-flow.is-visible (see style.css — same class the shared
-     reveal observer above already adds). The continuous travelling dot
-     can't be pure CSS since it needs to loop indefinitely without ever
-     re-triggering the entrance, so it's a one-shot Web Animations API
-     loop per connector, started the first time the section scrolls into
-     view — same one-shot IntersectionObserver shape as the kinetic
-     counters above, just animating a dot instead of a number. */
-  function initProcessFlowDots() {
+  /* ---------- Process flow: the delivery line ----------
+     The whole choreography — truck, rolls, status flags, stage nodes, step
+     cards, station machinery — is CSS keyframes gated behind
+     .process-flow.is-running (see style.css). All this does is add and
+     remove that class as the section enters and leaves the viewport, which
+     is the one thing CSS can't do for itself.
+
+     Unlike the kinetic counters and the old connector dots, this observer
+     is NOT one-shot: it keeps toggling. Two dozen infinite animations —
+     spinning cylinders, a press stroke, drips — would otherwise keep
+     running (and keep the compositor awake) for the entire rest of the
+     page. Removing the class also parks the truck back off-canvas, so the
+     sequence always restarts from the arrival rather than from wherever it
+     happened to be when the reader scrolled past.
+
+     reduceMotion is deliberately NOT checked here. The class is what
+     attaches the keyframes at all, so skipping it would leave the band
+     empty — truck parked off-canvas, nothing lit. style.css handles that
+     case instead, pausing the same animations on a frame 20% into the
+     cycle. Withholding the class hides the illustration; pausing it shows
+     the illustration standing still, which is the point. */
+  function initProcessLine() {
     var flow = document.querySelector('.process-flow');
-    if (!flow || reduceMotion || !('IntersectionObserver' in window)) return;
+    if (!flow) return;
+    if (reduceMotion || !('IntersectionObserver' in window)) { flow.classList.add('is-running'); return; }
 
-    function runDots() {
-      flow.querySelectorAll('.process-connector').forEach(function (conn, idx) {
-        var dot = conn.querySelector('.process-connector__dot');
-        setTimeout(function () {
-          dot.style.opacity = '1';
-          dot.animate(
-            [
-              { transform: 'translateX(0px)', opacity: 0 },
-              { transform: 'translateX(0px)', opacity: 1, offset: 0.08 },
-              { transform: 'translateX(96px)', opacity: 1, offset: 0.92 },
-              { transform: 'translateX(100px)', opacity: 0 }
-            ],
-            { duration: 1600, easing: 'cubic-bezier(0.65,0,0.35,1)', iterations: Infinity, delay: 300 }
-          );
-        }, idx * 550);
-      });
-    }
-
-    var flowObserver = new IntersectionObserver(function (entries) {
+    var lineObserver = new IntersectionObserver(function (entries) {
       entries.forEach(function (entry) {
-        if (entry.isIntersecting) {
-          setTimeout(runDots, 700);
-          flowObserver.unobserve(entry.target);
-        }
+        flow.classList.toggle('is-running', entry.isIntersecting);
       });
-    }, { threshold: 0.4 });
-    flowObserver.observe(flow);
+    }, { threshold: 0.2 });
+    lineObserver.observe(flow);
   }
 
-  window.addEventListener('DOMContentLoaded', initProcessFlowDots);
+  window.addEventListener('DOMContentLoaded', initProcessLine);
 })();

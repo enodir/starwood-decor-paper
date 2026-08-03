@@ -133,12 +133,10 @@ for a Russian mill). If you add new display text, verify Cyrillic coverage befor
 overlay stacking/compressing into a plate), used in exactly one place now:
 1. Decor-card hover (`.decor-card__corner` — a small "dog-ear" at rest that lifts fully on hover)
 
-It used to also drive the production-process pinned scroll scene (`.stack-bar`, staircase-highlighting in
-step with `.process-stage`), but that was replaced by `.process-flow-img` — a per-language animated GIF
-diagram (`assets/img/process-flow/process-flow-{ru,en,uz}.gif`, swapped by `applyLang` in script.js, with a
-static PNG fallback per language for `prefers-reduced-motion`). `.process-stage` (the numbered text list)
-is unchanged and still drives scroll-linked activation via `initProcessScene()`; it just no longer also
-toggles a `.stack-bar` sibling since that element is gone.
+It used to also drive the production-process pinned scroll scene (`.stack-bar` + `.process-stage`), then a
+per-language animated GIF diagram, then a five-card flow with connector lines and a travelling cyan dot.
+That slot is now **the delivery line** (see below) — none of `.stack-bar`, `.process-stage`,
+`.process-flow-img` or `.process-connector` exist any more, and neither does `initProcessScene()`.
 
 It no longer appears in the hero — that slot has its own motif, the **laminated-MDF stack** (`.mdf-stack`,
 `#mdf-stage`, `assets/mdf-stack.js`): a real-time three.js scene of six boards, each faced with one of the
@@ -174,10 +172,42 @@ complexity, so keep it intact when editing:
   more than an invisible canvas does. Sizing comes from a `ResizeObserver`, never from reading
   `clientWidth` inside the loop.
 
+**Process section — "the delivery line"** (`.process-flow`, `.pflow-*`, `#process`). Ported from a Claude
+Design file (project `4c58dab7-4fc7-486a-9fef-2b775d0c5b7d`, `Production Process.dc.html`; read it with the
+DesignSync tool, its share URL 403s to a plain fetch). A DECOSTAR truck arrives at the inbound gate,
+unloads three rolls of base paper and leaves, while four line stations — rotogravure, melamine bath, hot
+press, lab bench — run their own machinery and each of the five step cards lights in turn. All CSS
+keyframes and inline SVG: no images, no library, no canvas.
+
+Four invariants, all easy to break by accident:
+
+1. **One clock.** `--pflow-cycle` (9s) drives the truck, rolls, status flags, stage nodes and card
+   highlights together — retime one of them alone and the truck starts arriving out of step with the card
+   that announces it. The station machinery deliberately runs on its own short loops (a press stroke, a
+   spinning cylinder); those read as continuous plant noise, and tying them to the cycle would make a
+   press stroke absurdly slow.
+2. **`.is-running` is what attaches the keyframes at all.** `initProcessLine()` adds it when the section
+   scrolls in and *removes* it when it leaves — unlike the kinetic counters, this observer is not
+   one-shot, because two dozen infinite animations would otherwise keep the compositor awake for the rest
+   of the page. It is still added under `prefers-reduced-motion`; style.css pauses those same animations
+   on a frame 20% into the cycle (truck arrived, first roll down, step 01 live). Withholding the class
+   there would leave an empty band with the truck parked off-canvas.
+3. **Colour goes through the `--pf-*` aliases**, which resolve to existing site tokens — that is what makes
+   the day/night toggle repaint the whole line for free. Two exceptions are deliberate: `--pf-accent-line`
+   (strokes) is the lighter eyebrow cyan, not `--registration-cyan`, which reads as a dark smudge at 1.2px
+   on the night shell; and `--pf-tyre`/`--pf-tyre-mark` stay dark in both themes, since `--pf-ink` is
+   pulp-white on night and gave the truck white tyres.
+4. **Geometry is percentages** (stations at 30/50/70/90%, cards at fifths), so the line stays registered
+   with the cards at every width. Below 900px the band and stage nodes are hidden outright and the cards
+   go two-up, then one-up at 560px — the cards carry the same content as text.
+
+The blueprint corner marks on each card are eight gradient layers on one `::after`, not the design's four
+`<i>` elements per card — same registration-mark language the `.eyebrow` crosshair already speaks, without
+twenty empty nodes in the markup.
+
 Do not add a showpiece to every section — the design brief for this project explicitly calls for *one bold
-moment per major section slot* (the MDF stack in the hero, the animated process-flow-img diagram in
-process, Cover Flow in the decor catalog) and quiet, disciplined motion everywhere else (progressive
-fade/translateY reveals,
+moment per major section slot* (the MDF stack in the hero, the delivery line in process, Cover Flow in the
+decor catalog) and quiet, disciplined motion everywhere else (progressive fade/translateY reveals,
 grayscale→color logo hovers, kinetic counters).
 
 **Client marquee** (`.logo-marquee`, `#clients`): the "trusted by" list drifts right-to-left forever
