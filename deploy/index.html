@@ -16,9 +16,20 @@
 <meta name="twitter:image" content="assets/img/process-flow/decor-wood-1024.jpg">
 <link rel="icon" type="image/png" href="assets/favicon.png">
 <link rel="preload" as="font" href="assets/fonts/pt-sans-narrow-700-cyrillic.woff2" type="font/woff2" crossorigin>
-<link rel="preload" as="image" href="assets/img/process-flow/hero-swatch-2-480.webp" imagesrcset="assets/img/process-flow/hero-swatch-2-480.webp 480w, assets/img/process-flow/hero-swatch-2-960.webp 960w" imagesizes="200px" type="image/webp">
+<link rel="preconnect" href="https://unpkg.com" crossorigin>
 <link rel="stylesheet" href="assets/fonts.generated.css">
 <link rel="stylesheet" href="style.css">
+<!-- three.js for the hero's laminated-MDF stack (assets/mdf-stack.js). Same CDN
+     and pinned-version policy as GSAP at the bottom of this file. The import map
+     must be parsed before any module loads, hence its place here in <head>. -->
+<script type="importmap">
+{
+  "imports": {
+    "three": "https://unpkg.com/three@0.184.0/build/three.module.js",
+    "three/": "https://unpkg.com/three@0.184.0/"
+  }
+}
+</script>
 </head>
 <body>
 <div class="bg-texture" aria-hidden="true"></div>
@@ -28,7 +39,7 @@
 
 <header class="site-header">
   <div class="container header-inner">
-    <a href="#top" class="logo"><img src="assets/img/process-flow/decostar-logo.svg" alt="DECOSTAR" class="logo-img" width="86" height="38"></a>
+    <a href="#top" class="logo"><img src="assets/img/process-flow/decostar-logo.svg" alt="DECOSTAR" class="logo-img" width="111" height="38"></a>
 
     <div class="nav-island">
       <nav class="main-nav" id="main-nav" aria-label="Основная навигация">
@@ -96,55 +107,21 @@
       </div>
 
       <div class="hero-visual">
-        <div class="swatch-float" id="swatch-float" role="img" aria-label="Образцы декоративной бумаги: эбен, орех, светлый капа-нарост, венге, дуб, белая корона, дуб вотан и интерьерный золотой">
-          <figure class="swatch-card swatch-card--1">
-            <picture>
-              <source type="image/webp" srcset="assets/img/process-flow/hero-swatch-1-480.webp 480w, assets/img/process-flow/hero-swatch-1-960.webp 960w" sizes="180px">
-              <img src="assets/img/process-flow/hero-swatch-1-480.jpg" srcset="assets/img/process-flow/hero-swatch-1-480.jpg 480w, assets/img/process-flow/hero-swatch-1-960.jpg 960w" sizes="180px" width="480" height="480" loading="eager" decoding="async" alt="">
-            </picture>
-          </figure>
-          <figure class="swatch-card swatch-card--2">
-            <picture>
-              <source type="image/webp" srcset="assets/img/process-flow/hero-swatch-2-480.webp 480w, assets/img/process-flow/hero-swatch-2-960.webp 960w" sizes="200px">
-              <img src="assets/img/process-flow/hero-swatch-2-480.jpg" srcset="assets/img/process-flow/hero-swatch-2-480.jpg 480w, assets/img/process-flow/hero-swatch-2-960.jpg 960w" sizes="200px" width="480" height="480" loading="eager" decoding="async" alt="">
-            </picture>
-          </figure>
-          <figure class="swatch-card swatch-card--3">
-            <picture>
-              <source type="image/webp" srcset="assets/img/process-flow/hero-swatch-3-480.webp 480w, assets/img/process-flow/hero-swatch-3-960.webp 960w" sizes="190px">
-              <img src="assets/img/process-flow/hero-swatch-3-480.jpg" srcset="assets/img/process-flow/hero-swatch-3-480.jpg 480w, assets/img/process-flow/hero-swatch-3-960.jpg 960w" sizes="190px" width="480" height="480" loading="eager" decoding="async" alt="">
-            </picture>
-          </figure>
-          <figure class="swatch-card swatch-card--4">
-            <picture>
-              <source type="image/webp" srcset="assets/img/process-flow/hero-swatch-4-480.webp 480w, assets/img/process-flow/hero-swatch-4-960.webp 960w" sizes="170px">
-              <img src="assets/img/process-flow/hero-swatch-4-480.jpg" srcset="assets/img/process-flow/hero-swatch-4-480.jpg 480w, assets/img/process-flow/hero-swatch-4-960.jpg 960w" sizes="170px" width="480" height="480" loading="eager" decoding="async" alt="">
-            </picture>
-          </figure>
-          <figure class="swatch-card swatch-card--5">
-            <picture>
-              <source type="image/webp" srcset="assets/img/process-flow/hero-swatch-5-480.webp 480w, assets/img/process-flow/hero-swatch-5-960.webp 960w" sizes="140px">
-              <img src="assets/img/process-flow/hero-swatch-5-480.jpg" srcset="assets/img/process-flow/hero-swatch-5-480.jpg 480w, assets/img/process-flow/hero-swatch-5-960.jpg 960w" sizes="140px" width="480" height="480" loading="eager" decoding="async" alt="">
-            </picture>
-          </figure>
-          <figure class="swatch-card swatch-card--6">
-            <picture>
-              <source type="image/webp" srcset="assets/img/process-flow/hero-swatch-6-480.webp 480w, assets/img/process-flow/hero-swatch-6-960.webp 960w" sizes="160px">
-              <img src="assets/img/process-flow/hero-swatch-6-480.jpg" srcset="assets/img/process-flow/hero-swatch-6-480.jpg 480w, assets/img/process-flow/hero-swatch-6-960.jpg 960w" sizes="160px" width="480" height="480" loading="eager" decoding="async" alt="">
-            </picture>
-          </figure>
-          <figure class="swatch-card swatch-card--7">
-            <picture>
-              <source type="image/webp" srcset="assets/img/process-flow/hero-swatch-7-480.webp 480w, assets/img/process-flow/hero-swatch-7-960.webp 960w" sizes="150px">
-              <img src="assets/img/process-flow/hero-swatch-7-480.jpg" srcset="assets/img/process-flow/hero-swatch-7-480.jpg 480w, assets/img/process-flow/hero-swatch-7-960.jpg 960w" sizes="150px" width="480" height="480" loading="eager" decoding="async" alt="">
-            </picture>
-          </figure>
-          <figure class="swatch-card swatch-card--8">
-            <picture>
-              <source type="image/webp" srcset="assets/img/process-flow/hero-swatch-8-480.webp 480w, assets/img/process-flow/hero-swatch-8-960.webp 960w" sizes="160px">
-              <img src="assets/img/process-flow/hero-swatch-8-480.jpg" srcset="assets/img/process-flow/hero-swatch-8-480.jpg 480w, assets/img/process-flow/hero-swatch-8-960.jpg 960w" sizes="160px" width="480" height="480" loading="eager" decoding="async" alt="">
-            </picture>
-          </figure>
+        <!-- Signature motif: laminated MDF boards fly in, fan, then compress
+             into a stack as the hero scrolls away (assets/mdf-stack.js).
+             The frame starts empty on purpose — the boards enter from off
+             screen, so showing anything first would read as a flash. The
+             <picture> is therefore hidden until something is known to have
+             gone wrong: no WebGL, or the module still not live after a few
+             seconds (both handled in script.js), or no JS at all (the
+             <noscript> rule below). It is never part of a normal load. -->
+        <div class="mdf-stack" role="img" aria-label="Плиты МДФ, облицованные декоративной бумагой: Астана, Белая корона, Улудаг Меше, Ачик Кок, Венге и Дуб Катания">
+          <canvas id="mdf-stage" aria-hidden="true"></canvas>
+          <picture class="mdf-stack__fallback">
+            <source media="(min-width: 769px)" srcset="assets/img/process-flow/hero-decor-swatches-1920.jpg">
+            <img src="assets/img/process-flow/hero-decor-swatches-768.jpg" width="768" height="512" loading="lazy" decoding="async" alt="">
+          </picture>
+          <noscript><style>.mdf-stack__fallback { display: block; }</style></noscript>
         </div>
       </div>
     </div>
@@ -382,81 +359,253 @@
         <h2><span data-i18n-lang="ru">Как рождается декор</span><span data-i18n-lang="en">How a decor is made</span><span data-i18n-lang="uz">Dekor qanday tug'iladi</span></h2>
       </div>
 
-      <div class="process-flow reveal stagger" id="process-flow">
+      <p class="pflow-lead reveal">
+        <span data-i18n-lang="ru">Пять проходов — от входных ворот до погрузочной рампы. Каждый проход подписывает заводская лаборатория, прежде чем партия идёт дальше.</span>
+        <span data-i18n-lang="en">Five passes from the inbound gate to the loading bay. Every pass is signed off by the in-house lab before the batch moves on.</span>
+        <span data-i18n-lang="uz">Kirish darvozasidan yuklash maydonchasigacha besh bosqich. Har bir bosqichni partiya keyingi bosqichga o'tishidan oldin zavod laboratoriyasi tasdiqlaydi.</span>
+      </p>
+
+      <!-- The delivery line. Everything inside .pflow-band is decorative —
+           the five .process-card items below carry the same information as
+           text, so the band is aria-hidden and hidden outright on phones. -->
+      <div class="process-flow reveal" id="process-flow">
+        <div class="pflow-band" aria-hidden="true">
+          <span class="pflow-band__label">
+            <span data-i18n-lang="ru">Входящее — целлюлоза и базовая бумага</span>
+            <span data-i18n-lang="en">Inbound — pulp &amp; base paper</span>
+            <span data-i18n-lang="uz">Kiruvchi — sellyuloza va asosiy qog'oz</span>
+          </span>
+          <span class="pflow-band__road"></span>
+
+          <span class="pflow-flag pflow-flag--gate">
+            <span data-i18n-lang="ru">Поставка принята</span>
+            <span data-i18n-lang="en">Delivery received</span>
+            <span data-i18n-lang="uz">Yetkazib berish qabul qilindi</span>
+          </span>
+
+          <div class="pflow-station pflow-station--print">
+            <span class="pflow-flag">
+              <span data-i18n-lang="ru">Печатный проход</span>
+              <span data-i18n-lang="en">Printing pass</span>
+              <span data-i18n-lang="uz">Bosma bosqichi</span>
+            </span>
+            <svg viewBox="0 0 128 80" width="128" height="80" fill="none">
+              <clipPath id="pflow-web-clip"><rect x="66" y="38" width="50" height="16"/></clipPath>
+              <path d="M38 12V78M74 12V78M34 78h44" stroke="var(--pf-line)" stroke-width="1.2"/>
+              <path d="M14 46h100" stroke="var(--pf-line-soft)" stroke-width="1.4"/>
+              <g clip-path="url(#pflow-web-clip)">
+                <g class="pflow-anim" style="animation-name: pflow-web-feed; animation-duration: 1.1s; animation-timing-function: linear;">
+                  <rect x="60" y="41" width="7" height="7" fill="var(--pf-accent-soft)"/>
+                  <rect x="72" y="41" width="7" height="7" fill="var(--pf-accent-soft)"/>
+                  <rect x="84" y="41" width="7" height="7" fill="var(--pf-accent-soft)"/>
+                  <rect x="96" y="41" width="7" height="7" fill="var(--pf-accent-soft)"/>
+                  <rect x="108" y="41" width="7" height="7" fill="var(--pf-accent-soft)"/>
+                  <path d="M66 50h50" stroke="var(--pf-accent)" stroke-width="1.4"/>
+                </g>
+              </g>
+              <g class="pflow-anim pflow-spin" style="animation-name: pflow-cyl-spin; animation-duration: 1.6s;">
+                <circle cx="56" cy="31" r="15" fill="var(--pf-accent-tint)" stroke="var(--pf-accent-line)" stroke-width="1.4"/>
+                <path d="M56 16v30M41 31h30M45.4 20.4l21.2 21.2M66.6 20.4L45.4 41.6" stroke="var(--pf-accent-line)" stroke-width="1"/>
+                <circle cx="56" cy="31" r="4" fill="var(--pf-fill)" stroke="var(--pf-accent-line)" stroke-width="1"/>
+              </g>
+              <g class="pflow-anim pflow-spin" style="animation-name: pflow-cyl-spin-rev; animation-duration: 1.6s;">
+                <circle cx="56" cy="60" r="13" fill="var(--pf-fill)" stroke="var(--pf-ink)" stroke-width="1.4"/>
+                <path d="M56 47v26M43 60h26" stroke="var(--pf-line-soft)" stroke-width="1"/>
+              </g>
+              <circle cx="94" cy="20" r="7" fill="var(--pf-accent)" class="pflow-anim" style="animation-name: pflow-ink-pulse; animation-duration: 1.6s; animation-timing-function: ease-in-out;"/>
+              <path d="M87 22 74 27" stroke="var(--pf-accent-line)" stroke-width="1.2"/>
+              <circle cx="14" cy="46" r="11" fill="none" stroke="var(--pf-line)" stroke-width="1.4" class="pflow-anim pflow-spin" style="animation-name: pflow-cyl-spin; animation-duration: 2.4s;"/>
+              <circle cx="114" cy="46" r="11" fill="none" stroke="var(--pf-accent-line)" stroke-width="1.4" class="pflow-anim pflow-spin" style="animation-name: pflow-cyl-spin; animation-duration: 1.9s;"/>
+            </svg>
+          </div>
+
+          <div class="pflow-station pflow-station--resin">
+            <span class="pflow-flag">
+              <span data-i18n-lang="ru">Меламиновая ванна</span>
+              <span data-i18n-lang="en">Melamine bath</span>
+              <span data-i18n-lang="uz">Melamin vannasi</span>
+            </span>
+            <svg viewBox="0 0 128 80" width="128" height="80" fill="none">
+              <clipPath id="pflow-resin-clip"><rect x="41" y="45" width="50" height="23"/></clipPath>
+              <path d="M0 26h30" stroke="var(--pf-line-soft)" stroke-width="1.4"/>
+              <path d="M34 26 52 58h28l18-32" stroke="var(--pf-line-soft)" stroke-width="1.4"/>
+              <path d="M98 26h30" stroke="var(--pf-accent)" stroke-width="2.4"/>
+              <g clip-path="url(#pflow-resin-clip)">
+                <rect x="41" y="52" width="50" height="16" fill="var(--pf-accent-tint)"/>
+                <g class="pflow-anim" style="animation-name: pflow-resin-wave; animation-duration: 1.4s; animation-timing-function: linear;">
+                  <path d="M34 52q7-3 14 0t14 0 14 0 14 0 14 0" stroke="var(--pf-accent-line)" stroke-width="1.2" fill="none"/>
+                </g>
+              </g>
+              <path d="M40 44v24h52V44M46 68v10M86 68v10M34 78h64" stroke="var(--pf-ink)" stroke-width="1.4"/>
+              <path d="M94 50h5M94 56h5M94 62h5" stroke="var(--pf-line)" stroke-width="1"/>
+              <path d="M66 6v10" stroke="var(--pf-line)" stroke-width="1.4"/>
+              <rect x="58" y="2" width="16" height="6" fill="var(--pf-accent-soft)" stroke="var(--pf-accent-line)" stroke-width="1.2"/>
+              <ellipse cx="66" cy="18" rx="2.6" ry="3.4" fill="var(--pf-accent)" class="pflow-anim" style="animation-name: pflow-drip-1; animation-duration: 1.6s; animation-timing-function: linear;"/>
+              <ellipse cx="66" cy="18" rx="2" ry="2.8" fill="var(--pf-accent-soft)" class="pflow-anim" style="animation-name: pflow-drip-2; animation-duration: 1.6s; animation-timing-function: linear;"/>
+              <circle cx="34" cy="26" r="6.5" fill="var(--pf-fill)" stroke="var(--pf-ink)" stroke-width="1.4" class="pflow-anim pflow-spin" style="animation-name: pflow-cyl-spin; animation-duration: 1.9s;"/>
+              <circle cx="66" cy="58" r="7.5" fill="var(--pf-accent-soft)" stroke="var(--pf-accent-line)" stroke-width="1.4" class="pflow-anim pflow-spin" style="animation-name: pflow-cyl-spin-rev; animation-duration: 2.2s;"/>
+              <g class="pflow-anim pflow-spin" style="animation-name: pflow-cyl-spin; animation-duration: 1.5s;">
+                <circle cx="106" cy="19" r="6.5" fill="var(--pf-fill)" stroke="var(--pf-accent-line)" stroke-width="1.4"/>
+                <path d="M106 13v12" stroke="var(--pf-line-soft)" stroke-width="1"/>
+              </g>
+              <g class="pflow-anim pflow-spin" style="animation-name: pflow-cyl-spin-rev; animation-duration: 1.5s;">
+                <circle cx="106" cy="33" r="6.5" fill="var(--pf-fill)" stroke="var(--pf-accent-line)" stroke-width="1.4"/>
+                <path d="M106 27v12" stroke="var(--pf-line-soft)" stroke-width="1"/>
+              </g>
+            </svg>
+          </div>
+
+          <div class="pflow-station pflow-station--press">
+            <span class="pflow-flag">
+              <span data-i18n-lang="ru">Горячий пресс · 180°C</span>
+              <span data-i18n-lang="en">Hot press · 180°C</span>
+              <span data-i18n-lang="uz">Issiq press · 180°C</span>
+            </span>
+            <svg viewBox="0 0 128 80" width="128" height="80" fill="none">
+              <path d="M0 46h30" stroke="var(--pf-accent)" stroke-width="2.4"/>
+              <path d="M18 4V78M110 4V78M12 78h104" stroke="var(--pf-ink)" stroke-width="1.4"/>
+              <path d="M18 8h92" stroke="var(--pf-line)" stroke-width="1.4"/>
+              <g class="pflow-anim" style="animation-name: pflow-ram-pulse; animation-duration: 2.6s; animation-timing-function: ease-in-out;">
+                <path d="M50 10v8M64 10v8M78 10v8" stroke="var(--pf-accent-line)" stroke-width="1.4"/>
+                <path d="M46 14l4 5 4-5M60 14l4 5 4-5M74 14l4 5 4-5" stroke="var(--pf-accent-line)" stroke-width="1.4"/>
+              </g>
+              <g class="pflow-anim" style="animation-name: pflow-platen-stroke; animation-duration: 2.6s; animation-timing-function: cubic-bezier(.4,0,.3,1);">
+                <rect x="24" y="22" width="80" height="12" fill="var(--pf-fill)" stroke="var(--pf-ink)" stroke-width="1.4"/>
+                <path d="M28 26h72M28 30h72" stroke="var(--pf-accent-soft)" stroke-width="1.2"/>
+              </g>
+              <g class="pflow-anim" style="animation-name: pflow-panel-squeeze; animation-duration: 2.6s; animation-timing-function: cubic-bezier(.4,0,.3,1); transform-box: fill-box; transform-origin: bottom;">
+                <rect x="30" y="52" width="68" height="4" fill="var(--pf-accent-soft)" stroke="var(--pf-accent-line)" stroke-width="1.2"/>
+                <rect x="30" y="56" width="68" height="10" fill="var(--pf-fill-2)" stroke="var(--pf-ink)" stroke-width="1.4"/>
+                <path d="M38 61h6M50 61h6M62 61h6M74 61h6M86 61h6" stroke="var(--pf-line)" stroke-width="1"/>
+              </g>
+              <rect x="24" y="66" width="80" height="10" fill="var(--pf-fill)" stroke="var(--pf-ink)" stroke-width="1.4"/>
+              <path d="M28 70h72" stroke="var(--pf-accent-soft)" stroke-width="1.2"/>
+              <ellipse cx="26" cy="50" rx="5" ry="3.5" fill="var(--pf-accent-tint)" class="pflow-anim pflow-spin" style="animation-name: pflow-puff-left; animation-duration: 2.6s; animation-timing-function: ease-out;"/>
+              <ellipse cx="102" cy="50" rx="5" ry="3.5" fill="var(--pf-accent-tint)" class="pflow-anim pflow-spin" style="animation-name: pflow-puff-right; animation-duration: 2.6s; animation-timing-function: ease-out;"/>
+              <g class="pflow-anim" style="animation-name: pflow-heat-rise; animation-duration: 2.6s; animation-timing-function: ease-out;">
+                <path d="M112 40q4-4 8 0t8 0" stroke="var(--pf-accent)" stroke-width="1.2"/>
+              </g>
+              <g class="pflow-anim" style="animation-name: pflow-heat-rise; animation-duration: 2.6s; animation-timing-function: ease-out; animation-delay: .8s;">
+                <path d="M112 46q4-4 8 0t8 0" stroke="var(--pf-accent)" stroke-width="1.2"/>
+              </g>
+            </svg>
+          </div>
+
+          <div class="pflow-station pflow-station--qc">
+            <span class="pflow-flag">
+              <span data-i18n-lang="ru">Контроль ОТК · годно</span>
+              <span data-i18n-lang="en">Lab check · pass</span>
+              <span data-i18n-lang="uz">Laboratoriya nazorati · o'tdi</span>
+            </span>
+            <svg viewBox="0 0 128 80" width="128" height="80" fill="none">
+              <path d="M0 46h14" stroke="var(--pf-accent)" stroke-width="2.4"/>
+              <path d="M10 22h84M14 18v8M90 18v8" stroke="var(--pf-ink)" stroke-width="1.4"/>
+              <g class="pflow-anim" style="animation-name: pflow-scan-sweep; animation-duration: 2.8s; animation-timing-function: ease-in-out;">
+                <path d="M28 44 34 26h14l6 18z" fill="var(--pf-accent-tint)"/>
+                <rect x="30" y="18" width="22" height="9" fill="var(--pf-fill)" stroke="var(--pf-accent-line)" stroke-width="1.4"/>
+                <path d="M28 45h26" stroke="var(--pf-accent)" stroke-width="1.6"/>
+              </g>
+              <rect x="14" y="46" width="80" height="10" fill="var(--pf-fill-2)" stroke="var(--pf-ink)" stroke-width="1.4"/>
+              <path d="M14 48.5h80" stroke="var(--pf-accent-soft)" stroke-width="1.6"/>
+              <g class="pflow-anim pflow-spin" style="animation-name: pflow-cyl-spin; animation-duration: 1.2s;">
+                <circle cx="84" cy="39" r="7" fill="none" stroke="var(--pf-accent-line)" stroke-width="1.4"/>
+                <path d="M84 32v14M77 39h14" stroke="var(--pf-line-soft)" stroke-width="1"/>
+              </g>
+              <path d="M84 27v5" stroke="var(--pf-line)" stroke-width="1.2"/>
+              <circle cx="22" cy="62" r="4.5" fill="none" stroke="var(--pf-line)" stroke-width="1.2" class="pflow-anim pflow-spin" style="animation-name: pflow-cyl-spin; animation-duration: 2s;"/>
+              <circle cx="44" cy="62" r="4.5" fill="none" stroke="var(--pf-line)" stroke-width="1.2" class="pflow-anim pflow-spin" style="animation-name: pflow-cyl-spin; animation-duration: 2s;"/>
+              <circle cx="66" cy="62" r="4.5" fill="none" stroke="var(--pf-line)" stroke-width="1.2" class="pflow-anim pflow-spin" style="animation-name: pflow-cyl-spin; animation-duration: 2s;"/>
+              <circle cx="88" cy="62" r="4.5" fill="none" stroke="var(--pf-line)" stroke-width="1.2" class="pflow-anim pflow-spin" style="animation-name: pflow-cyl-spin; animation-duration: 2s;"/>
+              <path d="M12 78h92" stroke="var(--pf-ink)" stroke-width="1.4"/>
+              <rect x="100" y="8" width="24" height="26" fill="none" stroke="var(--pf-line-soft)" stroke-width="1.2"/>
+              <rect x="103" y="28" width="18" height="3" fill="var(--pf-accent)" class="pflow-anim" style="animation-name: pflow-gloss-blink; animation-duration: 1.4s; animation-timing-function: ease-in-out;"/>
+              <rect x="103" y="23" width="13" height="3" fill="var(--pf-accent)" class="pflow-anim" style="animation-name: pflow-gloss-blink; animation-duration: 1.4s; animation-timing-function: ease-in-out; animation-delay: .3s;"/>
+              <rect x="103" y="18" width="8" height="3" fill="var(--pf-accent)" class="pflow-anim" style="animation-name: pflow-gloss-blink; animation-duration: 1.4s; animation-timing-function: ease-in-out; animation-delay: .6s;"/>
+              <g class="pflow-anim pflow-spin" style="animation-name: pflow-stamp-in; animation-duration: 2.8s; animation-timing-function: ease-out;">
+                <rect x="100" y="40" width="24" height="20" fill="var(--pf-accent)"/>
+                <path d="M105 50.5l4.5 4.5 9-9.5" stroke="var(--pulp-white)" stroke-width="2.2" stroke-linecap="square"/>
+              </g>
+              <path d="M100 66h24M104 62v8M120 62v8" stroke="var(--pf-line)" stroke-width="1.2"/>
+            </svg>
+          </div>
+
+          <div class="pflow-rolls">
+            <span class="pflow-roll pflow-roll--1"></span>
+            <span class="pflow-roll pflow-roll--2"></span>
+            <span class="pflow-roll pflow-roll--3"></span>
+          </div>
+
+          <div class="pflow-truck">
+            <div class="pflow-truck__settle">
+              <svg viewBox="0 0 232 104" width="134" height="60" fill="none">
+                <ellipse cx="118" cy="99" rx="106" ry="4" fill="#000" opacity=".18"/>
+                <rect x="10" y="16" width="118" height="62" fill="var(--pf-fill)" stroke="var(--pf-accent-line)" stroke-width="1.5"/>
+                <path d="M24 20V74M38 20V74M52 20V74M66 20V74M80 20V74M94 20V74M108 20V74" stroke="var(--pf-line-soft)" stroke-width="1.2"/>
+                <text x="69" y="40" text-anchor="middle" font-family="'PT Sans Narrow', 'Arial Narrow', sans-serif" font-size="26" font-weight="700" letter-spacing="0.8" fill="var(--pf-accent-line)">DECOSTAR</text>
+                <rect x="10" y="16" width="118" height="7" fill="var(--pf-accent)"/>
+                <rect x="10" y="71" width="118" height="7" fill="var(--pf-accent)"/>
+                <path d="M132 34c0-2 1.5-3.5 3.5-3.5h34l14 12v35H132z" fill="var(--pf-accent)" stroke="var(--pf-accent-line)" stroke-width="1.5"/>
+                <path d="M170 36h9l10 9h-19z" fill="var(--pf-accent-tint)" stroke="var(--pf-accent-line)" stroke-width="1.2"/>
+                <rect x="140" y="36" width="23" height="16" fill="var(--pf-accent-tint)" stroke="var(--pf-accent-line)" stroke-width="1.2"/>
+                <path d="M136 58h4M136 64h10" stroke="var(--pf-accent-line)" stroke-width="1.2"/>
+                <rect x="181" y="62" width="12" height="10" fill="var(--pf-line-soft)" stroke="var(--pf-accent-line)" stroke-width="1.2"/>
+                <rect x="176" y="46" width="6" height="4" fill="var(--pf-line-soft)"/>
+                <rect x="10" y="78" width="181" height="5" fill="var(--pf-tyre)"/>
+                <rect x="60" y="80" width="34" height="12" rx="1" fill="var(--pf-tyre)"/>
+                <g class="pflow-anim pflow-spin pflow-wheel">
+                  <circle cx="42" cy="83" r="15" fill="var(--pf-tyre)"/>
+                  <circle cx="42" cy="83" r="6.5" fill="var(--pf-line-soft)"/>
+                  <path d="M42 77v12M36 83h12" stroke="var(--pf-tyre-mark)" stroke-width="1.2"/>
+                </g>
+                <g class="pflow-anim pflow-spin pflow-wheel">
+                  <circle cx="158" cy="83" r="15" fill="var(--pf-tyre)"/>
+                  <circle cx="158" cy="83" r="6.5" fill="var(--pf-line-soft)"/>
+                  <path d="M158 77v12M152 83h12" stroke="var(--pf-tyre-mark)" stroke-width="1.2"/>
+                </g>
+              </svg>
+            </div>
+          </div>
+        </div>
+
+        <div class="pflow-nodes" aria-hidden="true">
+          <span class="pflow-node"></span>
+          <span class="pflow-node"></span>
+          <span class="pflow-node"></span>
+          <span class="pflow-node"></span>
+          <span class="pflow-node"></span>
+        </div>
+
         <div class="process-track">
           <div class="process-card">
-            <div class="process-card__badge">01</div>
-            <div class="process-card__icon">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path d="M3 8l9-5 9 5-9 5-9-5z"/><path d="M3 8v8l9 5 9-5V8"/><path d="M12 13v8"/></svg>
-            </div>
+            <div class="process-card__num">01</div>
             <h3><span data-i18n-lang="ru">Сырьё</span><span data-i18n-lang="en">Raw material</span><span data-i18n-lang="uz">Xomashyo</span></h3>
             <p><span data-i18n-lang="ru">Целлюлоза и базовая бумага поступают на входной контроль плотности и влажности.</span>
                <span data-i18n-lang="en">Pulp and base paper undergo incoming checks for weight and moisture.</span>
                <span data-i18n-lang="uz">Sellyuloza va asosiy qog'oz zichlik va namlik bo'yicha kirish nazoratidan o'tadi.</span></p>
           </div>
-          <div class="process-connector" data-seg="0" aria-hidden="true">
-            <svg viewBox="0 0 100 40" preserveAspectRatio="none">
-              <line class="process-connector__line" x1="0" y1="20" x2="100" y2="20"/>
-              <line class="process-connector__progress" x1="0" y1="20" x2="100" y2="20"/>
-              <circle class="process-connector__dot" cx="0" cy="20" r="2.6"/>
-            </svg>
-          </div>
           <div class="process-card">
-            <div class="process-card__badge">02</div>
-            <div class="process-card__icon">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="4"/><circle cx="12" cy="7.5" r="0.8" fill="currentColor" stroke="none"/><circle cx="15.5" cy="14.5" r="0.8" fill="currentColor" stroke="none"/><circle cx="8.5" cy="14.5" r="0.8" fill="currentColor" stroke="none"/></svg>
-            </div>
+            <div class="process-card__num">02</div>
             <h3><span data-i18n-lang="ru">Печать</span><span data-i18n-lang="en">Printing</span><span data-i18n-lang="uz">Bosib chiqarish</span></h3>
             <p><span data-i18n-lang="ru">Ротогравюрная печать в 4–8 цветов с контролем совмещения по регистрационным меткам.</span>
                <span data-i18n-lang="en">Rotogravure printing in 4–8 colours, registration checked against alignment marks.</span>
                <span data-i18n-lang="uz">4–8 rangli rotogravyura bosmasi, ro'yxatga olish belgilari bo'yicha moslik nazorati bilan.</span></p>
           </div>
-          <div class="process-connector" data-seg="1" aria-hidden="true">
-            <svg viewBox="0 0 100 40" preserveAspectRatio="none">
-              <line class="process-connector__line" x1="0" y1="20" x2="100" y2="20"/>
-              <line class="process-connector__progress" x1="0" y1="20" x2="100" y2="20"/>
-              <circle class="process-connector__dot" cx="0" cy="20" r="2.6"/>
-            </svg>
-          </div>
           <div class="process-card">
-            <div class="process-card__badge">03</div>
-            <div class="process-card__icon">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path d="M12 3c3 4.5 6 8 6 11a6 6 0 0 1-12 0c0-3 3-6.5 6-11z"/><path d="M9.5 14a2.5 2.5 0 0 0 2.5 2.5"/></svg>
-            </div>
+            <div class="process-card__num">03</div>
             <h3><span data-i18n-lang="ru">Пропитка</span><span data-i18n-lang="en">Impregnation</span><span data-i18n-lang="uz">Shimdirish</span></h3>
             <p><span data-i18n-lang="ru">Пропитка меламиновыми смолами, дозированная по плотности декора.</span>
                <span data-i18n-lang="en">Melamine resin impregnation, dosed to the decor's weight.</span>
                <span data-i18n-lang="uz">Dekor zichligiga qarab dozalangan melamin smolalari bilan shimdirish.</span></p>
           </div>
-          <div class="process-connector" data-seg="2" aria-hidden="true">
-            <svg viewBox="0 0 100 40" preserveAspectRatio="none">
-              <line class="process-connector__line" x1="0" y1="20" x2="100" y2="20"/>
-              <line class="process-connector__progress" x1="0" y1="20" x2="100" y2="20"/>
-              <circle class="process-connector__dot" cx="0" cy="20" r="2.6"/>
-            </svg>
-          </div>
           <div class="process-card">
-            <div class="process-card__badge">04</div>
-            <div class="process-card__icon">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path d="M3 7h18v4H3z"/><path d="M3 17h18v4H3z"/><path d="M7 11v6M17 11v6" stroke-dasharray="2 2"/><path d="M12 11v6"/></svg>
-            </div>
+            <div class="process-card__num">04</div>
             <h3><span data-i18n-lang="ru">Прессование</span><span data-i18n-lang="en">Pressing</span><span data-i18n-lang="uz">Presslash</span></h3>
             <p><span data-i18n-lang="ru">Термопрессование на ДСП/МДФ под давлением, синхронизация тиснения с рисунком.</span>
                <span data-i18n-lang="en">Hot-pressing onto particleboard/MDF, embossing synchronised with the print.</span>
                <span data-i18n-lang="uz">DSP/MDF ustiga bosim ostida issiq presslash, relyefni rasmga sinxronlash.</span></p>
           </div>
-          <div class="process-connector" data-seg="3" aria-hidden="true">
-            <svg viewBox="0 0 100 40" preserveAspectRatio="none">
-              <line class="process-connector__line" x1="0" y1="20" x2="100" y2="20"/>
-              <line class="process-connector__progress" x1="0" y1="20" x2="100" y2="20"/>
-              <circle class="process-connector__dot" cx="0" cy="20" r="2.6"/>
-            </svg>
-          </div>
           <div class="process-card">
-            <div class="process-card__badge">05</div>
-            <div class="process-card__icon">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><circle cx="10" cy="10" r="6"/><path d="M14.5 14.5L20 20"/><path d="M7.2 10l1.8 1.8L13 7.8"/></svg>
-            </div>
+            <div class="process-card__num">05</div>
             <h3><span data-i18n-lang="ru">Контроль качества</span><span data-i18n-lang="en">Quality control</span><span data-i18n-lang="uz">Sifat nazorati</span></h3>
             <p><span data-i18n-lang="ru">Проверка цвета, блеска и износостойкости перед упаковкой и отгрузкой.</span>
                <span data-i18n-lang="en">Colour, gloss and abrasion checks before packing and shipment.</span>
@@ -595,12 +744,50 @@
           <span data-i18n-lang="ru">НАМ ДОВЕРЯЮТ</span><span data-i18n-lang="en">TRUSTED BY</span><span data-i18n-lang="uz">BIZGA ISHONISHADI</span>
         </p>
       </div>
-      <div class="logo-row reveal">
-        <span class="client-logo">MEBEL&nbsp;GROUP</span>
-        <span class="client-logo">PARQUET&nbsp;PRO</span>
-        <span class="client-logo">NORDWOOD</span>
-        <span class="client-logo">FASADE&nbsp;LINE</span>
-        <span class="client-logo">DOMPLIT</span>
+      <!-- Endless right-to-left marquee. The five clients are repeated four
+           times as a single flat run of spans — not four nested rows —
+           because the alternating light/dark rhythm comes from
+           :nth-child(even) on the track, and with an odd number of clients
+           a per-row nth-child would restart the pattern at every seam and
+           put two light logos side by side. Flat, the parity carries
+           straight through the wrap.
+
+           The track slides by exactly one copy, so a copy always arrives
+           where the previous one started and the loop has no seam. Four
+           copies and not two: the track has to stay at least a container
+           width longer than one step, or a hole opens at the right edge
+           mid-cycle — five short client names make one copy only ~770px
+           against a 1200px container. If you add or remove clients, check
+           that (copies - 1) x copy width still exceeds the container, and
+           keep --marquee-copies in style.css in step with the markup.
+
+           Repeats are aria-hidden, so the five clients are announced once.
+           Under prefers-reduced-motion the track stops and the repeats are
+           hidden (see style.css), landing back on the plain centered row
+           this section used to be. -->
+      <div class="logo-marquee reveal">
+        <div class="logo-marquee__track">
+          <span class="client-logo">MEBEL&nbsp;GROUP</span>
+          <span class="client-logo">PARQUET&nbsp;PRO</span>
+          <span class="client-logo">NORDWOOD</span>
+          <span class="client-logo">FASADE&nbsp;LINE</span>
+          <span class="client-logo">DOMPLIT</span>
+          <span class="client-logo" aria-hidden="true">MEBEL&nbsp;GROUP</span>
+          <span class="client-logo" aria-hidden="true">PARQUET&nbsp;PRO</span>
+          <span class="client-logo" aria-hidden="true">NORDWOOD</span>
+          <span class="client-logo" aria-hidden="true">FASADE&nbsp;LINE</span>
+          <span class="client-logo" aria-hidden="true">DOMPLIT</span>
+          <span class="client-logo" aria-hidden="true">MEBEL&nbsp;GROUP</span>
+          <span class="client-logo" aria-hidden="true">PARQUET&nbsp;PRO</span>
+          <span class="client-logo" aria-hidden="true">NORDWOOD</span>
+          <span class="client-logo" aria-hidden="true">FASADE&nbsp;LINE</span>
+          <span class="client-logo" aria-hidden="true">DOMPLIT</span>
+          <span class="client-logo" aria-hidden="true">MEBEL&nbsp;GROUP</span>
+          <span class="client-logo" aria-hidden="true">PARQUET&nbsp;PRO</span>
+          <span class="client-logo" aria-hidden="true">NORDWOOD</span>
+          <span class="client-logo" aria-hidden="true">FASADE&nbsp;LINE</span>
+          <span class="client-logo" aria-hidden="true">DOMPLIT</span>
+        </div>
       </div>
     </div>
   </section>
@@ -710,5 +897,9 @@
 <script src="https://unpkg.com/gsap@3.12.5/dist/gsap.min.js" defer></script>
 <script src="https://unpkg.com/gsap@3.12.5/dist/ScrollTrigger.min.js" defer></script>
 <script src="script.js" defer></script>
+<!-- Hero motif. type="module" is deferred by default; if three.js fails to
+     resolve, or the browser has no WebGL, this simply never runs and the
+     hero keeps its static fallback image. -->
+<script type="module" src="assets/mdf-stack.js"></script>
 </body>
 </html>
