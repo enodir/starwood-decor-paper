@@ -541,7 +541,7 @@
                 <ellipse cx="118" cy="99" rx="106" ry="4" fill="#000" opacity=".18"/>
                 <rect x="10" y="16" width="118" height="62" fill="var(--pf-fill)" stroke="var(--pf-accent-line)" stroke-width="1.5"/>
                 <path d="M24 20V74M38 20V74M52 20V74M66 20V74M80 20V74M94 20V74M108 20V74" stroke="var(--pf-line-soft)" stroke-width="1.2"/>
-                <text x="69" y="40" text-anchor="middle" font-family="'PT Sans Narrow', 'Arial Narrow', sans-serif" font-size="26" font-weight="700" letter-spacing="0.8" fill="var(--pf-accent-line)">DECOSTAR</text>
+                <text x="69" y="47" text-anchor="middle" dominant-baseline="central" font-family="'PT Sans Narrow', 'Arial Narrow', sans-serif" font-size="24" font-weight="700" letter-spacing="0.8" fill="var(--pf-accent-line)">DECOSTAR</text>
                 <rect x="10" y="16" width="118" height="7" fill="var(--pf-accent)"/>
                 <rect x="10" y="71" width="118" height="7" fill="var(--pf-accent)"/>
                 <path d="M132 34c0-2 1.5-3.5 3.5-3.5h34l14 12v35H132z" fill="var(--pf-accent)" stroke="var(--pf-accent-line)" stroke-width="1.5"/>
@@ -567,12 +567,36 @@
           </div>
         </div>
 
-        <div class="pflow-nodes" aria-hidden="true">
-          <span class="pflow-node"></span>
-          <span class="pflow-node"></span>
-          <span class="pflow-node"></span>
-          <span class="pflow-node"></span>
-          <span class="pflow-node"></span>
+        <!-- Checkpoint rail: the lab sign-off the lead paragraph promises.
+             Each stage counts up from a number to a spinner to a stamped
+             check as the batch clears it, on the same clock as the band. -->
+        <div class="pflow-checks" aria-hidden="true">
+          <span class="pflow-checks__rail"><span class="pflow-checks__fill"></span></span>
+          <span class="pflow-check">
+            <span class="pflow-check__num">1</span>
+            <span class="pflow-check__spin"></span>
+            <span class="pflow-check__done">✓</span>
+          </span>
+          <span class="pflow-check">
+            <span class="pflow-check__num">2</span>
+            <span class="pflow-check__spin"></span>
+            <span class="pflow-check__done">✓</span>
+          </span>
+          <span class="pflow-check">
+            <span class="pflow-check__num">3</span>
+            <span class="pflow-check__spin"></span>
+            <span class="pflow-check__done">✓</span>
+          </span>
+          <span class="pflow-check">
+            <span class="pflow-check__num">4</span>
+            <span class="pflow-check__spin"></span>
+            <span class="pflow-check__done">✓</span>
+          </span>
+          <span class="pflow-check">
+            <span class="pflow-check__num">5</span>
+            <span class="pflow-check__spin"></span>
+            <span class="pflow-check__done">✓</span>
+          </span>
         </div>
 
         <div class="process-track">

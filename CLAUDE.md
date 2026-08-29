@@ -176,16 +176,22 @@ complexity, so keep it intact when editing:
 Design file (project `4c58dab7-4fc7-486a-9fef-2b775d0c5b7d`, `Production Process.dc.html`; read it with the
 DesignSync tool, its share URL 403s to a plain fetch). A DECOSTAR truck arrives at the inbound gate,
 unloads three rolls of base paper and leaves, while four line stations — rotogravure, melamine bath, hot
-press, lab bench — run their own machinery and each of the five step cards lights in turn. All CSS
-keyframes and inline SVG: no images, no library, no canvas.
+press, lab bench — run their own machinery and each of the five step cards lights in turn. Between the
+band and the cards runs the **checkpoint rail** (`.pflow-checks`): five markers that count from a number
+to a spinner to a stamped check as the batch clears each stage, on a filling progress bar. Unlike
+everything else on the line the checks *latch* — a signed-off stage stays stamped until the next batch
+restarts the cycle — which is what makes the rail read as accumulated progress rather than another row of
+blinking lights. (It replaced the five plain `.pflow-node` diamonds this slot used to hold; that class is
+gone.) All CSS keyframes and inline SVG: no images, no library, no canvas.
 
 Four invariants, all easy to break by accident:
 
-1. **One clock.** `--pflow-cycle` (9s) drives the truck, rolls, status flags, stage nodes and card
+1. **One clock.** `--pflow-cycle` (9s) drives the truck, rolls, status flags, checkpoint rail and card
    highlights together — retime one of them alone and the truck starts arriving out of step with the card
    that announces it. The station machinery deliberately runs on its own short loops (a press stroke, a
    spinning cylinder); those read as continuous plant noise, and tying them to the cycle would make a
-   press stroke absurdly slow.
+   press stroke absurdly slow. The checkpoint spinners are the same split: a cycle-long fade for *which*
+   stage is working, plus their own 0.9s `pflow-ck-turn` rotation.
 2. **`.is-running` is what attaches the keyframes at all.** `initProcessLine()` adds it when the section
    scrolls in and *removes* it when it leaves — unlike the kinetic counters, this observer is not
    one-shot, because two dozen infinite animations would otherwise keep the compositor awake for the rest
@@ -197,9 +203,11 @@ Four invariants, all easy to break by accident:
    (strokes) is the lighter eyebrow cyan, not `--registration-cyan`, which reads as a dark smudge at 1.2px
    on the night shell; and `--pf-tyre`/`--pf-tyre-mark` stay dark in both themes, since `--pf-ink` is
    pulp-white on night and gave the truck white tyres.
-4. **Geometry is percentages** (stations at 30/50/70/90%, cards at fifths), so the line stays registered
-   with the cards at every width. Below 900px the band and stage nodes are hidden outright and the cards
-   go two-up, then one-up at 560px — the cards carry the same content as text.
+4. **Geometry is percentages** (stations at 30/50/70/90%, checkpoints at 10/30/50/70/90%, cards at
+   fifths), so the line stays registered with the cards at every width. Below 900px the band and the
+   checkpoint rail are hidden outright and the cards go two-up, then one-up at 560px — the cards carry
+   the same content as text. The checkpoint markers are opaque (`--shell-bg`, the section's own base
+   colour in both themes) because each one has to mask the rail running under it.
 
 The blueprint corner marks on each card are eight gradient layers on one `::after`, not the design's four
 `<i>` elements per card — same registration-mark language the `.eyebrow` crosshair already speaks, without

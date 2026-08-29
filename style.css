@@ -1531,19 +1531,76 @@ html[data-theme="day"] .process {
 }
 .pflow-truck svg { display: block; overflow: visible; }
 
-/* ---------- Stage nodes ---------- */
-.pflow-nodes {
-  display: grid;
-  grid-template-columns: repeat(5, minmax(0, 1fr));
-  margin-top: -1px;
+/* ---------- Checkpoint rail ----------
+   Replaces the five plain stage diamonds this slot used to hold. Same job —
+   register the band against the cards — but it now says what the band says:
+   a batch clears each stage and gets stamped. Markers sit at the same
+   10/30/50/70/90% the stations do, so the rail stays in step at any width.
+   The three states are stacked in one 30px box and cross-faded, rather than
+   swapped, so nothing reflows on the compositor. */
+.pflow-checks {
+  position: relative;
+  height: 30px;
+  margin-top: 1.6rem;
 }
-.pflow-node {
-  width: 11px;
-  height: 11px;
-  margin: 0 auto;
-  border: 1px solid var(--pf-ink);
-  background: transparent;
-  transform: rotate(45deg) translateY(-4px);
+.pflow-checks__rail {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  height: 3px;
+  background: var(--pf-line);
+}
+.pflow-checks__fill {
+  display: block;
+  width: 0;
+  height: 100%;
+  background: var(--pf-accent);
+}
+.pflow-check {
+  position: absolute;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  width: 30px;
+  height: 30px;
+}
+.pflow-check:nth-child(2) { left: 10%; }
+.pflow-check:nth-child(3) { left: 30%; }
+.pflow-check:nth-child(4) { left: 50%; }
+.pflow-check:nth-child(5) { left: 70%; }
+.pflow-check:nth-child(6) { left: 90%; }
+/* Opaque, because each marker has to mask the rail running under it.
+   --shell-bg is the section's own base colour in both themes, so this
+   repaints with the day/night toggle like the rest of the line. */
+.pflow-check__num,
+.pflow-check__spin,
+.pflow-check__done {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+}
+.pflow-check__num {
+  background: var(--shell-bg);
+  border: 1px solid var(--pf-line);
+  font-family: var(--font-display);
+  font-size: 0.95rem;
+  color: var(--shell-muted-soft);
+}
+.pflow-check__spin {
+  opacity: 0;
+  background: var(--shell-bg);
+  border: 2px solid var(--shell-border);
+  border-top-color: var(--pf-accent);
+  border-radius: 50%;
+}
+.pflow-check__done {
+  opacity: 0;
+  background: var(--pf-accent);
+  color: var(--pulp-white);
+  font-size: 1rem;
+  line-height: 1;
 }
 
 /* ---------- Step cards ---------- */
@@ -1611,11 +1668,26 @@ html[data-theme="day"] .process {
 .process-flow.is-running .pflow-station--resin .pflow-flag { animation: pflow-status-3 var(--pflow-cycle) linear infinite; }
 .process-flow.is-running .pflow-station--press .pflow-flag { animation: pflow-status-4 var(--pflow-cycle) linear infinite; }
 .process-flow.is-running .pflow-station--qc .pflow-flag { animation: pflow-status-5 var(--pflow-cycle) linear infinite; }
-.process-flow.is-running .pflow-node:nth-child(1) { animation: pflow-node-1 var(--pflow-cycle) linear infinite; }
-.process-flow.is-running .pflow-node:nth-child(2) { animation: pflow-node-2 var(--pflow-cycle) linear infinite; }
-.process-flow.is-running .pflow-node:nth-child(3) { animation: pflow-node-3 var(--pflow-cycle) linear infinite; }
-.process-flow.is-running .pflow-node:nth-child(4) { animation: pflow-node-4 var(--pflow-cycle) linear infinite; }
-.process-flow.is-running .pflow-node:nth-child(5) { animation: pflow-node-5 var(--pflow-cycle) linear infinite; }
+.process-flow.is-running .pflow-checks__fill { animation: pflow-ck-bar var(--pflow-cycle) linear infinite; }
+.process-flow.is-running .pflow-check:nth-child(2) .pflow-check__num { animation: pflow-ck-num-1 var(--pflow-cycle) linear infinite; }
+.process-flow.is-running .pflow-check:nth-child(3) .pflow-check__num { animation: pflow-ck-num-2 var(--pflow-cycle) linear infinite; }
+.process-flow.is-running .pflow-check:nth-child(4) .pflow-check__num { animation: pflow-ck-num-3 var(--pflow-cycle) linear infinite; }
+.process-flow.is-running .pflow-check:nth-child(5) .pflow-check__num { animation: pflow-ck-num-4 var(--pflow-cycle) linear infinite; }
+.process-flow.is-running .pflow-check:nth-child(6) .pflow-check__num { animation: pflow-ck-num-5 var(--pflow-cycle) linear infinite; }
+/* Two animations per spinner: the cycle-long fade that says "this stage is
+   working", and its own 0.9s rotation — the same split the station
+   machinery uses, and for the same reason (a spinner geared to a 9s cycle
+   would not read as a spinner). */
+.process-flow.is-running .pflow-check:nth-child(2) .pflow-check__spin { animation: pflow-ck-spin-1 var(--pflow-cycle) linear infinite, pflow-ck-turn .9s linear infinite; }
+.process-flow.is-running .pflow-check:nth-child(3) .pflow-check__spin { animation: pflow-ck-spin-2 var(--pflow-cycle) linear infinite, pflow-ck-turn .9s linear infinite; }
+.process-flow.is-running .pflow-check:nth-child(4) .pflow-check__spin { animation: pflow-ck-spin-3 var(--pflow-cycle) linear infinite, pflow-ck-turn .9s linear infinite; }
+.process-flow.is-running .pflow-check:nth-child(5) .pflow-check__spin { animation: pflow-ck-spin-4 var(--pflow-cycle) linear infinite, pflow-ck-turn .9s linear infinite; }
+.process-flow.is-running .pflow-check:nth-child(6) .pflow-check__spin { animation: pflow-ck-spin-5 var(--pflow-cycle) linear infinite, pflow-ck-turn .9s linear infinite; }
+.process-flow.is-running .pflow-check:nth-child(2) .pflow-check__done { animation: pflow-ck-done-1 var(--pflow-cycle) linear infinite; }
+.process-flow.is-running .pflow-check:nth-child(3) .pflow-check__done { animation: pflow-ck-done-2 var(--pflow-cycle) linear infinite; }
+.process-flow.is-running .pflow-check:nth-child(4) .pflow-check__done { animation: pflow-ck-done-3 var(--pflow-cycle) linear infinite; }
+.process-flow.is-running .pflow-check:nth-child(5) .pflow-check__done { animation: pflow-ck-done-4 var(--pflow-cycle) linear infinite; }
+.process-flow.is-running .pflow-check:nth-child(6) .pflow-check__done { animation: pflow-ck-done-5 var(--pflow-cycle) linear infinite; }
 .process-flow.is-running .process-card:nth-child(1) { animation: pflow-step-1 var(--pflow-cycle) linear infinite; }
 .process-flow.is-running .process-card:nth-child(2) { animation: pflow-step-2 var(--pflow-cycle) linear infinite; }
 .process-flow.is-running .process-card:nth-child(3) { animation: pflow-step-3 var(--pflow-cycle) linear infinite; }
@@ -1674,11 +1746,34 @@ html[data-theme="day"] .process {
 @keyframes pflow-status-3 { 0%, 44% { opacity: 0; } 50%, 64% { opacity: 1; } 70%, 100% { opacity: 0; } }
 @keyframes pflow-status-4 { 0%, 58% { opacity: 0; } 64%, 78% { opacity: 1; } 84%, 100% { opacity: 0; } }
 @keyframes pflow-status-5 { 0%, 72% { opacity: 0; } 78%, 94% { opacity: 1; } 99%, 100% { opacity: 0; } }
-@keyframes pflow-node-1 { 0%, 12% { background: transparent; } 18%, 38% { background: var(--pf-accent); } 44%, 100% { background: transparent; } }
-@keyframes pflow-node-2 { 0%, 28% { background: transparent; } 34%, 52% { background: var(--pf-accent); } 58%, 100% { background: transparent; } }
-@keyframes pflow-node-3 { 0%, 42% { background: transparent; } 48%, 66% { background: var(--pf-accent); } 72%, 100% { background: transparent; } }
-@keyframes pflow-node-4 { 0%, 56% { background: transparent; } 62%, 80% { background: var(--pf-accent); } 86%, 100% { background: transparent; } }
-@keyframes pflow-node-5 { 0%, 70% { background: transparent; } 76%, 96% { background: var(--pf-accent); } 100% { background: transparent; } }
+/* The checkpoints latch: a stage that has been signed off stays stamped
+   until the next batch starts the cycle over. That's the whole point of the
+   rail — it reads as accumulated progress, not another blinking light. */
+@keyframes pflow-ck-turn { to { transform: rotate(360deg); } }
+@keyframes pflow-ck-bar {
+  0%, 12%  { width: 0%; }
+  20%      { width: 10%; }
+  36%      { width: 30%; }
+  50%      { width: 50%; }
+  64%      { width: 70%; }
+  78%      { width: 90%; }
+  96%, 100%{ width: 100%; }
+}
+@keyframes pflow-ck-num-1 { 0%, 13% { opacity: 1; } 14%, 100% { opacity: 0; } }
+@keyframes pflow-ck-num-2 { 0%, 31% { opacity: 1; } 32%, 100% { opacity: 0; } }
+@keyframes pflow-ck-num-3 { 0%, 47% { opacity: 1; } 48%, 100% { opacity: 0; } }
+@keyframes pflow-ck-num-4 { 0%, 61% { opacity: 1; } 62%, 100% { opacity: 0; } }
+@keyframes pflow-ck-num-5 { 0%, 75% { opacity: 1; } 76%, 100% { opacity: 0; } }
+@keyframes pflow-ck-spin-1 { 0%, 13% { opacity: 0; } 14%, 31% { opacity: 1; } 32%, 100% { opacity: 0; } }
+@keyframes pflow-ck-spin-2 { 0%, 31% { opacity: 0; } 32%, 47% { opacity: 1; } 48%, 100% { opacity: 0; } }
+@keyframes pflow-ck-spin-3 { 0%, 47% { opacity: 0; } 48%, 61% { opacity: 1; } 62%, 100% { opacity: 0; } }
+@keyframes pflow-ck-spin-4 { 0%, 61% { opacity: 0; } 62%, 75% { opacity: 1; } 76%, 100% { opacity: 0; } }
+@keyframes pflow-ck-spin-5 { 0%, 75% { opacity: 0; } 76%, 95% { opacity: 1; } 96%, 100% { opacity: 0; } }
+@keyframes pflow-ck-done-1 { 0%, 31% { opacity: 0; } 32%, 100% { opacity: 1; } }
+@keyframes pflow-ck-done-2 { 0%, 47% { opacity: 0; } 48%, 100% { opacity: 1; } }
+@keyframes pflow-ck-done-3 { 0%, 61% { opacity: 0; } 62%, 100% { opacity: 1; } }
+@keyframes pflow-ck-done-4 { 0%, 75% { opacity: 0; } 76%, 100% { opacity: 1; } }
+@keyframes pflow-ck-done-5 { 0%, 95% { opacity: 0; } 96%, 100% { opacity: 1; } }
 @keyframes pflow-step-1 { 0%, 12% { border-color: var(--shell-border); } 18%, 38% { border-color: var(--pf-accent); } 44%, 100% { border-color: var(--shell-border); } }
 @keyframes pflow-step-2 { 0%, 28% { border-color: var(--shell-border); } 34%, 52% { border-color: var(--pf-accent); } 58%, 100% { border-color: var(--shell-border); } }
 @keyframes pflow-step-3 { 0%, 42% { border-color: var(--shell-border); } 48%, 66% { border-color: var(--pf-accent); } 72%, 100% { border-color: var(--shell-border); } }
@@ -1758,7 +1853,10 @@ html[data-theme="day"] .process {
   .process-flow .pflow-wheel,
   .process-flow .pflow-roll,
   .process-flow .pflow-flag,
-  .process-flow .pflow-node,
+  .process-flow .pflow-checks__fill,
+  .process-flow .pflow-check__num,
+  .process-flow .pflow-check__spin,
+  .process-flow .pflow-check__done,
   .process-flow .process-card,
   .process-flow .process-card__num {
     animation-duration: var(--pflow-cycle) !important;
@@ -1772,9 +1870,11 @@ html[data-theme="day"] .process {
 
 @media (max-width: 900px) {
   .process-track { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1.5rem 1.25rem; }
-  /* The band and its stage nodes are one wide illustration; below this it
-     would be a 60px-tall smear, and the cards carry the same content. */
-  .pflow-band, .pflow-nodes { display: none; }
+  /* The band and its checkpoint rail are one wide illustration; below this
+     it would be a 60px-tall smear, and the rail's 10/30/50/70/90% markers
+     only register against the five-column card track anyway. The cards
+     carry the same content as text. */
+  .pflow-band, .pflow-checks { display: none; }
 }
 @media (max-width: 560px) {
   .process-track { grid-template-columns: 1fr; }
