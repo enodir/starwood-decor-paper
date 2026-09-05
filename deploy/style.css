@@ -455,15 +455,21 @@ p.lead { font-size: clamp(1.05rem, 1.6vw, 1.25rem); color: var(--ink-grey); }
      sitting at its own content width with a large, viewport-dependent gap
      opening up between them on wide screens. */
   flex: 1 1 auto;
-  /* Fully transparent fill, on request — only the border marks the pill's
-     edge, no backdrop-filter either since saturate() tints whatever shows
-     through even with no background-color of its own. Ink is fixed
-     --press-black (not theme-following) because with nothing behind it to
-     control, the pill shows raw page content as the user scrolls — hero
-     photo, light paper-stock sections, dark shell sections — and a fixed
-     dark ink is the one choice that stays legible-ish across all of them,
-     same as the mobile dropdown assumes. */
-  background: transparent;
+  /* Keyed one step darker than the #sustainability section: that section
+     renders at #B1A596 in the default night theme (its rgba(168,158,142,
+     .85) composited over --bg-texture), and this is that tone at ~0.9.
+     Measured off the rendered pixels rather than read off the token, since
+     the section's colour is translucent over a photo and the declared value
+     is not what the eye actually gets.
+
+     Alpha is high (0.9, not the 0.7 a lighter fill could afford) precisely
+     because this is now a specific colour rather than "light": at 0.7 the
+     pill would read markedly darker over the hero than over a paper-stock
+     section and stop matching the reference at all. The remaining 0.1 plus
+     the blur keep it glass rather than an opaque chip. */
+  background: rgba(159, 148, 135, 0.9);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
   /* Bolder on request now that background is gone — the border is the
      pill's only visible edge, so 1px/0.16 read as too faint on its own. */
   border: 1.5px solid rgba(30, 26, 23, 0.32);
@@ -609,25 +615,23 @@ p.lead { font-size: clamp(1.05rem, 1.6vw, 1.25rem); color: var(--ink-grey); }
 }
 .main-nav a {
   position: relative;
-  opacity: 0.85;
+  /* Full strength, not the 0.85 this rested at over the old light fill:
+     against the darker pill that lands at 4.31:1, under AA. Hover keeps
+     three signals without it — 600->700 weight, the underline sweep, and
+     the opacity rule below is now a no-op it can afford to lose. */
+  opacity: 1;
   text-decoration: none;
   /* 600 at rest (not 400) — sharper on request; still has 700 on hover as
      headroom to distinguish the hover state. Both weights are real hinted
      files (see assets/fonts.generated.css), not synthetic/faux-bold. */
   font-weight: 600;
   transition: opacity 150ms;
-  /* White ink coated in a black outline (reversed from black-on-white, on
-     request) — the header islands have no background of their own (see
-     .nav-island), so this text sits directly over whatever's scrolled
-     underneath. White fill reads on the dark hero/process/certificates/CTA
-     sections; the black coating is what stays legible over the light
-     paper-stock sections instead. */
-  color: var(--pulp-white);
-  text-shadow:
-    -1px -1px 0 var(--press-black),
-     1px -1px 0 var(--press-black),
-    -1px  1px 0 var(--press-black),
-     1px  1px 0 var(--press-black);
+  /* Dark ink, no outlining. The white-on-black-coating treatment this
+     replaced existed only because the islands were transparent and the text
+     sat directly on whatever scrolled underneath; now that the pill carries
+     its own light ground (see .nav-island), white would be unreadable and
+     the four-corner shadow would just be grime around the letters. */
+  color: var(--press-black);
 }
 .main-nav a:hover { opacity: 1; }
 
@@ -637,6 +641,13 @@ p.lead { font-size: clamp(1.05rem, 1.6vw, 1.25rem); color: var(--ink-grey); }
 .action-island {
   display: flex;
   align-items: center;
+  /* Takes a larger share of the row's leftover width than the logo and nav
+     pills (which stay at the flex-grow: 1 set above), so the CTA, language
+     switch and theme toggle get more breathing room inside it. Grow, not a
+     wider flex-basis: the three items are laid out with space-evenly, so
+     extra width distributes into the intervals between them rather than
+     pushing the pill past its neighbours at narrow viewports. */
+  flex-grow: 1.6;
   /* space-evenly, not space-between/center — CTA/lang-switch/toggle should
      sit equally distanced from each other AND from the pill's left/right
      edges once it grows wider than its content (see flex:1 1 auto above),
@@ -690,14 +701,15 @@ p.lead { font-size: clamp(1.05rem, 1.6vw, 1.25rem); color: var(--ink-grey); }
   letter-spacing: 0.02em;
   padding: 0.32em 0.55em;
   border-radius: 2px;
-  opacity: 0.6;
+  /* 0.8, not the 0.6 this sat at while the ink was white-coated-in-black:
+     that coating was doing the contrast work, and plain --press-black at
+     0.6 lands ~3.4:1 over the pill when a dark hero shows through it. The
+     active option is still clearly distinct — full opacity plus a cyan
+     fill, not a 0.4 opacity gap. */
+  opacity: 0.8;
   transition: opacity 150ms, background 150ms, color 150ms;
-  /* White ink coated in black — see .main-nav a for why. */
-  text-shadow:
-    -1px -1px 0 var(--press-black),
-     1px -1px 0 var(--press-black),
-    -1px  1px 0 var(--press-black),
-     1px  1px 0 var(--press-black);
+  /* Dark ink, no outlining — see .main-nav a for why the coating went. */
+  color: var(--press-black);
 }
 .lang-option:hover { opacity: 1; color: var(--registration-cyan); }
 .lang-option.is-active {
@@ -2096,6 +2108,9 @@ html[data-theme="day"] .process {
 .logo-marquee {
   --marquee-gap: clamp(1.5rem, 5vw, 3.5rem);
   --marquee-copies: 4;
+  /* Every wordmark below is sized as a ratio of this, so the whole belt
+     rescales from one number instead of five that can drift apart. */
+  --logo-size: 2.6rem;
   overflow: hidden;
   /* Logos dissolve at the edges instead of being guillotined by the
      container, so the row reads as a continuous belt passing through. */
@@ -2109,10 +2124,12 @@ html[data-theme="day"] .process {
   justify-content: center;
   width: max-content;
   gap: var(--marquee-gap);
-  /* The duration covers one step (one copy), not the whole track: ~40px/s,
-     so a name takes about half a minute to cross the container. Ambient
-     drift rather than a news ticker. */
-  animation: logo-marquee 20s linear infinite;
+  /* The duration covers one step (one copy), not the whole track. Held at
+     ~40px/s — ambient drift rather than a news ticker. It is 40s and not the
+     original 20s because doubling the wordmark size doubled a copy's width,
+     and the same duration over twice the distance would have silently
+     doubled the belt's speed. */
+  animation: logo-marquee 40s linear infinite;
 }
 
 @keyframes logo-marquee {
@@ -2142,9 +2159,99 @@ html[data-theme="day"] .process {
   opacity: 0.5;
   transition: filter 250ms, opacity 250ms;
   font-family: var(--font-display);
-  font-size: 1.3rem;
+  font-size: var(--logo-size);
   letter-spacing: 0.03em;
   color: var(--ink-grey);
+  /* Mark and wordmark sit on one baseline as a lockup. */
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45em;
+  white-space: nowrap;
+}
+
+/* Each client reads as its own wordmark instead of five copies of one type
+   style — a partner wall is only legible as one when the marks differ.
+   Addressed with :nth-child(5n+k) across the flat 20-span track, so a
+   treatment lands on the same client in every copy with no markup change,
+   and the alternating-parity rule above keeps working untouched.
+
+   These are deliberately typographic lockups over placeholder company names,
+   not invented corporate symbols: the mark is one CSS-drawn pseudo-element,
+   so a real supplied logo replaces the whole thing as a single image or SVG
+   element once the mill provides them. Every weight used here is a real loaded
+   file (see assets/fonts.generated.css) — PT Sans Narrow ships 400/700 only,
+   so nothing leans on a synthesised weight. */
+.logo-marquee .client-logo::before {
+  content: "";
+  flex: none;
+  display: block;
+  width: 0.66em;
+  height: 0.66em;
+  background-repeat: no-repeat;
+}
+
+/* MEBEL GROUP — furniture: heavy and square, a solid block with a cut. */
+.logo-marquee .client-logo:nth-child(5n + 1) {
+  font-weight: 700;
+  letter-spacing: -0.005em;
+}
+.logo-marquee .client-logo:nth-child(5n + 1)::before {
+  background-image: linear-gradient(currentColor 0 100%);
+  clip-path: polygon(0 0, 100% 0, 100% 62%, 62% 100%, 0 100%);
+}
+
+/* PARQUET PRO — flooring: mono and wide, over a herringbone hatch. */
+.logo-marquee .client-logo:nth-child(5n + 2) {
+  font-family: var(--font-mono);
+  font-weight: 500;
+  font-size: calc(var(--logo-size) * 0.785);
+  letter-spacing: 0.12em;
+}
+.logo-marquee .client-logo:nth-child(5n + 2)::before {
+  background-image: repeating-linear-gradient(
+    45deg, currentColor 0 0.1em, transparent 0.1em 0.24em);
+}
+
+/* NORDWOOD — the airy one: wide tracking around an open ring. */
+.logo-marquee .client-logo:nth-child(5n + 3) {
+  font-family: var(--font-body);
+  font-weight: 400;
+  font-size: calc(var(--logo-size) * 0.808);
+  letter-spacing: 0.26em;
+  text-transform: uppercase;
+}
+.logo-marquee .client-logo:nth-child(5n + 3)::before {
+  border: 0.12em solid currentColor;
+  border-radius: 50%;
+  width: 0.6em;
+  height: 0.6em;
+}
+
+/* FASADE LINE — cladding: stacked rules, like courses on a facade. */
+.logo-marquee .client-logo:nth-child(5n + 4) {
+  font-family: var(--font-body);
+  font-weight: 600;
+  font-size: calc(var(--logo-size) * 0.769);
+  letter-spacing: 0.07em;
+}
+.logo-marquee .client-logo:nth-child(5n + 4)::before {
+  background-image: repeating-linear-gradient(
+    to bottom, currentColor 0 0.1em, transparent 0.1em 0.26em);
+}
+
+/* DOMPLIT — panels: two pressed layers, tight and heavy. */
+.logo-marquee .client-logo:nth-child(5n + 5) {
+  font-weight: 700;
+  font-size: calc(var(--logo-size) * 1.046);
+  letter-spacing: -0.02em;
+  text-transform: uppercase;
+}
+.logo-marquee .client-logo:nth-child(5n + 5)::before {
+  background-image:
+    linear-gradient(currentColor 0 100%),
+    linear-gradient(currentColor 0 100%);
+  background-size: 100% 0.26em, 74% 0.26em;
+  background-position: 0 18%, 26% 74%;
 }
 
 /* Alternating weight — every second logo sits darker on the page, so the
