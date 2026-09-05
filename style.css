@@ -1101,6 +1101,71 @@ html[data-theme="day"] #sustainability { background: rgba(217, 210, 196, 0.55); 
   transition: opacity var(--dur-reveal) var(--ease-out), transform var(--dur-reveal) var(--ease-out);
 }
 
+/* Section names assemble a letter at a time as their block scrolls in. Same
+   fade-and-rise vocabulary the .reveal device already speaks, just resolved
+   per character — the quiet tier, not a new competing signature moment.
+
+   The letters start after the block's own reveal rather than alongside it:
+   two nested opacity fades would multiply into a muddy half-transparent
+   ramp, and sequencing them reads as the rule and eyebrow arriving first,
+   then the name typing itself onto them. Spans are built by script.js; with
+   no JS the heading is plain text and simply reveals with its block. */
+
+/* The unbreakable unit. Letters are inline-block, so without this wrapper a
+   line could break between any two of them and split a word down the middle
+   at narrow widths. This keeps breaks at spaces, where they belong. */
+.headline-word {
+  display: inline-block;
+  white-space: nowrap;
+}
+.headline-char {
+  display: inline-block;
+  opacity: 0;
+  transform: translateY(0.3em);
+}
+.reveal.is-visible .headline-char {
+  opacity: 1;
+  transform: translateY(0);
+  transition: opacity 360ms var(--ease-out), transform 360ms var(--ease-out);
+  /* 26ms per character, not the 55ms a per-word cascade could afford: the
+     longest heading here runs 33 characters, which at word-pacing would
+     take nearly two seconds to finish resolving. */
+  transition-delay: calc(150ms + var(--char-i) * 26ms);
+}
+
+/* The sitewide reduced-motion rule collapses transition-duration but leaves
+   transition-delay alone, so without this the letters would still tick in
+   one after another — the stagger surviving as a sequence even with the
+   motion gone. Spelled out explicitly, same as the client marquee. */
+@media (prefers-reduced-motion: reduce) {
+  .headline-char {
+    opacity: 1;
+    transform: none;
+  }
+  .reveal.is-visible .headline-char { transition-delay: 0ms; }
+}
+
+/* Carries the heading's real text for assistive tech. The per-letter spans
+   beside it are aria-hidden, because screen readers announce them one
+   character at a time. Standard clip-rect recipe: removed from view without
+   display:none or visibility:hidden, both of which hide it from AT too. */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+  /* The heading's text exists twice in the DOM — once here for AT, once as
+     the visible letter spans. Without this, dragging across a heading would
+     copy both copies ("PartnersPartners"). */
+  user-select: none;
+  -webkit-user-select: none;
+}
+
 /* Staggered grid reveal: the grid container itself (already a .reveal target
    the JS observer toggles .is-visible on) skips its own fade and instead
    passes the motion down to each child, offset a beat apart — reads as one

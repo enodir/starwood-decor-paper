@@ -111,6 +111,72 @@
     }, { passive: true });
   }
 
+  /* ---------- Section names resolve a letter at a time ----------
+     Splits every section <h2> into per-letter spans so the heading types
+     itself in as the section scrolls in, instead of arriving as one block.
+
+     Three structural decisions here, each load-bearing:
+
+     1. Letters nest inside a per-word wrapper. Bare inline-block letters let
+        the browser break a line between any two of them, so a heading could
+        wrap mid-word at narrow widths. The wrapper is the unbreakable unit;
+        line breaks still happen at spaces only.
+     2. The split spans are aria-hidden, with a .sr-only copy of the real
+        text beside them. Screen readers spell per-letter spans out loud
+        ("P-A-R-T-N-E-R-S"); the hidden copy is what actually gets announced.
+        It sits inside the language span, so the existing display toggle
+        hides it in the two inactive languages for free — no aria-label to
+        keep in sync on every language switch.
+     3. --char-i counts across the whole heading, not per word, so the
+        cascade runs evenly instead of restarting at each space.
+
+     All three language spans are split up front, not just the active one.
+     Every language already lives in the DOM at once (see the i18n pattern),
+     so applyLang() stays a pure CSS visibility flip and a language switch
+     can never race, re-split, or double-wrap a heading.
+
+     The hero <h1> is deliberately excluded — it carries a nested
+     <em class="hero-accent"> that a textContent split would flatten away. */
+  document.querySelectorAll('h2').forEach(function (heading) {
+    heading.querySelectorAll('[data-i18n-lang]').forEach(function (langSpan) {
+      if (langSpan.querySelector('.headline-word')) return;
+      var text = langSpan.textContent.trim();
+      var words = text.split(/\s+/).filter(Boolean);
+      if (!words.length) return;
+
+      langSpan.textContent = '';
+
+      var readable = document.createElement('span');
+      readable.className = 'sr-only';
+      readable.textContent = text;
+      langSpan.appendChild(readable);
+
+      var charIndex = 0;
+      words.forEach(function (word, w) {
+        var wordSpan = document.createElement('span');
+        wordSpan.className = 'headline-word';
+        wordSpan.setAttribute('aria-hidden', 'true');
+        word.split('').forEach(function (char) {
+          var charSpan = document.createElement('span');
+          charSpan.className = 'headline-char';
+          charSpan.style.setProperty('--char-i', charIndex);
+          charSpan.textContent = char;
+          wordSpan.appendChild(charSpan);
+          charIndex++;
+        });
+        langSpan.appendChild(wordSpan);
+        /* A plain text-node space between word wrappers — deliberately not a
+           span or an &nbsp;, either of which would remove the only place the
+           heading is allowed to break. The gap still advances the counter so
+           the cascade keeps an even rhythm across it rather than stalling. */
+        if (w < words.length - 1) {
+          langSpan.appendChild(document.createTextNode(' '));
+          charIndex++;
+        }
+      });
+    });
+  });
+
   /* ---------- Progressive reveal (IntersectionObserver, no GSAP dependency) ---------- */
   var revealEls = document.querySelectorAll('.reveal');
   if ('IntersectionObserver' in window && !reduceMotion) {
