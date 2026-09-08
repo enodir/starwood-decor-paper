@@ -33,6 +33,18 @@
 </head>
 <body>
 <div class="bg-texture" aria-hidden="true"></div>
+<!-- Sticky LMDF board: a real photo of the mill's fanned board stack
+     (assets/img/process-flow/LDSP2.jpg, same source as --process-bg-photo)
+     picks up the hero's own board stack (assets/mdf-stack.js) the instant
+     its closing scroll span completes — starting on the same white
+     (belaya-korona) it closes on — and stays anchored to the viewport from
+     there, re-tinted as sections scroll by. See initLmdfBackground() in
+     script.js and the .lmdf-bg rules in style.css. Two tint layers so the
+     colour can cross-fade. -->
+<div class="lmdf-bg" aria-hidden="true">
+  <div class="lmdf-bg__tint" data-slot="a"></div>
+  <div class="lmdf-bg__tint" data-slot="b"></div>
+</div>
 <a class="skip-link" href="#main">
   <span data-i18n-lang="ru">Перейти к содержимому</span><span data-i18n-lang="en">Skip to content</span><span data-i18n-lang="uz">Kontentga o'tish</span>
 </a>
@@ -128,7 +140,8 @@
   </section>
 
   <!-- ============ DECOR CATALOG ============ -->
-  <section class="section section--pulp-white" id="decors">
+  <section class="section section--pulp-white" id="decors" data-lmdf="belaya-korona">
+    <div class="lmdf-parallax" aria-hidden="true"></div>
     <div class="container">
       <div class="section-head reveal">
         <p class="eyebrow"><span class="crosshair" aria-hidden="true"></span>
@@ -348,7 +361,8 @@
   </section>
 
   <!-- ============ PRODUCTION PROCESS ============ -->
-  <section class="section section--dark process" id="process">
+  <section class="section section--dark process" id="process" data-lmdf="uludag-mese">
+    <div class="lmdf-parallax" aria-hidden="true"></div>
     <div class="container">
       <div class="section-head reveal">
         <p class="eyebrow"><span class="crosshair" aria-hidden="true"></span>
@@ -641,7 +655,8 @@
   </section>
 
   <!-- ============ ADVANTAGES (no numbering) ============ -->
-  <section class="section section--pulp-white" id="advantages">
+  <section class="section section--pulp-white" id="advantages" data-lmdf="acik-kok">
+    <div class="lmdf-parallax" aria-hidden="true"></div>
     <div class="container">
       <div class="section-head reveal">
         <p class="eyebrow"><span class="crosshair" aria-hidden="true"></span>
@@ -691,7 +706,8 @@
   </section>
 
   <!-- ============ SUSTAINABILITY ============ -->
-  <section class="section section--pulp" id="sustainability">
+  <section class="section section--pulp" id="sustainability" data-lmdf="wenge">
+    <div class="lmdf-parallax" aria-hidden="true"></div>
     <div class="container">
       <div class="section-head reveal">
         <p class="eyebrow"><span class="crosshair" aria-hidden="true"></span>
@@ -724,7 +740,8 @@
   </section>
 
   <!-- ============ CERTIFICATES / STATS ============ -->
-  <section class="section section--dark" id="certificates">
+  <section class="section section--dark" id="certificates" data-lmdf="dub-kataniya">
+    <div class="lmdf-parallax" aria-hidden="true"></div>
     <div class="container">
       <div class="section-head reveal">
         <p class="eyebrow"><span class="crosshair" aria-hidden="true"></span>
@@ -761,7 +778,8 @@
   </section>
 
   <!-- ============ SOCIAL PROOF ============ -->
-  <section class="section section--pulp-white" id="clients">
+  <section class="section section--pulp-white" id="clients" data-lmdf="astana">
+    <div class="lmdf-parallax" aria-hidden="true"></div>
     <div class="container">
       <div class="section-head reveal">
         <p class="eyebrow"><span class="crosshair" aria-hidden="true"></span>
@@ -818,7 +836,8 @@
   </section>
 
   <!-- ============ CTA / SAMPLE REQUEST ============ -->
-  <section class="section cta-section" id="cta">
+  <section class="section cta-section" id="cta" data-lmdf="belaya-korona">
+    <div class="lmdf-parallax" aria-hidden="true"></div>
     <div class="container cta-layout">
       <div class="reveal">
         <p class="eyebrow"><span class="crosshair" aria-hidden="true"></span>
@@ -870,7 +889,8 @@
 </main>
 
 <!-- ============ FOOTER — COLOPHON ============ -->
-<footer class="site-footer" id="contact">
+<footer class="site-footer" id="contact" data-lmdf="uludag-mese">
+  <div class="lmdf-parallax" aria-hidden="true"></div>
   <div class="container colophon">
     <div><strong>DECOSTAR DECOR PAPER</strong> — <span data-i18n-lang="ru">РЕГИСТРАЦИЯ № 2026</span><span data-i18n-lang="en">REGISTRATION No. 2026</span><span data-i18n-lang="uz">RO'YXATGA OLISH № 2026</span></div>
     <div><span data-i18n-lang="ru">Плотность 70–140 г/м² · Коллекций в каталоге: 120+ · Пропитка: меламин ✓</span>

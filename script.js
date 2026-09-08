@@ -606,4 +606,102 @@
   }
 
   window.addEventListener('DOMContentLoaded', initProcessLine);
+
+  /* ---------- Sticky LMDF board ----------
+     Continues the hero's laminated-MDF board stack (assets/mdf-stack.js)
+     past the hero itself, showing the same real photo of the mill's fanned
+     board stack (--lmdf-photo in style.css, assets/img/process-flow/
+     LDSP2.jpg) rather than a flat colour, in two places:
+
+     1. initLmdfBackground() (below) reveals a fixed, page-anchored tint of
+        that photo (.lmdf-bg in style.css) the instant the hero's own
+        stack-closing scroll span completes — starting on the same belaya-
+        korona (white) finish the boards close on, which is close to
+        achromatic and so renders the photo close to desaturated: the
+        literal "extracted white board" the hero hands off into — then
+        keeps it cross-fading through the palette as the reader scrolls.
+        It's a thin accent, not the main visual.
+     2. Every section below the hero also carries its own .lmdf-parallax
+        layer showing that same photo, recoloured to one specific finish —
+        but that positioning, recolouring, *and* the parallax/continuity
+        itself are pure CSS ([data-lmdf="..."] and background-attachment:
+        fixed in style.css), not JS. No per-section script needed for any
+        of it; see the comment on .lmdf-parallax in style.css for how the
+        fixed attachment gets both properties from one declaration.
+
+     PALETTE here only needs the six names for #1 — the actual colour
+     values live in style.css ([data-lmdf="..."] rules) and are duplicated
+     to FINISHES in assets/mdf-stack.js. Keep all three in sync by hand if a
+     finish's colour changes; script.js can't import either of the others
+     directly (one's an ES module, one's a stylesheet). */
+  var PALETTE = ['belaya-korona', 'uludag-mese', 'acik-kok', 'wenge', 'dub-kataniya', 'astana'];
+  var PALETTE_HEX = {
+    'belaya-korona': ['#efe9e0', '#ffffff'],
+    'uludag-mese':   ['#b98d5a', '#e0b985'],
+    'acik-kok':      ['#d9c3a2', '#f2e4cb'],
+    'wenge':         ['#33241d', '#6b4a34'],
+    'dub-kataniya':  ['#8d7a66', '#bcaa93'],
+    'astana':        ['#b6a894', '#dbd0bd']
+  };
+  var LMDF_PHOTO = 'url(assets/img/process-flow/process-ldsp2-1000.jpg)';
+
+  function initLmdfBackground() {
+    var bg = document.querySelector('.lmdf-bg');
+    var hero = document.querySelector('.hero');
+    if (!bg || !hero) return;
+    var tints = bg.querySelectorAll('.lmdf-bg__tint');
+    if (tints.length < 2) return;
+
+    var HERO_SPAN = 0.34; // keep matched to SPAN in assets/mdf-stack.js
+    var sections = Array.prototype.slice.call(document.querySelectorAll('[data-lmdf]'));
+
+    var shownSlot = 0;    // index (0/1) of the tint element currently visible
+    var paletteAt = -1;   // palette index currently painted, so repeats no-op
+    var revealed = false; // gone active yet (hero's stack has closed)
+
+    function paint(index) {
+      if (index === paletteAt) return;
+      paletteAt = index;
+      var hex = PALETTE_HEX[PALETTE[index % PALETTE.length]];
+      var nextSlot = 1 - shownSlot;
+      var el = tints[nextSlot];
+      el.style.backgroundImage = 'linear-gradient(' + hex[0] + ',' + hex[1] + '), ' + LMDF_PHOTO;
+      // Read layout back before flipping opacity — otherwise the browser
+      // can coalesce the background swap and the class change into one
+      // paint and the cross-fade never happens.
+      void el.offsetWidth;
+      tints[shownSlot].classList.remove('is-shown');
+      el.classList.add('is-shown');
+      shownSlot = nextSlot;
+    }
+
+    function update() {
+      if (!revealed) {
+        var r = hero.getBoundingClientRect();
+        var span = r.height * HERO_SPAN;
+        var heroProgress = span > 0 ? Math.min(1, Math.max(0, -r.top / span)) : 0;
+        if (heroProgress < 1) return;
+        revealed = true;
+        bg.classList.add('is-active');
+        paint(0); // belaya-korona — the hero stack's own closing colour
+        return;
+      }
+
+      // Whichever tracked section currently owns the viewport's vertical
+      // centre is "active" — the last one whose top has scrolled above it.
+      var mid = innerHeight / 2;
+      var activeIndex = 0;
+      for (var i = 0; i < sections.length; i++) {
+        var rect = sections[i].getBoundingClientRect();
+        if (rect.top <= mid && rect.bottom >= 0) activeIndex = i;
+      }
+      paint(activeIndex);
+    }
+
+    addEventListener('scroll', update, { passive: true });
+    addEventListener('resize', update);
+    update();
+  }
+
+  window.addEventListener('DOMContentLoaded', initLmdfBackground);
 })();

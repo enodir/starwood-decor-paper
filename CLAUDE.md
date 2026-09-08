@@ -172,6 +172,76 @@ complexity, so keep it intact when editing:
   more than an invisible canvas does. Sizing comes from a `ResizeObserver`, never from reading
   `clientWidth` inside the loop.
 
+**Sticky LMDF board + continuous section backdrop** (`--lmdf-photo`, `.lmdf-bg`, `.lmdf-parallax`,
+`[data-lmdf]`, `initLmdfBackground()` in `script.js`) is the one deliberate exception to "the MDF stack lives
+only in the hero" / "one showpiece per section": the board stack's story continues past the hero, into
+every section below it, using a real photo — `assets/img/process-flow/LDSP2.jpg` (via the already-generated
+`process-ldsp2-1000.jpg`, same asset as `--process-bg-photo`) — of the mill's own fanned board stack, not a
+flat colour. Two cooperating pieces:
+
+1. `.lmdf-bg` is a thin, page-anchored accent: a fixed two-layer tint of that photo that reveals itself the
+   instant the hero's own stack-closing scroll span (`SPAN` in `assets/mdf-stack.js`) completes, opening on
+   the same belaya-korona (white) finish the boards close on — since that finish is close to achromatic,
+   the photo renders close to desaturated at that moment, which *is* the literal "extracted white board"
+   the hero hands off into — then cross-fading through the palette as the reader scrolls (`HERO_SPAN` in
+   `script.js` must stay matched to `SPAN`). It's a faint bleed through the light sections' own translucent
+   tints. This is the literal "stuck to the page" continuity; it is not the bold visual.
+2. `.lmdf-parallax` is that bold visual: every section below the hero (plus the footer) carries its own
+   layer showing that same photo, statically recoloured via a `data-lmdf="<finish-name>"` attribute on the
+   section (`decors`→belaya-korona, `process`→uludag-mese, `advantages`→acik-kok, `sustainability`→wenge,
+   `certificates`→dub-kataniya, `clients`→astana, `cta`→belaya-korona again, footer→uludag-mese again —
+   cycling the same six hero finishes in page order). The photo is now each section's actual visible
+   background, not a subtle accent behind it — and it's **one continuous image across every section, not
+   each one re-cropping its own copy**: the photo layer's `background-attachment` is `fixed`, so it's sized
+   and positioned against the *viewport*, not each section's own box. A section is just a window moving over
+   one shared, viewport-anchored image; scrolling past a section boundary never restarts or re-crops it, and
+   "the background stays still while the page scrolls over it" *is* the parallax — one CSS declaration gets
+   both continuity and motion, no JS and no per-section margin/seam needed. (The recolour/scrim layers in the
+   same `background-image` list stay `background-attachment: scroll` — they're generated per-finish colour,
+   not photo content, so they track their own section normally; only the photo layer needs to stay put.)
+   This replaced an earlier version where each section had its own oversized, JS-`transform`-driven copy of
+   the photo — that produced a visible seam/reset at every section boundary since each section centred its
+   own independent crop; don't reintroduce a per-section seam margin or a JS parallax transform on this
+   layer to "fix" a look that background-attachment:fixed already fixes structurally. Note this is a
+   deliberate, scoped exception to the `.bg-texture` comment's stated avoidance of `background-attachment:
+   fixed` (repaint jank, iOS inconsistency) — that guidance is about a layer that's live across the *entire*
+   page at all times; here the photo genuinely needs to be one shared backdrop, that's the whole point, and
+   it's one such layer, not many independently-animated ones.
+
+   Recolouring is `background-blend-mode: color` between a solid gradient layer and the photo, in the same
+   `background-image` list (no extra DOM needed for the duotone effect itself) — the standard duotone-photo
+   technique: it takes only the gradient's hue/saturation and keeps the photo's own lightness (board edges,
+   grain, highlights) intact. A second, gentler `soft-light` pass on `.lmdf-parallax::after` nudges lightness
+   too, which is what keeps a close-hue finish (dub-kataniya, astana) reading as *tinted* rather than "the
+   same photo again" — see the git history for the flat-colour-only version this replaced, which had exactly
+   that problem.
+
+   **The scrim exists but is deliberately light, on request** — a real photograph has both light patches (a
+   pale board face) and dark ones (the shadow between sheets, a board's cut edge) that can land directly
+   under text with no card behind it, so some scrim is structurally necessary. `.section--dark`/`.cta-
+   section`/`.site-footer` get the sitewide `--shell-scrim-rgb` token at the *same* 0.72 alpha
+   `.hero`/`.process`/`.cta-section` already scrim their own photos at (not a heavier one — an earlier pass
+   pushed this to 0.97 to hit a clean 4.5:1 everywhere, which left the photo barely visible under what still
+   read as the old flat section colour; matching the sitewide precedent instead makes the photo actually
+   read as each section's background, which was the explicit ask). The pulp sections get a mirrored light
+   scrim (`rgba(232,228,220,0.6)`) in the other direction. `text-shadow` (inherited from each section's
+   `.container`, so it reaches every bare text node for free) is the compensating layer: a drop shadow lifts
+   text off a busy photo without hiding the photo the way more scrim opacity would.
+
+   Known, accepted trade-off: at this scrim strength, a handful of bare-text elements with no opaque card
+   behind them (`#process .pflow-lead`, `#certificates .stat-label`) sample under 4.5:1 by strict WCAG
+   luminance math, something the text-shadow compensates for perceptually but doesn't fix numerically. This
+   was a deliberate call, not an oversight — the alternative (this session's first pass) pushed scrim past
+   0.9 to hit 4.5:1 everywhere, which visibly defeated the point of putting a photo there at all (see git
+   history / the design conversation this came out of). If stricter WCAG compliance matters more than the
+   photo staying visible, the fix is a heavier per-element scrim or an opaque pill behind just those labels
+   — not a blanket scrim increase back toward the earlier version.
+
+   Hex values are duplicated in three places by necessity — `FINISHES` in `assets/mdf-stack.js` (an ES
+   module), `PALETTE_HEX` in `script.js` (a plain IIFE, can't import from a module), and the
+   `[data-lmdf="..."]` custom-property rules in `style.css` — keep all three in sync by hand if a finish's
+   colour ever changes.
+
 **Process section — "the delivery line"** (`.process-flow`, `.pflow-*`, `#process`). Ported from a Claude
 Design file (project `4c58dab7-4fc7-486a-9fef-2b775d0c5b7d`, `Production Process.dc.html`; read it with the
 DesignSync tool, its share URL 403s to a plain fetch). A DECOSTAR truck arrives at the inbound gate,
@@ -216,7 +286,9 @@ twenty empty nodes in the markup.
 Do not add a showpiece to every section — the design brief for this project explicitly calls for *one bold
 moment per major section slot* (the MDF stack in the hero, the delivery line in process, Cover Flow in the
 decor catalog) and quiet, disciplined motion everywhere else (progressive fade/translateY reveals,
-grayscale→color logo hovers, kinetic counters).
+grayscale→color logo hovers, kinetic counters). The sticky LMDF board + per-section parallax (above, under
+the hero section) is the deliberate exception: it's the hero's own motif and its own photo continuing
+behind every section rather than a new showpiece competing with each section's existing one.
 
 **Client marquee** (`.logo-marquee`, `#clients`): the "trusted by" list drifts right-to-left forever
 instead of sitting still, with **every second logo set darker** (`opacity: .78` against the base `.5`) so

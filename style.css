@@ -88,6 +88,15 @@
      past that would just blur it. Swapped for a smaller crop on mobile. */
   --process-bg-photo: url('assets/img/process-flow/process-ldsp2-1000.jpg');
 
+  /* Sticky/parallax LMDF motif (see .lmdf-bg / .lmdf-parallax further down):
+     the same fanned-board photo as --process-bg-photo above, reused as the
+     one "laminate" image behind the sticky background and every section
+     below the hero, rather than a second asset. Kept as its own token (not
+     an alias) since the two are conceptually separate — this one is tinted
+     per section and shared sitewide, --process-bg-photo is #process's own
+     single-color scrim — even though both point at the same file today. */
+  --lmdf-photo: url('assets/img/process-flow/process-ldsp2-1000.jpg');
+
   /* Certificates-section-only background photo: Belaya Korona decor paper
      (source: assets/img/Papers/Belaya_Korona.webp) — a light, low-contrast
      wood-grain sample. First tried the mill's full color-list grid here
@@ -214,6 +223,216 @@ body.is-lang-switching {
   background-position: center;
   background-repeat: no-repeat;
 }
+
+/* ---------- Sticky LMDF board ----------
+   Continues the hero's laminated-MDF board stack (assets/mdf-stack.js) past
+   the hero itself, using a real photo of the mill's own fanned board stack
+   (--lmdf-photo) rather than a flat colour, so it reads as an actual image
+   of laminate, not an abstract wash. That three.js scene closes its six
+   boards into a stack, ending on the belaya-korona (white) finish, over the
+   first SPAN (34%) of the hero's own exit; this fixed layer stays hidden
+   until that same moment, then takes over on that same white — see
+   initLmdfBackground() in script.js, which keeps HERO_SPAN matched to SPAN
+   there — and re-tints as the reader scrolls further.
+
+   The recolour trick (shared with .lmdf-parallax below): a solid gradient
+   layered *over* the photo in the same background-image list, blended with
+   background-blend-mode: color. That takes only the gradient's hue and
+   saturation and keeps the photo's own lightness — its highlights, board
+   edges, grain — intact, so the image still reads as a photograph, just
+   dyed to a specific finish, the standard duotone-photo technique. Belaya-
+   korona is close to achromatic, so this state renders the photo close to
+   desaturated — a pale, "unfinished" board — which is the point: it's the
+   literal extracted white the hero hands off into. */
+.lmdf-bg {
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  overflow: hidden;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 900ms ease;
+}
+.lmdf-bg.is-active { opacity: 1; }
+.lmdf-bg__tint {
+  position: absolute;
+  inset: -12%;
+  background-size: cover, cover;
+  background-position: center, center;
+  background-blend-mode: color, normal;
+  opacity: 0;
+  transition: opacity 1100ms ease;
+  will-change: opacity;
+}
+.lmdf-bg__tint.is-shown { opacity: 1; }
+@media (prefers-reduced-motion: reduce) {
+  .lmdf-bg, .lmdf-bg__tint { transition-duration: 300ms; }
+}
+
+/* ---------- Section-background parallax + LMDF colour ----------
+   Every section below the hero carries its own oversized layer showing the
+   same board photo (--lmdf-photo), duotone-recoloured to one of the hero's
+   six finishes (see [data-lmdf="..."] rules below — values duplicated from
+   FINISHES in assets/mdf-stack.js by hand, since that file is an ES module
+   script.js can't import from). This is the bold, clearly-visible half of
+   the motif — the photo *is* now each section's visible background, not a
+   subtle accent — which is also why it needs the second, gentler layer
+   below: pure colour-blend keeps the photo's own contrast/lightness range,
+   so a finish whose hue sits close to the site's ambient wood-brown
+   (dub-kataniya, astana) still reads as recognisably tinted rather than an
+   identical repaint.
+
+   Continuity across sections (the same photo, not each section re-centring
+   its own independent crop of it) plus the parallax drift are both a
+   single declaration, not JS: the photo layer's own background-attachment
+   is fixed, so it's positioned and cover-sized against the *viewport*, not
+   each section's own box. Every section is then just a window moving over
+   one shared, viewport-anchored image — scrolling past a section boundary
+   never restarts or re-crops it, and the "background stays still while the
+   page scrolls over it" read *is* the parallax. This replaces an earlier
+   version that gave each section its own oversized, JS-transformed copy of
+   the photo (see git history) — that produced a visible seam at every
+   section boundary, since each section centred/cropped the image
+   independently; background-attachment:fixed removes the seam by
+   construction rather than papering over it. (The scrim/tint layers below
+   stay attachment:scroll — they're generated per-finish colour, not photo
+   content, so they have no continuity to preserve and should track their
+   own section normally.) Deliberately not used for .bg-texture — see that
+   rule's own comment — but here the photo is the whole point, and a fixed
+   attachment costs nothing extra since it's one shared layer, not 8
+   independent ones each redoing their own paint.
+
+   [data-lmdf] gets position/isolation in one shared rule rather than
+   repeating it per section type — isolation scopes the blend to that
+   section's own stacking context (not .lmdf-bg or .bg-texture behind the
+   page). */
+[data-lmdf] {
+  position: relative;
+  isolation: isolate;
+}
+.lmdf-parallax {
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  background-image: linear-gradient(var(--lmdf-a), var(--lmdf-b)), var(--lmdf-photo);
+  background-size: cover, cover;
+  background-position: center, center;
+  background-attachment: scroll, fixed;
+  background-blend-mode: color, normal;
+}
+/* Dark-shell sections (process, certificates, cta, footer) carry light
+   text (--shell-ink/--pulp-white) with no opaque card behind it, the same
+   way .hero/.process/.cta-section already do — and the same reason they
+   already scrim their own photo: a real photograph has light patches
+   (here, a pale board face) that would otherwise sit directly under light
+   text and wash it out. Same --shell-scrim-rgb token, same alpha (0.72-0.75)
+   .hero/.process/.cta-section already scrim their own photos at — matching
+   that instead of crushing this one harder, so the board photo actually
+   reads as this section's background rather than a barely-there tint under
+   what's still visually the old flat colour. The extra legibility margin a
+   heavier scrim would have bought comes from text-shadow instead (further
+   down) — a drop shadow lifts text off a busy backdrop without hiding the
+   backdrop itself, which more scrim can't do. */
+.section--dark[data-lmdf] .lmdf-parallax,
+.cta-section[data-lmdf] .lmdf-parallax,
+.site-footer[data-lmdf] .lmdf-parallax {
+  background-image:
+    linear-gradient(rgba(var(--shell-scrim-rgb), 0.72), rgba(var(--shell-scrim-rgb), 0.72)),
+    linear-gradient(var(--lmdf-a), var(--lmdf-b)),
+    var(--lmdf-photo);
+  background-size: cover, cover, cover;
+  background-position: center, center, center;
+  background-attachment: scroll, scroll, fixed;
+  background-blend-mode: normal, color, normal;
+}
+/* Mirror of the above for the light (pulp) sections: --ink-grey/--press-
+   black body text has no opaque card behind it here either, and the photo
+   has genuinely dark patches (board edges, shadow between sheets) that
+   would otherwise sit under dark text with too little separation. Same
+   raw-pulp tint the pulp sections already lay over .bg-texture (see
+   .section--pulp-white/.section--pulp above); same reasoning as the dark
+   scrim just above for keeping this at a photo-preserving strength and
+   leaning on text-shadow rather than opacity for the rest of the margin. */
+.section--pulp-white[data-lmdf] .lmdf-parallax,
+.section--pulp[data-lmdf] .lmdf-parallax {
+  background-image:
+    linear-gradient(rgba(232, 228, 220, 0.6), rgba(232, 228, 220, 0.6)),
+    linear-gradient(var(--lmdf-a), var(--lmdf-b)),
+    var(--lmdf-photo);
+  background-size: cover, cover, cover;
+  background-position: center, center, center;
+  background-attachment: scroll, scroll, fixed;
+  background-blend-mode: normal, color, normal;
+}
+/* text-shadow inherits, so one rule per section shell lifts every bare
+   text node inside it off the now much-more-visible photo — headings,
+   eyebrows, stat numbers, process-card copy, form labels, none of which sit
+   inside an opaque card here. Harmless on the few children that *do* have
+   an opaque backing (inputs, decor/sustain cards): a soft shadow under
+   already-safe text is imperceptible, not a second problem. */
+.section--dark[data-lmdf] .container,
+.cta-section[data-lmdf] .container,
+.site-footer[data-lmdf] .container {
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.45), 0 2px 16px rgba(0, 0, 0, 0.3);
+}
+.section--pulp-white[data-lmdf] .container,
+.section--pulp[data-lmdf] .container {
+  text-shadow: 0 1px 3px rgba(247, 245, 241, 0.8);
+}
+/* Gentle soft-light pass on top of the same photo — lifts/deepens the
+   photo's own lightness slightly toward the finish colour, which is what
+   makes the close-hue finishes (dub-kataniya on dark sections especially)
+   read as a distinct wash rather than "the same brown photo again". Kept
+   low-opacity: this is a nudge, not a second contrast question to reopen —
+   the base colour-blend layer above is what stays luminance-safe. */
+.lmdf-parallax::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background-image: linear-gradient(var(--lmdf-a), var(--lmdf-b)), var(--lmdf-photo);
+  background-size: cover, cover;
+  background-position: center, center;
+  background-attachment: scroll, fixed;
+  background-blend-mode: soft-light, normal;
+  opacity: 0.35;
+}
+/* Dark sections skip this pass rather than scrim it too: its whole job is
+   nudging lightness toward the finish colour, which is exactly what a
+   section already scrimmed dark for light text can't afford — every extra
+   point of scrim needed to keep this pass safe was fighting the base
+   layer's own contrast margin for no real gain (dub-kataniya already reads
+   distinctly on a dark backdrop from the base colour-blend layer alone;
+   this pass earns its keep on the *light* sections instead, see the
+   before/after comparison in git history). */
+.section--dark[data-lmdf] .lmdf-parallax::after,
+.cta-section[data-lmdf] .lmdf-parallax::after,
+.site-footer[data-lmdf] .lmdf-parallax::after {
+  display: none;
+}
+/* Light sections keep this pass (it's what makes astana/dub-kataniya read
+   as tinted rather than "the same beige again") but need the same raw-pulp
+   scrim as the base layer just above, for the same reason. */
+.section--pulp-white[data-lmdf] .lmdf-parallax::after,
+.section--pulp[data-lmdf] .lmdf-parallax::after {
+  background-image:
+    linear-gradient(rgba(232, 228, 220, 0.6), rgba(232, 228, 220, 0.6)),
+    linear-gradient(var(--lmdf-a), var(--lmdf-b)),
+    var(--lmdf-photo);
+  background-size: cover, cover, cover;
+  background-position: center, center, center;
+  background-attachment: scroll, scroll, fixed;
+  background-blend-mode: normal, soft-light, normal;
+}
+/* Hex values duplicated from FINISHES in assets/mdf-stack.js — keep in sync
+   by hand (that file is an ES module script.js can't import from). Order
+   here is cosmetic only; each section's own data-lmdf is what assigns it. */
+[data-lmdf="belaya-korona"] { --lmdf-a: #efe9e0; --lmdf-b: #ffffff; }
+[data-lmdf="uludag-mese"]   { --lmdf-a: #b98d5a; --lmdf-b: #e0b985; }
+[data-lmdf="acik-kok"]      { --lmdf-a: #d9c3a2; --lmdf-b: #f2e4cb; }
+[data-lmdf="wenge"]         { --lmdf-a: #33241d; --lmdf-b: #6b4a34; }
+[data-lmdf="dub-kataniya"]  { --lmdf-a: #8d7a66; --lmdf-b: #bcaa93; }
+[data-lmdf="astana"]        { --lmdf-a: #b6a894; --lmdf-b: #dbd0bd; }
 
 h1, h2, h3, h4 {
   font-family: var(--font-display);
