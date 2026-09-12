@@ -1100,6 +1100,22 @@ html[data-theme="day"] .theme-toggle__icon--day { opacity: 1; }
     border-color: transparent;
     box-shadow: none;
     padding: 0;
+    /* .nav-island still carries the shared .logo/.nav-island/.action-island
+       backdrop-filter — and backdrop-filter (like transform/filter/
+       will-change) makes an element a containing block for its own
+       absolutely-positioned descendants regardless of `position`. .main-nav
+       is now nav-island's only child, so that child's left/right:
+       var(--gutter) was resolving against nav-island's own box, not
+       .header-inner — and with no in-flow content left inside it,
+       nav-island shrinks toward 0 width, collapsing the dropdown to a
+       ~40px sliver instead of the full-width panel the comment above
+       .main-nav describes. Clearing it here (there's nothing left to blur
+       — background is none, above) lets .main-nav's containing-block
+       search continue up to .header-inner (position:relative, full row
+       width), which is what left/right:var(--gutter) was actually written
+       against. */
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
   }
 }
 

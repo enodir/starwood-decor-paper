@@ -170,6 +170,45 @@ html[data-theme="day"] {
   --footer-bg: #C7BEAF;
 }
 
+/* Warm the whole page's background palette except the hero, on request.
+   A hue-rotate-toward-orange + small saturation boost on the same tokens
+   above (kept at the same HSL lightness, so contrast against the text
+   tokens that sit on them barely moves — rechecked below, not eyeballed),
+   not a new set of colors: --raw-pulp/--raw-pulp-dark/--surface-dark/
+   --footer-bg/--shell-scrim-rgb warmed roughly 14° toward red/orange.
+
+   Scoped here rather than edited at :root, because the hero draws from
+   these same tokens too — directly (--surface-dark via --shell-bg) and, in
+   day theme, doubly so (--shell-bg aliases to --raw-pulp there) — and has
+   to keep its original, unwarmed palette in both themes. Custom properties
+   resolve lazily at the element a var() is actually used on, not where
+   they're declared, so overriding them on every section *after* .hero
+   (plus the footer, which sits outside <main> as .hero's sibling, not
+   .hero's own descendant) reaches every non-hero background rule that
+   already references --shell-bg/--surface-dark/--raw-pulp/--shell-scrim-rgb
+   without editing each of those rules individually, while .hero keeps
+   inheriting the original values straight from this block above.
+
+   #decors/#advantages needed a touch more lightness than a flat hue
+   rotation gave them (their rendered contrast against bare --ink-grey text
+   dropped to 4.47:1, just under AA) — bumped back to ~4.65:1; see the
+   literal rgba() sibling of this token below (.section--pulp-white etc.)
+   for where that specific value lives, since those fills are independent
+   literals, not derived from these tokens. */
+main > .hero ~ *,
+.site-footer {
+  --raw-pulp: #DFCCBE;
+  --raw-pulp-dark: #D0B8A4;
+  --surface-dark: #5D4231;
+  --shell-scrim-rgb: 93, 66, 49;
+  --footer-bg: #855D51;
+}
+html[data-theme="day"] main > .hero ~ *,
+html[data-theme="day"] .site-footer {
+  --shell-scrim-rgb: 223, 204, 190;
+  --footer-bg: #CFB7A7;
+}
+
 /* ---------- Reset ---------- */
 *, *::before, *::after { box-sizing: border-box; }
 html { scroll-behavior: smooth; }
@@ -359,11 +398,14 @@ body.is-lang-switching {
    raw-pulp tint the pulp sections already lay over .bg-texture (see
    .section--pulp-white/.section--pulp above); same reasoning as the dark
    scrim just above for keeping this at a photo-preserving strength and
-   leaning on text-shadow rather than opacity for the rest of the margin. */
+   leaning on text-shadow rather than opacity for the rest of the margin.
+   Warmed alongside the rest of the non-hero palette (another literal, not
+   var()-based, so hand-updated here too — see the "warm the whole page"
+   block near --shell-bg). */
 .section--pulp-white[data-lmdf] .lmdf-parallax,
 .section--pulp[data-lmdf] .lmdf-parallax {
   background-image:
-    linear-gradient(rgba(232, 228, 220, 0.6), rgba(232, 228, 220, 0.6)),
+    linear-gradient(rgba(235, 225, 217, 0.6), rgba(235, 225, 217, 0.6)),
     linear-gradient(var(--lmdf-a), var(--lmdf-b)),
     var(--lmdf-photo);
   background-size: cover, cover, cover;
@@ -422,7 +464,7 @@ body.is-lang-switching {
 .section--pulp-white[data-lmdf] .lmdf-parallax::after,
 .section--pulp[data-lmdf] .lmdf-parallax::after {
   background-image:
-    linear-gradient(rgba(232, 228, 220, 0.6), rgba(232, 228, 220, 0.6)),
+    linear-gradient(rgba(235, 225, 217, 0.6), rgba(235, 225, 217, 0.6)),
     linear-gradient(var(--lmdf-a), var(--lmdf-b)),
     var(--lmdf-photo);
   background-size: cover, cover, cover;
@@ -1058,6 +1100,22 @@ html[data-theme="day"] .theme-toggle__icon--day { opacity: 1; }
     border-color: transparent;
     box-shadow: none;
     padding: 0;
+    /* .nav-island still carries the shared .logo/.nav-island/.action-island
+       backdrop-filter — and backdrop-filter (like transform/filter/
+       will-change) makes an element a containing block for its own
+       absolutely-positioned descendants regardless of `position`. .main-nav
+       is now nav-island's only child, so that child's left/right:
+       var(--gutter) was resolving against nav-island's own box, not
+       .header-inner — and with no in-flow content left inside it,
+       nav-island shrinks toward 0 width, collapsing the dropdown to a
+       ~40px sliver instead of the full-width panel the comment above
+       .main-nav describes. Clearing it here (there's nothing left to blur
+       — background is none, above) lets .main-nav's containing-block
+       search continue up to .header-inner (position:relative, full row
+       width), which is what left/right:var(--gutter) was actually written
+       against. */
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
   }
 }
 
@@ -1209,25 +1267,30 @@ html[data-theme="day"] .theme-toggle__icon--day { opacity: 1; }
 /* Darkened alongside --raw-pulp/--raw-pulp-dark above, same reasoning:
    narrows the light/dark section gap instead of leaving these two literals
    (independent of the tokens since they're translucent tints layered over
-   .bg-texture, not flat fills) at the old, much lighter values. */
-.section--pulp-white { background: rgba(235,231,222,0.55); }
-.section--pulp { background: rgba(217,210,196,0.55); }
+   .bg-texture, not flat fills) at the old, much lighter values. Warmed
+   alongside those same tokens too (see the "warm the whole page" block
+   near --shell-bg above) — these are independent literals, not var()-
+   based, so the warmth has to be hand-applied here rather than inherited. */
+.section--pulp-white { background: rgba(238,228,219,0.55); }
+.section--pulp { background: rgba(223,204,190,0.55); }
 /* Darker in night/dark mode, on request — scoped to these 3 IDs (not the
    shared .section--pulp-white/.section--pulp classes) since #clients also
    uses .section--pulp-white and should keep the original lighter tone.
-   Capped around rgb(186,178,165) rather than going as dark as the true
-   .section--dark shell surfaces: #decors' lead paragraph and .advantage p
-   both render --ink-grey directly on this background (not inside an
-   opaque card, unlike .decor-card/.sustain-card), and --ink-grey needs
-   ~180+ lightness behind it to clear 4.5:1 AA — going darker would take
-   those below AA. html[data-theme="day"] restores the original lighter
-   tint, since day theme is uniformly light by design (see the day/night
-   theme comment near --shell-bg above). */
-#decors, #advantages { background: rgba(186, 178, 165, 0.85); }
-#sustainability { background: rgba(168, 158, 142, 0.85); }
+   Capped around rgb(186,178,165) — now rgb(198,175,160), see above — rather
+   than going as dark as the true .section--dark shell surfaces: #decors'
+   lead paragraph and .advantage p both render --ink-grey directly on this
+   background (not inside an opaque card, unlike .decor-card/.sustain-card),
+   and --ink-grey needs ~4.5:1 against it to clear AA — the plain warmed
+   value alone (rgb 196,171,155) landed at 4.47:1, so this is nudged a touch
+   lighter than a flat hue-rotate gave it, to land back at ~4.65:1 instead.
+   html[data-theme="day"] restores the original lighter tint, since day
+   theme is uniformly light by design (see the day/night theme comment near
+   --shell-bg above). */
+#decors, #advantages { background: rgba(198, 175, 160, 0.85); }
+#sustainability { background: rgba(180, 149, 130, 0.85); }
 html[data-theme="day"] #decors,
-html[data-theme="day"] #advantages { background: rgba(235, 231, 222, 0.55); }
-html[data-theme="day"] #sustainability { background: rgba(217, 210, 196, 0.55); }
+html[data-theme="day"] #advantages { background: rgba(238, 228, 219, 0.55); }
+html[data-theme="day"] #sustainability { background: rgba(223, 204, 190, 0.55); }
 .section--pulp-white::before,
 .section--pulp::before {
   content: '';
@@ -2392,7 +2455,14 @@ html[data-theme="day"] .process {
 }
 
 /* ---------- Social proof ----------
-   The client list drifts right-to-left forever instead of sitting still.
+   The eyebrow and heading use the shared .eyebrow/h2 sizing, same as every
+   other section, on request — this section used to scale both down 30%
+   for itself (#clients .eyebrow / #clients h2 overrides), which made
+   "TRUSTED BY" / "Partners" read smaller than every other section's
+   eyebrow/heading pair. --logo-size below still scales just the marquee
+   wordmarks on its own. */
+
+/* The client list drifts right-to-left forever instead of sitting still.
    Four copies of the five clients form one flat run of spans inside the
    track, and the track travels exactly one copy plus one gap, so a copy
    always lands where the previous one began and the loop has no seam.
@@ -2405,8 +2475,10 @@ html[data-theme="day"] .process {
   --marquee-gap: clamp(1.5rem, 5vw, 3.5rem);
   --marquee-copies: 4;
   /* Every wordmark below is sized as a ratio of this, so the whole belt
-     rescales from one number instead of five that can drift apart. */
-  --logo-size: 2.6rem;
+     rescales from one number instead of five that can drift apart. 2.6rem
+     scaled 30% down, then another 20% down on request (was
+     --logo-size: 2.6rem, then 1.82rem). */
+  --logo-size: 1.456rem;
   overflow: hidden;
   /* Logos dissolve at the edges instead of being guillotined by the
      container, so the row reads as a continuous belt passing through. */
