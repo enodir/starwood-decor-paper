@@ -94,9 +94,9 @@
     <div class="container hero-grid">
       <div class="hero-copy">
         <p class="eyebrow eyebrow--dark"><span class="crosshair" aria-hidden="true"></span>
-          <span data-i18n-lang="ru">REGISTRATION 01 — ЗАВОД DECOSTAR</span>
-          <span data-i18n-lang="en">REGISTRATION 01 — DECOSTAR MILL</span>
-          <span data-i18n-lang="uz">REGISTRATION 01 — DECOSTAR ZAVODI</span>
+          <span data-i18n-lang="ru">ЗАВОД DECOSTAR</span>
+          <span data-i18n-lang="en">DECOSTAR MILL</span>
+          <span data-i18n-lang="uz">DECOSTAR ZAVODI</span>
         </p>
         <h1>
           <span data-i18n-lang="ru">Декоративная бумага для ламината, которой <em class="hero-accent">доверяют</em> производители ДСП и МДФ</span>
@@ -346,6 +346,18 @@
         </article>
       </div>
 
+      <!-- Cover Flow focus readout: one name/category line for whichever
+           card is centred, replacing the per-card caption while the 3D
+           rail is running (see .is-coverflow .decor-card__body in
+           style.css). script.js fills this in from the centred card's own
+           i18n spans, so language switching keeps working for free.
+           Stays hidden with no JS / reduced motion, where the plain
+           scroller shows each card's own caption instead. -->
+      <div class="decor-focus-info reveal" id="decor-focus-info" hidden>
+        <p class="decor-focus-info__name" id="decor-focus-name"></p>
+        <p class="decor-focus-info__category" id="decor-focus-category"></p>
+      </div>
+
       <p class="decor-empty" hidden>
         <span data-i18n-lang="ru">В этой категории пока нет декоров — уточните у менеджера.</span>
         <span data-i18n-lang="en">No decors in this category yet — ask your account manager.</span>
@@ -366,9 +378,9 @@
     <div class="container">
       <div class="section-head reveal">
         <p class="eyebrow"><span class="crosshair" aria-hidden="true"></span>
-          <span data-i18n-lang="ru">PASS 00 — ПРОИЗВОДСТВЕННЫЙ ПРОЦЕСС</span>
-          <span data-i18n-lang="en">PASS 00 — PRODUCTION PROCESS</span>
-          <span data-i18n-lang="uz">PASS 00 — ISHLAB CHIQARISH JARAYONI</span>
+          <span data-i18n-lang="ru">ПРОИЗВОДСТВЕННЫЙ ПРОЦЕСС</span>
+          <span data-i18n-lang="en">PRODUCTION PROCESS</span>
+          <span data-i18n-lang="uz">ISHLAB CHIQARISH JARAYONI</span>
         </p>
         <h2><span data-i18n-lang="ru">Как рождается декор</span><span data-i18n-lang="en">How a decor is made</span><span data-i18n-lang="uz">Dekor qanday tug'iladi</span></h2>
       </div>

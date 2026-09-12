@@ -199,9 +199,19 @@
      .decor-grid) handles landing on a card edge either way. The Cover Flow
      3D layer below rides on top of that same scroll position; it never
      takes over scrolling, which is why swipe, trackpad, the buttons and
-     scroll-snap all keep working untouched. */
+     scroll-snap all keep working untouched.
+
+     overflow-x:auto only takes horizontal input from a trackpad swipe, a
+     touchscreen, or the (hidden) scrollbar — a plain vertical mouse wheel
+     does nothing to it by default, and a mouse has no built-in way to drag
+     it at all. Both are wired up below so every input method actually
+     scrolls the rail; a real click still reaches the per-card
+     click-to-centre listener because a drag is only recognised past a
+     small movement threshold (DECOR_DRAG_THRESHOLD). */
   var decorGrid = document.getElementById('decor-grid');
   var decorNavButtons = document.querySelectorAll('[data-decor-nav]');
+  var DECOR_DRAG_THRESHOLD = 4; /* px of pointer movement before a press counts as a drag, not a click */
+  var decorSuppressClick = false;
 
   function updateDecorNav() {
     if (!decorGrid) return;
@@ -245,6 +255,48 @@
       layoutCoverflow();
     });
     updateDecorNav();
+
+    /* Vertical wheel input steers the rail horizontally, same idea as a
+       trackpad's horizontal swipe. preventDefault only while the rail can
+       actually move further that way — at either end the event is left
+       alone so the page keeps scrolling normally underneath the cursor. */
+    decorGrid.addEventListener('wheel', function (e) {
+      if (Math.abs(e.deltaX) >= Math.abs(e.deltaY)) return; /* already horizontal (trackpad) — nothing to convert */
+      var atStart = decorGrid.scrollLeft <= 0;
+      var atEnd = decorGrid.scrollLeft >= decorGrid.scrollWidth - decorGrid.clientWidth - 1;
+      if ((e.deltaY < 0 && atStart) || (e.deltaY > 0 && atEnd)) return;
+      e.preventDefault();
+      decorGrid.scrollLeft += e.deltaY;
+    }, { passive: false });
+
+    /* Click-and-drag for mouse pointers — touch and pen already get native
+       drag-scroll from the browser, so this is gated to pointerType
+       'mouse'. Scroll-snap is switched off mid-drag (.is-dragging in
+       style.css) so it can't fight the scrollLeft this sets every move;
+       it re-engages on release and settles the rail on the nearest card. */
+    var decorDrag = null;
+    decorGrid.addEventListener('pointerdown', function (e) {
+      if (e.pointerType !== 'mouse' || e.button !== 0) return;
+      decorDrag = { startX: e.clientX, startScroll: decorGrid.scrollLeft, moved: false };
+    });
+    window.addEventListener('pointermove', function (e) {
+      if (!decorDrag) return;
+      var dx = e.clientX - decorDrag.startX;
+      if (!decorDrag.moved && Math.abs(dx) > DECOR_DRAG_THRESHOLD) {
+        decorDrag.moved = true;
+        decorGrid.classList.add('is-dragging');
+      }
+      if (decorDrag.moved) decorGrid.scrollLeft = decorDrag.startScroll - dx;
+    });
+    window.addEventListener('pointerup', function () {
+      if (!decorDrag) return;
+      /* A real drag just ended — swallow the click it generates, so
+         releasing the mouse over a card doesn't also fire that card's
+         click-to-centre handler on top of the drag that just moved it. */
+      if (decorDrag.moved) decorSuppressClick = true;
+      decorDrag = null;
+      decorGrid.classList.remove('is-dragging');
+    });
   }
 
   /* ---------- Decor catalog: Cover Flow ----------
@@ -273,6 +325,43 @@
   var DECOR_MIN_OPACITY = 0.25;
   var decorCoverflowCards = [];
 
+  /* ---------- Cover Flow focus readout ----------
+     One name/category line below the rail for whichever card is centred,
+     built by cloning that card's own i18n spans rather than duplicating
+     translations — the CSS-based lang toggle then just works on the clone
+     for free. Category text comes from the matching decor-filter button's
+     spans (same data-filter value), for the same reason. */
+  var decorFocusInfo = document.getElementById('decor-focus-info');
+  var decorFocusName = document.getElementById('decor-focus-name');
+  var decorFocusCategory = document.getElementById('decor-focus-category');
+  var decorCategoryLabels = {};
+  document.querySelectorAll('.decor-filter[data-filter]').forEach(function (btn) {
+    if (btn.dataset.filter === 'all') return;
+    decorCategoryLabels[btn.dataset.filter] = btn.innerHTML;
+  });
+  var decorFocusedCard = null;
+
+  function setDecorFocusCard(card) {
+    if (card === decorFocusedCard) return;
+    decorFocusedCard = card;
+    if (!decorFocusInfo) return;
+    if (!card) {
+      decorFocusInfo.hidden = true;
+      return;
+    }
+    decorFocusInfo.hidden = false;
+    /* Swap the text under an opacity dip instead of an instant jump —
+       transition is declared on .decor-focus-info in style.css. */
+    decorFocusInfo.style.opacity = '0';
+    window.requestAnimationFrame(function () {
+      var nameEl = card.querySelector('.decor-card__name');
+      if (nameEl && decorFocusName) decorFocusName.innerHTML = nameEl.innerHTML;
+      var label = decorCategoryLabels[card.dataset.category];
+      if (label && decorFocusCategory) decorFocusCategory.innerHTML = label;
+      decorFocusInfo.style.opacity = '1';
+    });
+  }
+
   /* Distance between adjacent card centres, measured from layout rather
      than derived from CSS. The cards overlap by a negative margin, so this
      is neither the card width nor the gap; taking it from two real
@@ -298,6 +387,9 @@
     var unit = decorStep();
     if (!unit) return;
 
+    var focusCard = null;
+    var focusA = Infinity;
+
     for (var i = 0; i < decorCoverflowCards.length; i++) {
       var card = decorCoverflowCards[i];
       if (card.style.display === 'none' || card.classList.contains('is-filtered-out')) {
@@ -321,6 +413,11 @@
          from fighting each other for z-index. */
       var c = Math.max(-2.2, Math.min(2.2, d));
       var a = Math.abs(c);
+      /* Whichever card sits closest to the middle drives the focus readout
+         below the rail, tracked here rather than re-derived from the
+         data-decor-offset attribute so it settles on a single card even
+         while several are within the "centred" threshold below. */
+      if (a < focusA) { focusA = a; focusCard = card; }
 
       /* Rotation saturates at one card out; past that only depth, scale and
          opacity keep receding. That's the Cover Flow look — a wall of side
@@ -360,6 +457,8 @@
          off the rail rather than as the same card at a bigger scale. */
       card.classList.toggle('is-decor-focus', centred);
     }
+
+    setDecorFocusCard(focusCard);
   }
 
   if (decorGrid) {
@@ -375,6 +474,11 @@
        offsetLeft is layout geometry, which transforms don't touch. */
     decorCoverflowCards.forEach(function (card) {
       card.addEventListener('click', function () {
+        /* Swallow the click a drag-to-scroll release just generated (see
+           the pointerup handler above) — otherwise releasing a drag over a
+           card both scrolls the rail and re-centres on whatever card the
+           mouse happened to be over. */
+        if (decorSuppressClick) { decorSuppressClick = false; return; }
         if (!card.hasAttribute('data-decor-offset')) return;
         decorGrid.scrollTo({
           left: card.offsetLeft + card.offsetWidth / 2 - decorGrid.clientWidth / 2,
