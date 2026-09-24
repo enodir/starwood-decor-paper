@@ -88,13 +88,18 @@
   var navToggle = document.getElementById('nav-toggle');
   var mainNav = document.getElementById('main-nav');
   if (navToggle && mainNav) {
+    var navIcon = navToggle.querySelector('.t-icon-swap');
+    var setNavState = function (isOpen) {
+      navToggle.setAttribute('aria-expanded', String(isOpen));
+      navToggle.setAttribute('aria-label', isOpen ? 'Закрыть меню' : 'Открыть меню');
+      if (navIcon) navIcon.setAttribute('data-state', isOpen ? 'b' : 'a');
+    };
     var closeNav = function () {
       mainNav.classList.remove('is-open');
-      navToggle.setAttribute('aria-expanded', 'false');
+      setNavState(false);
     };
     navToggle.addEventListener('click', function () {
-      var isOpen = mainNav.classList.toggle('is-open');
-      navToggle.setAttribute('aria-expanded', String(isOpen));
+      setNavState(mainNav.classList.toggle('is-open'));
     });
     mainNav.querySelectorAll('a').forEach(function (a) {
       a.addEventListener('click', closeNav);
@@ -102,7 +107,7 @@
     /* Close on outside click/tap or on scroll — an absolutely positioned
        menu left open otherwise sits on top of the page content. */
     document.addEventListener('click', function (e) {
-      if (mainNav.classList.contains('is-open') && !mainNav.contains(e.target) && e.target !== navToggle) {
+      if (mainNav.classList.contains('is-open') && !mainNav.contains(e.target) && !navToggle.contains(e.target)) {
         closeNav();
       }
     });
