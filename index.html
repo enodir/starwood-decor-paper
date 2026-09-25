@@ -67,10 +67,16 @@
       <a href="#cta" class="btn btn-primary btn-sm header-cta">
         <span data-i18n-lang="ru">Запросить образец</span><span data-i18n-lang="en">Request a sample</span><span data-i18n-lang="uz">Namuna so'rash</span>
       </a>
-      <div class="lang-switch" role="group" aria-label="Switch language">
-        <button class="lang-option" type="button" data-lang-set="ru">RU</button>
-        <button class="lang-option" type="button" data-lang-set="en">EN</button>
-        <button class="lang-option" type="button" data-lang-set="uz">UZ</button>
+      <div class="lang-switch">
+        <button class="lang-current" id="lang-current" type="button" aria-haspopup="true" aria-expanded="false" aria-controls="lang-list" aria-label="Switch language">
+          <span class="lang-current__code">RU</span>
+          <svg class="lang-current__chevron" width="10" height="10" viewBox="0 0 10 10" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 3.75l3 3 3-3"/></svg>
+        </button>
+        <div class="lang-list" id="lang-list" role="group" aria-label="Switch language">
+          <button class="lang-option" type="button" data-lang-set="ru">RU</button>
+          <button class="lang-option" type="button" data-lang-set="en">EN</button>
+          <button class="lang-option" type="button" data-lang-set="uz">UZ</button>
+        </div>
       </div>
       <button class="theme-toggle" id="theme-toggle" type="button" aria-pressed="false" aria-label="Переключить дневную и ночную тему">
         <picture>
@@ -719,7 +725,8 @@
       </div>
 
       <div class="section-cta reveal">
-        <a href="assets/3d/production-line-3d.html" class="btn btn-outline btn-outline-light" target="_blank" rel="noopener">
+        <a href="assets/3d/production-line-3d.html" class="btn btn-3d" target="_blank" rel="noopener">
+          <svg class="btn-3d__cube" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round" aria-hidden="true"><path d="M12 2.5l8.5 4.75v9.5L12 21.5l-8.5-4.75v-9.5z"/><path d="M3.5 7.25L12 12l8.5-4.75M12 12v9.5"/><path class="btn-3d__cube-top" d="M12 2.5l8.5 4.75L12 12 3.5 7.25z" fill="currentColor" stroke="none"/></svg>
           <span data-i18n-lang="ru">3D-модель линии</span><span data-i18n-lang="en">3D model</span><span data-i18n-lang="uz">3D model</span>
         </a>
       </div>

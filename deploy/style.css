@@ -61,6 +61,15 @@
      up. */
   --section-vgap: calc(min(150px, max(0px, (100vw - var(--container-w)) / 2)) + var(--gutter));
   --radius-card: 4px;
+  /* Interactive surfaces are rounded; content cards (--radius-card) stay
+     crisp. --radius-control covers every button and form field;
+     --radius-island rounds the header bar's two outer ends (logo island's
+     left, action island's right) — the same radius as the buttons, on
+     request (it went 999px → 18px → this); every inner side (logo right,
+     whole nav island, action left) is square — see .logo / .nav-island /
+     .action-island. */
+  --radius-control: 10px;
+  --radius-island: var(--radius-control);
 
   --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
   --ease-in-out: cubic-bezier(0.77, 0, 0.175, 1);
@@ -606,7 +615,7 @@ p.lead { font-size: clamp(1.05rem, 1.6vw, 1.25rem); color: var(--ink-grey); }
   letter-spacing: 0.03em;
   text-transform: uppercase;
   padding: 0.9em 1.6em;
-  border-radius: var(--radius-card);
+  border-radius: var(--radius-control);
   border: 1px solid transparent;
   transition: transform 200ms var(--ease-out), background 200ms, color 200ms, border-color 200ms;
 }
@@ -645,6 +654,46 @@ p.lead { font-size: clamp(1.05rem, 1.6vw, 1.25rem); color: var(--ink-grey); }
 .btn-outline-dark:hover { background: rgba(0,0,0,0.05); }
 
 .btn-outline-light { border-color: var(--shell-ink); }
+
+/* "3D model" link (process section): a bevelled cyan face — a vertical
+   gradient with a lit top edge and a darker bottom edge (inset shadows)
+   reads as a rounded, raised surface. The extruded side and cast shadow it
+   used to sit on were removed on request, so it no longer has any shade
+   outside its own box. Hover lifts and brightens it; press sinks the face
+   (inner shadow replaces the lit top edge). Cyan because it's an
+   interactive/working action (the kraft brown is reserved for the brand CTA);
+   the face gradient is kept dark enough that the white label clears AA
+   (≥4.8:1 through the middle of the face). */
+.btn-3d {
+  position: relative;
+  color: #ffffff;
+  background: linear-gradient(180deg, #2296aa 0%, #187d90 50%, #136b7c 100%);
+  border: 1px solid rgba(0, 0, 0, 0.25);
+  text-shadow: 0 -1px 0 rgba(0, 0, 0, 0.3);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.4),
+    inset 0 -2px 0 rgba(0, 0, 0, 0.15);
+  transition: transform 140ms var(--ease-out), box-shadow 140ms var(--ease-out), filter 140ms;
+}
+.btn-3d:hover {
+  transform: translateY(-2px);
+  filter: brightness(1.06);
+}
+.btn-3d:active {
+  transform: translateY(1px);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.15),
+    inset 0 2px 4px rgba(0, 0, 0, 0.3);
+  transition-duration: 70ms;
+}
+.btn-3d:focus-visible {
+  outline: 2px solid var(--pulp-white);
+  outline-offset: 3px;
+}
+/* The icon's top face is filled faintly, so the cube reads as a solid with
+   a lit top rather than a wireframe. */
+.btn-3d__cube { flex-shrink: 0; }
+.btn-3d__cube-top { opacity: 0.35; }
 
 .btn-link {
   padding: 0.9em 0.2em;
@@ -690,25 +739,34 @@ p.lead { font-size: clamp(1.05rem, 1.6vw, 1.25rem); color: var(--ink-grey); }
 
 .header-inner {
   --header-pad: clamp(0.75rem, 2vw, 1.25rem);
-  display: flex;
-  /* stretch (not center) so the shorter logo pill is forced to the same
-     height as the taller nav-island pill instead of floating at its own
-     shorter natural height next to it. */
+  /* Grid, not flex, so the logo and action islands are always exactly the
+     same length (on request), and both shorter than the nav island between
+     them (also on request): the row splits 1 : 1.4 : 1. 1.4 is close to the
+     ceiling — at the 1121px breakpoint edge in Russian a side column is
+     ~306px against the action island's ~295px minimum content, and a larger
+     ratio would push that island past its share (the grid would then
+     freeze it at content width and the two sides would stop matching).
+     The compact language menu and the 1120px hamburger breakpoint exist to
+     keep that fit. At phone/tablet widths the nav leaves the row and the
+     columns become 1fr 1fr (see the 1120px breakpoint). */
+  display: grid;
+  grid-template-columns: 1fr 1.4fr 1fr;
+  /* stretch so every island is the same height as the tallest one. */
   align-items: stretch;
-  /* No justify-content needed — the islands grow to fill 100% of the
-     leftover row width themselves (flex-grow, see .logo/.nav-island/
-     .action-island below), so there's no leftover space left for
-     justify-content to distribute. That's what keeps the interval between
-     islands down to exactly --header-pad (this gap) instead of ballooning
-     into whatever space is left over on wide viewports. */
+  /* The interval between islands — equal to the row's top/bottom and
+     left/right insets below. */
   gap: var(--header-pad);
-  /* Vertical padding only — horizontal inset comes from .container's own
-     padding-inline (var(--section-vgap), shared with every other section)
-     since this element also carries the .container class in index.html.
-     A plain `padding: var(--header-pad)` shorthand here would reset
-     padding-left/right too, overriding .container's and leaving the header
-     row noticeably wider than every section below it. */
+  /* One interval everywhere: between islands, above/below them and at the
+     row's left/right ends. Horizontally that's --section-vgap's centering
+     term (the same 1200px column every section keeps on wide screens) plus
+     --header-pad in place of --gutter — so below the cap the islands sit
+     exactly --header-pad from every edge, and above it they still track the
+     centered content column. Overrides .container's padding-inline. */
   padding-block: var(--header-pad);
+  padding-inline: calc(min(150px, max(0px, (100vw - var(--container-w)) / 2)) + var(--header-pad));
+  /* Inner spacing for the islands' own contents: item-to-item and
+     item-to-pill-edge. */
+  --island-pad: 0.5rem;
   position: relative;
 }
 
@@ -716,12 +774,6 @@ p.lead { font-size: clamp(1.05rem, 1.6vw, 1.25rem); color: var(--ink-grey); }
 .nav-island,
 .action-island {
   pointer-events: auto;
-  /* Grow to soak up the row's leftover width instead of leaving it in the
-     gaps — narrows the interval between islands down to a fixed
-     --header-pad regardless of viewport width, rather than each pill
-     sitting at its own content width with a large, viewport-dependent gap
-     opening up between them on wide screens. */
-  flex: 1 1 auto;
   /* Keyed one step darker than the #sustainability section: that section
      renders at #B1A596 in the default night theme (its rgba(168,158,142,
      .85) composited over --bg-texture), and this is that tone at ~0.9.
@@ -740,9 +792,8 @@ p.lead { font-size: clamp(1.05rem, 1.6vw, 1.25rem); color: var(--ink-grey); }
   /* Bolder on request now that background is gone — the border is the
      pill's only visible edge, so 1px/0.16 read as too faint on its own. */
   border: 1.5px solid rgba(30, 26, 23, 0.32);
-  /* Squared off to match the CTA button's --radius-card, on request —
-     was a full 999px pill/oval. */
-  border-radius: var(--radius-card);
+  /* Fully round-ended pills, on request (see --radius-island). */
+  border-radius: var(--radius-island);
   box-shadow: 0 6px 18px -6px rgba(30, 26, 23, 0.22), 0 1px 2px rgba(0, 0, 0, 0.05);
   color: var(--press-black);
   transition: box-shadow 200ms var(--ease-out), border-color 200ms, background-color 200ms, color 200ms;
@@ -771,9 +822,7 @@ p.lead { font-size: clamp(1.05rem, 1.6vw, 1.25rem); color: var(--ink-grey); }
   position: relative;
   display: inline-flex;
   align-items: center;
-  /* Centers the mark now that the pill grows wider than its content (see
-     flex:1 1 auto above) — left-aligned (the old default) would strand it
-     against the left edge with empty space trailing off to the right. */
+  /* Centers the mark in its (equal-width, see .header-inner) column. */
   justify-content: center;
   /* Padding split unevenly (less on top, more on bottom) rather than
      centering the mark in the pill's true geometric middle — the star's
@@ -783,8 +832,10 @@ p.lead { font-size: clamp(1.05rem, 1.6vw, 1.25rem); color: var(--ink-grey); }
      bigger logo-img without growing the pill itself — .logo's height is
      stretched to match .nav-island (see align-items:stretch above), so this
      is the only lever that controls how large the mark can render inside
-     that fixed box. */
-  padding: 0.2rem 1.1rem 0.4rem;
+     that fixed box. Inline padding is the shared --island-pad. */
+  padding: 0.2rem var(--island-pad) 0.4rem;
+  /* Rounded (--radius-island) on the left, square on the right, on request. */
+  border-radius: var(--radius-island) 0 0 var(--radius-island);
 }
 .logo-img {
   height: 38px;
@@ -812,16 +863,19 @@ p.lead { font-size: clamp(1.05rem, 1.6vw, 1.25rem); color: var(--ink-grey); }
 .nav-island {
   display: flex;
   align-items: center;
-  gap: 1.25rem;
-  /* .main-nav is this pill's only flex child, so space-between had nothing
-     to distribute — it just placed that single block at the start,
-     leaving the 5 links clumped at the left with dead space trailing off
-     to the right on the now-wider (flex:1 1 auto) pill. center fixes that
-     by centering .main-nav as a whole within the pill. */
-  justify-content: center;
-  /* Symmetric now that this pill holds only the nav links (the CTA button
-     that used to sit at its right edge is its own island now). */
-  padding: 0.55rem 1.5rem;
+  /* Square on both sides, on request — the middle segment between the
+     logo and action islands, whose facing sides are square too, so the
+     three read as one bar with round outer ends. */
+  border-radius: 0;
+  /* Content-width middle column (see .header-inner). The link gap scales
+     with viewport — tight near the 1120px breakpoint, where the row is
+     shortest, opening to --header-pad (the gap between islands) on wide
+     screens; any more and the Russian labels squeeze the side islands'
+     contents to their minimum spacing at 1440px — and the pill's end
+     padding matches it, so links sit equally distanced from each other and
+     from the pill's round ends. */
+  --nav-gap: clamp(var(--island-pad), 9vw - 6rem, var(--header-pad));
+  padding: var(--island-pad) var(--nav-gap);
 }
 /* One-time entrance on page load — a plate dropping in slightly askew,
    oversized and hot off the press, then stamping down and settling into
@@ -877,8 +931,15 @@ p.lead { font-size: clamp(1.05rem, 1.6vw, 1.25rem); color: var(--ink-grey); }
 
 .main-nav {
   display: flex;
-  gap: 1.75rem;
+  flex: 1;
+  /* gap matches .nav-island's end padding (see --nav-gap), and
+     space-evenly adds the same share of the column's leftover width to
+     every interval, ends included — so links stay equally spaced from each
+     other and from the pill's round ends as the 1.4fr column grows. */
+  justify-content: space-evenly;
+  gap: var(--nav-gap);
   font-size: 0.92rem;
+  white-space: nowrap;
 }
 .main-nav a {
   position: relative;
@@ -908,53 +969,78 @@ p.lead { font-size: clamp(1.05rem, 1.6vw, 1.25rem); color: var(--ink-grey); }
 .action-island {
   display: flex;
   align-items: center;
-  /* Takes a larger share of the row's leftover width than the logo and nav
-     pills (which stay at the flex-grow: 1 set above), so the CTA, language
-     switch and theme toggle get more breathing room inside it. Grow, not a
-     wider flex-basis: the three items are laid out with space-evenly, so
-     extra width distributes into the intervals between them rather than
-     pushing the pill past its neighbours at narrow viewports. */
-  flex-grow: 1.6;
-  /* space-evenly, not space-between/center — CTA/lang-switch/toggle should
-     sit equally distanced from each other AND from the pill's left/right
-     edges once it grows wider than its content (see flex:1 1 auto above),
-     not clumped in the middle with dead space at the edges, and not flush
-     against the edges with tighter gaps between items (space-between). No
-     explicit `gap` alongside it — gap adds a fixed minimum between items
-     on top of whatever space-evenly distributes, which would make the
-     between-item spacing larger than the edge spacing; leaving it at 0
-     lets space-evenly alone keep every interval equal. */
+  /* Square on the left, rounded (--radius-island) on the right, on request. */
+  border-radius: 0 var(--radius-island) var(--radius-island) 0;
+  /* --island-pad as both gap and padding sets the minimum interval;
+     space-evenly then adds the same share of the equal-width column's
+     leftover to every interval, edges included, so items stay equally
+     distanced from each other and from the pill's ends. */
   justify-content: space-evenly;
-  /* padding-block only — a horizontal padding-inline would add fixed space
-     at the edges on top of what space-evenly already distributes there,
-     making the edge gaps bigger than the between-item gaps instead of
-     equal to them. */
-  padding-block: 0.45rem;
+  gap: var(--island-pad);
+  padding: var(--island-pad);
 }
 
-/* Three-way language switch: RU / EN / UZ. A single "current/next" toggle
-   button doesn't scale past two languages, so this is a segmented control —
-   each code is its own button, the active one is visually distinct. */
+/* Language menu: RU / EN / UZ. A compact button showing the active code
+   (the old look of the segmented control's active segment — cyan fill,
+   pulp-white/black double ring) opens a small list of all three below it.
+   Compact on request: the always-visible three-segment control was ~65px
+   wider, which is what kept the logo and action islands from being equal
+   widths (see .header-inner). */
 .lang-switch {
+  position: relative;
+}
+.lang-current {
   display: inline-flex;
   align-items: center;
-  gap: 0.2rem;
-  /* Same fill as .logo/.nav-island/.action-island, on request — unlike
-     .theme-toggle (a plain icon button with no background of its own),
-     this control gets the island tint so its segmented buttons read
-     clearly. Kept in step with the islands' transparent fill above. */
-  background: transparent;
+  gap: 0.35em;
+  font-family: var(--font-mono);
+  font-size: 0.78rem;
+  font-weight: 500;
+  letter-spacing: 0.02em;
+  padding: 0.42em 0.6em 0.42em 0.75em;
   color: var(--pulp-white);
-  border: 1px solid currentColor;
-  /* Black halo on the border, reversed from black-on-white — see
-     .main-nav a for why this control needs the dual-color treatment at
-     all (it's transparent, so it sits over both light and dark sections). */
+  background: var(--registration-cyan);
+  border: 1px solid var(--pulp-white);
+  /* Black halo outside the light ring — the same dual-colour edge the
+     segmented control had, so it holds up over light and dark sections. */
   box-shadow: 0 0 0 1px var(--press-black);
-  border-radius: var(--radius-card);
-  padding: 2px;
-  opacity: 0.85;
+  border-radius: var(--radius-control);
+  transition: filter 150ms, transform 150ms var(--ease-out);
 }
-.lang-switch:hover { opacity: 1; }
+.lang-current:hover { filter: brightness(1.1); }
+.lang-current:active { transform: scale(0.95); }
+.lang-current__chevron { transition: transform 200ms var(--ease-out); }
+.lang-switch.is-open .lang-current__chevron { transform: rotate(180deg); }
+
+/* Opaque-ish panel rather than glass: it sits inside .action-island, whose
+   own backdrop-filter makes it a backdrop root, so a nested backdrop-filter
+   here would have nothing behind it to blur. Same fill as the mobile nav
+   dropdown. Fades/slides like that dropdown too; visibility keeps the
+   closed list out of the tab order. */
+.lang-list {
+  position: absolute;
+  top: calc(100% + 0.6rem);
+  left: 50%;
+  z-index: 2;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 100%;
+  padding: 4px;
+  background: rgba(200, 191, 172, 0.97);
+  border: 1px solid rgba(30, 26, 23, 0.1);
+  border-radius: calc(var(--radius-control) + 4px);
+  box-shadow: 0 14px 30px -8px rgba(30, 26, 23, 0.32), 0 1px 2px rgba(0, 0, 0, 0.05);
+  opacity: 0;
+  transform: translate(-50%, -6px);
+  visibility: hidden;
+  transition: opacity 180ms var(--ease-out), transform 180ms var(--ease-out), visibility 180ms;
+}
+.lang-switch.is-open .lang-list {
+  opacity: 1;
+  transform: translate(-50%, 0);
+  visibility: visible;
+}
 
 .lang-option {
   background: transparent;
@@ -966,8 +1052,9 @@ p.lead { font-size: clamp(1.05rem, 1.6vw, 1.25rem); color: var(--ink-grey); }
      IBM Plex Mono is loaded at, see assets/fonts.generated.css. */
   font-weight: 500;
   letter-spacing: 0.02em;
-  padding: 0.32em 0.55em;
-  border-radius: 2px;
+  padding: 0.45em 0.9em;
+  /* Concentric with .lang-list: its radius minus its 4px padding. */
+  border-radius: var(--radius-control);
   /* 0.8, not the 0.6 this sat at while the ink was white-coated-in-black:
      that coating was doing the contrast work, and plain --press-black at
      0.6 lands ~3.4:1 over the pill when a dark hero shows through it. The
@@ -1030,7 +1117,10 @@ html[data-theme="day"] .theme-toggle__icon--day { opacity: 1; }
   justify-content: center;
   min-width: 44px;
   min-height: 44px;
-  margin-inline: -0.5rem;
+  /* Pulls the 44px hit area in to the 22px icon's footprint, so layout
+     (and --island-pad spacing) is measured from the glyph you see, while
+     the tap target still overflows to the full 44px. */
+  margin: calc((22px - 44px) / 2);
   background: none;
   border: none;
   color: inherit;
@@ -1078,13 +1168,12 @@ html[data-theme="day"] .theme-toggle__icon--day { opacity: 1; }
   .t-icon-swap .t-icon { transition: none !important; }
 }
 
-@media (max-width: 1024px) {
-  /* Raised from 860px: once the header CTA stopped shrinking/wrapping
-     (see .btn-sm's white-space:nowrap), the full nav-island — links +
-     lang-switch + theme-toggle + CTA, all now rigid-width — no longer fits
-     in the 861-1023px range and was clipping off the right edge of the
-     viewport. Collapsing to the compact hamburger layout earlier avoids
-     that; verified no overflow at 1024px (~40px to spare). */
+@media (max-width: 1120px) {
+  /* Raised from 860px, then 1024px: the header row has to fit the nav plus
+     two *equal-width* side islands (see .header-inner's 1fr auto 1fr), each
+     as wide as the action island's content. In Russian (the longest nav
+     labels) that stops fitting just below ~1080px, so the hamburger layout
+     takes over from 1120px down with a little slack. */
   /* Mobile dropdown stays its own fixed light-glass panel rather than the
      desktop pills' transparent-with-border treatment — a fully transparent
      panel here would show raw page content through the open dropdown with
@@ -1094,8 +1183,11 @@ html[data-theme="day"] .theme-toggle__icon--day { opacity: 1; }
   .main-nav {
     position: absolute;
     top: calc(100% + 0.6rem);
-    left: var(--gutter);
-    right: var(--gutter);
+    /* Same inset as the header pills above it, so the panel's edges line
+       up with theirs (below the 1200px cap, .header-inner's padding-inline
+       is exactly --header-pad). */
+    left: var(--header-pad);
+    right: var(--header-pad);
     flex-direction: column;
     /* Links default to align-items:stretch (flex-direction:column's
        initial value) — each <a> would span the dropdown's full width with
@@ -1107,8 +1199,8 @@ html[data-theme="day"] .theme-toggle__icon--day { opacity: 1; }
     backdrop-filter: saturate(140%) blur(12px);
     -webkit-backdrop-filter: saturate(140%) blur(12px);
     border: 1px solid rgba(30, 26, 23, 0.1);
-    /* Matches the desktop pills' squared --radius-card. */
-    border-radius: var(--radius-card);
+    /* Same radius as the header bar's rounded outer ends above it. */
+    border-radius: var(--radius-island);
     box-shadow: 0 14px 30px -8px rgba(30, 26, 23, 0.28), 0 1px 2px rgba(0, 0, 0, 0.04);
     padding: 1rem 1.25rem 1.25rem;
     gap: 1rem;
@@ -1132,31 +1224,16 @@ html[data-theme="day"] .theme-toggle__icon--day { opacity: 1; }
   .nav-toggle { display: flex; }
   .header-cta { display: none; }
   /* nav-island now holds only .main-nav, which goes position:absolute
-     right above — with no in-flow content left, strip the pill's own
-     chrome so it doesn't render as an empty translucent box between the
-     logo and the plain controls. */
-  .nav-island {
-    background: none;
-    border-color: transparent;
-    box-shadow: none;
-    padding: 0;
-    /* .nav-island still carries the shared .logo/.nav-island/.action-island
-       backdrop-filter — and backdrop-filter (like transform/filter/
-       will-change) makes an element a containing block for its own
-       absolutely-positioned descendants regardless of `position`. .main-nav
-       is now nav-island's only child, so that child's left/right:
-       var(--gutter) was resolving against nav-island's own box, not
-       .header-inner — and with no in-flow content left inside it,
-       nav-island shrinks toward 0 width, collapsing the dropdown to a
-       ~40px sliver instead of the full-width panel the comment above
-       .main-nav describes. Clearing it here (there's nothing left to blur
-       — background is none, above) lets .main-nav's containing-block
-       search continue up to .header-inner (position:relative, full row
-       width), which is what left/right:var(--gutter) was actually written
-       against. */
-    backdrop-filter: none;
-    -webkit-backdrop-filter: none;
-  }
+     right above. display:contents drops the pill's own box entirely: no
+     empty translucent chip between the logo and the controls, and no
+     zero-width flex item adding a second --header-pad gap to the row. It
+     also means nav-island can't become .main-nav's containing block (its
+     backdrop-filter would otherwise do that and collapse the dropdown to a
+     sliver) — .main-nav's left/right insets resolve against
+     .header-inner (position:relative, full row width) as intended. */
+  .nav-island { display: contents; }
+  /* Two equal columns once the nav is out of the row. */
+  .header-inner { grid-template-columns: 1fr 1fr; }
 }
 
 /* ---------- Hero ---------- */
@@ -1419,7 +1496,7 @@ html[data-theme="day"] #sustainability { background: rgba(223, 204, 190, 0.55); 
   padding: 0;
   background: transparent;
   border: 1.5px solid var(--press-black);
-  border-radius: var(--radius-card);
+  border-radius: var(--radius-control);
   color: var(--press-black);
   transition: background 150ms, opacity 150ms, transform 150ms var(--ease-out);
 }
@@ -1559,7 +1636,7 @@ html[data-theme="day"] #sustainability { background: rgba(223, 204, 190, 0.55); 
   letter-spacing: 0.03em;
   padding: 0.55em 1em;
   border: 1px solid var(--raw-pulp-dark);
-  border-radius: var(--radius-card);
+  border-radius: var(--radius-control);
   /* Darker tint than the old --pulp-white, on request — one step down the
      same light-surface family (--raw-pulp), so the buttons read as sitting
      on the page rather than as a near-white chip floating on the section's
@@ -2727,7 +2804,7 @@ html[data-theme="day"] .process {
   background: var(--shell-form-fill);
   color: var(--shell-form-ink);
   border: 1px solid transparent;
-  border-radius: var(--radius-card);
+  border-radius: var(--radius-control);
   padding: 0.75em 0.9em;
 }
 .form-field input:focus,

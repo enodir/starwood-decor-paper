@@ -33,7 +33,10 @@
     if (metaDesc) metaDesc.setAttribute('content', META[lang].description);
     langOptionButtons.forEach(function (btn) {
       btn.classList.toggle('is-active', btn.dataset.langSet === lang);
+      btn.setAttribute('aria-pressed', String(btn.dataset.langSet === lang));
     });
+    var langCode = document.querySelector('.lang-current__code');
+    if (langCode) langCode.textContent = lang.toUpperCase();
     document.querySelectorAll('option[data-ru]').forEach(function (opt) {
       opt.textContent = opt.dataset[lang] || opt.dataset.ru;
     });
@@ -44,8 +47,38 @@
   try { savedLang = localStorage.getItem(LANG_KEY); } catch (e) {}
   applyLang(LANGS.indexOf(savedLang) !== -1 ? savedLang : 'ru');
 
+  /* Header language menu: one button showing the active code, opening a
+     small list of all three. Compact on purpose — the old always-visible
+     RU/EN/UZ segmented control was what kept the logo and action islands
+     from being equal widths (see .header-inner). */
+  var langCurrent = document.getElementById('lang-current');
+  var langSwitch = langCurrent && langCurrent.closest('.lang-switch');
+  var setLangMenu = function (open) {
+    if (!langSwitch) return;
+    langSwitch.classList.toggle('is-open', open);
+    langCurrent.setAttribute('aria-expanded', String(open));
+  };
+  if (langSwitch) {
+    langCurrent.addEventListener('click', function () {
+      setLangMenu(!langSwitch.classList.contains('is-open'));
+    });
+    document.addEventListener('click', function (e) {
+      if (!langSwitch.contains(e.target)) setLangMenu(false);
+    });
+    document.addEventListener('keydown', function (e) {
+      if (e.key === 'Escape' && langSwitch.classList.contains('is-open')) {
+        setLangMenu(false);
+        langCurrent.focus();
+      }
+    });
+    /* No close-on-scroll (unlike the mobile nav): the menu rides in the
+       fixed header, so it can't drift over content, and mobile browsers
+       fire scroll events on toolbar resize that would snap it shut. */
+  }
+
   langOptionButtons.forEach(function (btn) {
     btn.addEventListener('click', function () {
+      setLangMenu(false);
       var lang = btn.dataset.langSet;
       if (lang === html.getAttribute('lang') || reduceMotion) {
         applyLang(lang);

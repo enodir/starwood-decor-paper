@@ -376,9 +376,12 @@ text color is `--press-black` (not `--pulp-white`). Nav links and the logo under
 All three languages live in the DOM simultaneously as sibling `<span data-i18n-lang="ru">` / `<span
 data-i18n-lang="en">` / `<span data-i18n-lang="uz">` elements; visibility is toggled purely by CSS
 (`html[lang="ru"|"en"|"uz"] [data-i18n-lang="..."] { display: inline }`), so it works even before
-`script.js` runs. The language switch itself is a 3-button segmented control (`.lang-switch` /
-`.lang-option`, `data-lang-set="ru|en|uz"`) in both the header and the footer — not a single
-toggle/cycle button, which stopped scaling once a third language was added. `script.js`'s `applyLang()`
+`script.js` runs. The language switch itself lives in the header only: a compact menu button
+(`.lang-current`, showing the active code) that opens a small list of all three options
+(`.lang-list` > `.lang-option`, `data-lang-set="ru|en|uz"`). It replaced an always-visible 3-segment
+control because that was ~65px wider — too wide for the header's logo and action islands to be equal
+widths (`.header-inner` is a `1fr auto 1fr` grid; the header collapses to the hamburger layout at
+1120px for the same reason). `script.js`'s `applyLang()`
 flips `<html lang>`, marks the matching `.lang-option` as `.is-active`, persists the choice to
 `localStorage`, and updates the handful of things CSS can't reach: `<title>`, `<meta
 name="description">` (see the `META` object in `script.js`), the CTA form's post-submit status message
