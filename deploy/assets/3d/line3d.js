@@ -180,13 +180,24 @@ function digit(p, n, d, cx, cy, z, dw = 0.12, dh = 0.22, t = 0.025) {
   const pos = { a: [0, dh / 2, 1], d: [0, -dh / 2, 1], g: [0, 0, 1], f: [-dw / 2, dh / 4, 0], b: [dw / 2, dh / 4, 0], e: [-dw / 2, -dh / 4, 0], c: [dw / 2, -dh / 4, 0] };
   for (const s of SEG[d]) { const [x, y, hor] = pos[s]; box(p, `${n}_seg_${s}`, hor ? dw : t, hor ? t : dh / 2, 0.01, M.paper, cx + x, cy + y, z); }
 }
+const SIGN_NAMES = { 1: 'RAW MATERIAL ARRIVAL', 2: 'GRAVURE PRINTING', 3: 'IMPREGNATION', 4: 'PRESSING', 5: 'QUALITY CONTROL' };
+function signTex(num) {
+  const c = document.createElement('canvas'); c.width = 1024; c.height = 640; const g = c.getContext('2d');
+  g.fillStyle = '#1d1f20'; g.fillRect(0, 0, 1024, 640);
+  g.fillStyle = '#b3342b'; g.fillRect(0, 0, 1024, 70);
+  g.fillStyle = '#ffffff'; g.textAlign = 'center'; g.textBaseline = 'alphabetic';
+  g.font = '700 360px "Barlow Condensed","Arial Narrow",Arial,sans-serif'; g.fillText(String(num).padStart(2, '0'), 512, 440);
+  g.font = '600 92px "Barlow Condensed","Arial Narrow",Arial,sans-serif'; g.fillText(SIGN_NAMES[num], 512, 575, 960);
+  const t = new T.CanvasTexture(c); t.colorSpace = T.SRGBColorSpace; t.anisotropy = 8; return t;
+}
 function sign(p, n, num, x, z) {
-  const g = grp(p, n);
-  cylY(g, `${n}_post`, 0.035, 2.2, M.steelDark, x, 1.1, z - 0.04, 16);
-  box(g, `${n}_plate`, 0.62, 0.42, 0.03, M.steelDark, x, 2.15, z);
-  box(g, `${n}_rule`, 0.5, 0.012, 0.01, M.marking, x, 1.99, z + 0.02);
-  digit(g, `${n}_digit_tens`, 0, x - 0.1, 2.18, z + 0.02);
-  digit(g, `${n}_digit_units`, num, x + 0.1, 2.18, z + 0.02);
+  const g = grp(p, n), tex = signTex(num);
+  const face = new T.MeshStandardMaterial({ name: `sign_face_${num}`, map: tex, emissiveMap: tex, emissive: 0xffffff, emissiveIntensity: 0.55, roughness: 0.5 });
+  cylY(g, `${n}_post`, 0.05, 3.0, M.rubber, x, 1.5, z - 0.06, 16);
+  box(g, `${n}_plate`, 1.5, 0.96, 0.05, M.rubber, x, 3.0, z);
+  mesh(g, `${n}_face`, new T.PlaneGeometry(1.44, 0.9), face, x, 3.0, z + 0.026);
+  const back = mesh(g, `${n}_face_back`, new T.PlaneGeometry(1.44, 0.9), face, x, 3.0, z - 0.026); back.rotation.y = Math.PI;
+  box(g, `${n}_base`, 0.4, 0.04, 0.4, M.rubber, x, 0.02, z - 0.06);
   return g;
 }
 
@@ -194,7 +205,7 @@ function sign(p, n, num, x, z) {
    FLOOR, MARKINGS, SERVICES
    ======================================================= */
 const site = grp(model, 'site');
-box(site, 'factory_floor', 70, 0.15, 14, M.concrete, -1, -0.075, 0);
+box(site, 'factory_floor', 78, 0.15, 18, M.concrete, 3, -0.075, 0);
 box(site, 'aisle_line_operator', 70, 0.004, 0.1, M.marking, -1, 0.002, 3.4);
 box(site, 'aisle_line_drive', 54, 0.004, 0.1, M.marking, 6, 0.002, -3.4);
 for (const [i, x] of [-15.2, -4.6, 11.0, 19.6].entries())
@@ -214,7 +225,7 @@ for (let i = 0; i <= 8; i++) {
    01 — RAW MATERIAL ARRIVAL
    ======================================================= */
 const s1 = grp(model, 'station_01_raw_material_arrival');
-sign(s1, 'sign_01', 1, -23.95, 3.0);
+sign(s1, 'sign_01', 1, -21.3, 3.0);
 
 const tk = grp(s1, 'delivery_truck', -30, 0, -4.6);
 // --- wheels: lathed tyres with rounded shoulders, dual rear axles
@@ -263,7 +274,8 @@ cabShape.lineTo(CB, CB + 0.05);
 cabShape.quadraticCurveTo(CB, CB, CB + 0.05, CB);
 const cabGeo = new T.ExtrudeGeometry(cabShape, { depth: CW - 2 * CB, bevelEnabled: true, bevelThickness: CB, bevelSize: CB, bevelSegments: 5, curveSegments: 16 });
 cabGeo.translate(0, 0, -(CW - 2 * CB) / 2);
-mesh(tk, 'cab_shell', cabGeo, M.paint, CX, CY, 0);
+rbox(tk, 'cab_shell_lower', 2.2, 1.0, CW, 0.08, M.paint, CX + 1.1, CY + 0.5, 0);
+rbox(tk, 'cab_shell_upper', 2.12, 1.1, CW, 0.16, M.paint, CX + 1.06, CY + 1.5, 0);
 // windscreen follows the rake (outer surface line ≈ (2.2,1.007) → (2.1,1.957))
 const rake = Math.atan2(0.1, 0.95), nx = Math.cos(rake), ny = Math.sin(rake);
 rbox(tk, 'cab_windscreen', 0.02, 0.74, 2.1, 0.008, M.glass, CX + 2.145 + 0.012 * nx, CY + 1.525 + 0.012 * ny, 0, rake);
@@ -354,6 +366,38 @@ const stack = grp(s1, 'roll_stack');
 [-24.575, -23.325].forEach((x, i) => paperRoll(stack, `roll_top_${i + 1}`, x, 1.692, 0));
 box(stack, 'stack_chock_rear', 0.16, 0.14, 1.9, M.rubber, -25.67, 0.07, 0);
 box(stack, 'stack_chock_front', 0.16, 0.14, 1.9, M.rubber, -22.23, 0.07, 0);
+
+// roll-handling forklift with core ram (origin = mast base, forks face -z)
+const fl = grp(s1, 'forklift_roll_handler', -29.45, 0, 4.4); fl.rotation.y = Math.PI / 2;
+rbox(fl, 'fl_chassis', 1.2, 0.6, 2.1, 0.08, M.paint, 0, 0.6, 1.3);
+rbox(fl, 'fl_counterweight', 1.22, 0.75, 0.5, 0.12, M.steelDark, 0, 0.78, 2.3);
+rbox(fl, 'fl_seat', 0.5, 0.12, 0.5, 0.05, M.rubber, 0, 1.0, 1.55);
+rbox(fl, 'fl_seat_back', 0.5, 0.5, 0.1, 0.04, M.rubber, 0, 1.3, 1.82);
+cylBetween(fl, 'fl_steering_column', 0.035, [0, 0.9, 0.75], [0, 1.35, 1.05], M.steelDark, 12);
+{ const sw = mesh(fl, 'fl_steering_wheel', new T.TorusGeometry(0.17, 0.02, 8, 32), M.rubber, 0, 1.37, 1.07); sw.rotation.x = -1.0; }
+for (const [px, pz] of [[0.52, 0.72], [-0.52, 0.72], [0.52, 2.0], [-0.52, 2.0]]) cylY(fl, 'fl_guard_post_' + (px > 0 ? 'r' : 'l') + (pz < 1 ? 'f' : 'b'), 0.035, 1.35, M.steelDark, px, 1.575, pz, 12);
+rbox(fl, 'fl_overhead_guard', 1.14, 0.05, 1.4, 0.02, M.steelDark, 0, 2.27, 1.36);
+// wheels: steer knuckle (the rear axle steers) › spinning hub › lathed tyre with tread lugs, rim, hub cap, nuts
+const flNut = new T.CylinderGeometry(0.016, 0.016, 0.03, 6);
+function flTyre(r, w) {
+  const h = w / 2, pts = [[r * 0.6, -h], [r - 0.03, -h], [r - 0.008, -h + 0.02], [r, -h + 0.05], [r, h - 0.05], [r - 0.008, h - 0.02], [r - 0.03, h], [r * 0.6, h]];
+  const g = new T.LatheGeometry(pts.map(([a, b]) => new T.Vector2(a, b)), 40); g.rotateZ(Math.PI / 2); return g;
+}
+for (const [wx, wz, r] of [[0.52, 0.45, 0.32], [-0.52, 0.45, 0.32], [0.52, 2.05, 0.26], [-0.52, 2.05, 0.26]]) {
+  const n = 'fl_wheel_' + (wx > 0 ? 'r' : 'l') + (wz < 1 ? 'f' : 'b'), o = Math.sign(wx), hub = grp(grp(fl, n + '_steer', wx, r, wz), n + '_spin');
+  mesh(hub, n + '_tyre', flTyre(r, 0.26), M.rubber, 0, 0, 0);
+  for (let k = 0; k < 12; k++) { const a = k * Math.PI / 6; box(hub, `${n}_tread_${k + 1}`, 0.2, 0.024, 0.07, M.rubber, 0, Math.cos(a) * r, Math.sin(a) * r).rotation.x = a; }
+  cylX(hub, n + '_rim', r * 0.64, 0.22, M.steelLight, 0, 0, 0, 28);
+  cylX(hub, n + '_hub_cap', r * 0.24, 0.05, M.steelDark, o * 0.11, 0, 0, 20);
+  for (let k = 0; k < 6; k++) { const a = k * Math.PI / 3; mesh(hub, `${n}_nut_${k + 1}`, flNut, M.steelDark, o * 0.115, Math.cos(a) * r * 0.4, Math.sin(a) * r * 0.4).rotation.z = Math.PI / 2; }
+}
+for (const sd of [1, -1]) box(fl, 'fl_mast_' + (sd > 0 ? 'r' : 'l'), 0.1, 2.9, 0.14, M.steelDark, sd * 0.38, 1.5, 0.12);
+box(fl, 'fl_mast_cross', 0.86, 0.1, 0.1, M.steelDark, 0, 2.9, 0.12);
+const car = grp(fl, 'fl_carriage');
+box(car, 'fl_carriage_plate', 0.8, 0.5, 0.06, M.steel, 0, 0, 0.02);
+cylZ(car, 'fl_core_ram', 0.06, 2.3, M.steelLight, 0, 0, -1.3, 20);
+cylZ(car, 'fl_ram_collar', 0.12, 0.08, M.steelDark, 0, 0, -0.06, 24);
+for (const sd of [1, -1]) cylBetween(fl, 'fl_lift_cylinder_' + (sd > 0 ? 'r' : 'l'), 0.04, [sd * 0.25, 0.4, 0.2], [sd * 0.25, 2.8, 0.2], M.steelLight, 12);
 
 // unwind stand
 const UX = -18, UY = WEB_Y + 0.75 + 0.011;
@@ -523,7 +567,7 @@ guideStand(model, 'guide_stand_03_04', 11.6);
    04 — PRESSING (short-cycle platen press)
    ======================================================= */
 const s4 = grp(model, 'station_04_pressing'), PRX = 15.5;
-sign(s4, 'sign_04', 4, PRX, 3.0);
+sign(s4, 'sign_04', 4, PRX, 3.5);
 box(s4, 'press_foundation', 5.0, 0.6, 3.8, M.steelDark, PRX, 0.3, 0);
 const nutGeo = new T.CylinderGeometry(0.3, 0.3, 0.2, 6);
 for (const cx of [-1.9, 1.9]) for (const cz of [-1.55, 1.55]) {
@@ -614,12 +658,12 @@ for (const [i, z] of [-0.6, 0, 0.6].entries()) {
   cylY(gloss, `gloss_head_lens_${i + 1}`, 0.04, 0.02, M.glass, GLX, 1.595, z, 16);
 }
 const desk = grp(s5, 'qc_workstation'), QX = 24.4, QZ = 2.6;
-box(desk, 'desk_top', 1.2, 0.05, 0.6, M.steel, QX, 0.75, QZ);
-for (const dx of [-0.55, 0.55]) for (const dz of [-0.25, 0.25]) box(desk, `desk_leg_${dx < 0 ? 'l' : 'r'}_${dz < 0 ? 'b' : 'f'}`, 0.04, 0.725, 0.04, M.steelDark, QX + dx, 0.3625, QZ + dz);
-box(desk, 'monitor_stand', 0.06, 0.3, 0.06, M.steelDark, QX, 0.925, QZ - 0.18);
-box(desk, 'monitor', 0.9, 0.55, 0.04, M.steelDark, QX, 1.35, QZ - 0.2);
-box(desk, 'monitor_screen', 0.84, 0.49, 0.005, M.glass, QX, 1.35, QZ - 0.177);
-box(desk, 'keyboard', 0.45, 0.02, 0.15, M.steelDark, QX, 0.785, QZ + 0.05);
+box(desk, 'desk_top', 1.2, 0.05, 0.6, M.steel, QX, 1.1, QZ);
+for (const dx of [-0.55, 0.55]) for (const dz of [-0.25, 0.25]) box(desk, `desk_leg_${dx < 0 ? 'l' : 'r'}_${dz < 0 ? 'b' : 'f'}`, 0.04, 1.075, 0.04, M.steelDark, QX + dx, 0.5375, QZ + dz);
+box(desk, 'monitor_stand', 0.06, 0.2, 0.06, M.steelDark, QX, 1.225, QZ - 0.18);
+box(desk, 'monitor', 0.9, 0.55, 0.04, std('monitor_black', 0x111213, 0.5), QX, 1.6, QZ - 0.2);
+box(desk, 'monitor_screen', 0.84, 0.49, 0.005, std('monitor_screen_black', 0x050506, 0.15, 0.1), QX, 1.6, QZ - 0.177);
+box(desk, 'keyboard', 0.45, 0.02, 0.15, std('keyboard_black', 0x111213, 0.6), QX, 1.135, QZ + 0.05);
 // stacker + pallet
 const PLX = 30.6;
 const stk = grp(s5, 'vacuum_stacker');
@@ -657,11 +701,645 @@ strip(flow, 'web_bath_immersion', -0.18, 0.46, 0.18, 0.46, M.impreg);
 strip(flow, 'web_bath_ascent', 0.18, 0.46, 1.6, WEB_Y, M.impreg);
 strip(flow, 'web_impregnated', 1.6, WEB_Y, PRX - 1.8, WEB_Y, M.impreg);
 const BX0 = PRX - 1.8, BX1 = CX1 - 0.2;
-box(flow, 'board_core', BX1 - BX0, 0.044, W, M.mdf, (BX0 + BX1) / 2, BOARD_BOT + 0.022, 0);
-box(flow, 'board_decor_surface', BX1 - BX0, 0.01, W, M.decor, (BX0 + BX1) / 2, WEB_Y, 0);
+// pressed board, cut to final panels: one in the press, the rest indexing along the conveyor to the stacker
+const PANEL_L = 2.6, PANEL_S = [15.5, 18.26, 21.02, 23.78, 26.54, 29.3], PANEL_P = 2.76;
+const panels = PANEL_S.map((x, i) => {
+  const g = grp(flow, `finished_panel_${i + 1}`, x, 0, 0);
+  rbox(g, `finished_panel_${i + 1}_core`, PANEL_L, 0.044, W, 0.004, M.mdf, 0, BOARD_BOT + 0.022, 0);
+  box(g, `finished_panel_${i + 1}_decor`, PANEL_L - 0.004, 0.006, W - 0.004, M.decor, 0, WEB_Y + 0.002, 0);
+  return g;
+});
+
+/* ---------- driving: rear-steer forklift routes ---------- */
+// A route is traced by the front (drive) axle midpoint, the one point on a rear-steer truck that never slips
+// sideways, and the body always points along the path (forks trailing it in reverse), so nothing crabs.
+// Poses are [axle x, axle z, ψ]; forks face (−sin ψ, −cos ψ). Steps:
+//   {go: [[x, z], …], r, rev, v, lift: [to, from, until]}  drive through the points, corners filleted at r
+//   {lift, d}  raise/lower in place · {wait} · {until: t}   — `mark` records a step's start time
+const FL_AXLE = 0.45, FL_BASE = 1.6, FL_ACC = 1.8;
+const wrapA = a => a - 2 * Math.PI * Math.round(a / (2 * Math.PI));
+const smooth = u => (u = Math.min(1, Math.max(0, u)), u * u * (3 - 2 * u));
+function fillet(pts, r) {
+  const out = []; let [cx, cz] = pts[0];
+  for (let i = 1; i < pts.length; i++) {
+    const [x1, z1] = pts[i], L = Math.hypot(x1 - cx, z1 - cz), ux = (x1 - cx) / L, uz = (z1 - cz) / L;
+    if (i === pts.length - 1) { if (L > 1e-6) out.push({ x: cx, z: cz, ux, uz, len: L }); break; }
+    const [x2, z2] = pts[i + 1], N = Math.hypot(x2 - x1, z2 - z1), vx = (x2 - x1) / N, vz = (z2 - z1) / N;
+    const turn = Math.atan2(ux * vz - uz * vx, ux * vx + uz * vz), sg = Math.sign(turn), d = r * Math.tan(Math.abs(turn) / 2);
+    const sx = x1 - ux * d, sz = z1 - uz * d, ox = sx - sg * uz * r, oz = sz + sg * ux * r;
+    out.push({ x: cx, z: cz, ux, uz, len: L - d }, { ox, oz, r, th: Math.atan2(sz - oz, sx - ox), sg, len: r * Math.abs(turn) });
+    cx = x1 + vx * d; cz = z1 + vz * d;
+  }
+  return out;
+}
+// point + unit tangent at arc length s
+function along(path, s) {
+  for (const p of path) {
+    if (s <= p.len || p === path[path.length - 1]) {
+      s = Math.min(s, p.len);
+      if (p.ox === undefined) return [p.x + p.ux * s, p.z + p.uz * s, p.ux, p.uz];
+      const th = p.th + p.sg * s / p.r;
+      return [p.ox + p.r * Math.cos(th), p.oz + p.r * Math.sin(th), -p.sg * Math.sin(th), p.sg * Math.cos(th)];
+    }
+    s -= p.len;
+  }
+}
+// accelerate at a to v, cruise, brake to a stop
+function trapezoid(L, v, a = FL_ACC) {
+  const ta = Math.min(v / a, Math.sqrt(L / a)), vp = a * ta, dur = 2 * ta + (L - a * ta * ta) / vp;
+  return { dur, s: t => t < ta ? a * t * t / 2 : t > dur - ta ? L - a * (dur - t) ** 2 / 2 : a * ta * ta / 2 + vp * (t - ta) };
+}
+function route(start, lift0, steps) {
+  const legs = [], marks = {};
+  let [ax, az, psi] = start, lift = lift0, t = 0, D = 0;
+  const face = (tx, tz, rev) => rev ? Math.atan2(tx, tz) : Math.atan2(-tx, -tz);
+  for (const st of steps) {
+    if (st.mark) marks[st.mark] = t;
+    const leg = { t0: t, ax, az, psi, lift, D };
+    if (st.go) {
+      const path = fillet([[ax, az], ...st.go], st.r || 0.5), L = path.reduce((s, p) => s + p.len, 0), pr = trapezoid(L, st.v || 2);
+      const [l1, lu0, lu1] = [].concat(st.lift ?? lift, 0, 1), e = along(path, L);
+      Object.assign(leg, { path, L, pr, dir: st.rev ? -1 : 1, rev: !!st.rev, l1, lu0, lu1, dur: pr.dur });
+      [ax, az] = e; psi = face(e[2], e[3], st.rev); lift = l1; D += leg.dir * L;
+    } else if (st.d !== undefined) Object.assign(leg, { dur: st.d, l1: st.lift, lu0: 0, lu1: 1 }), lift = st.lift;
+    else leg.dur = st.until !== undefined ? Math.max(0, st.until - t) : st.wait;
+    t += leg.dur; legs.push(leg);
+  }
+  // k = heading change per metre driven (signed by gear), averaged over ±0.35 m so the steer eases in and out
+  const at = time => {
+    time = Math.min(Math.max(time, 0), t);
+    const l = legs.find(g => time < g.t0 + g.dur) || legs[legs.length - 1], u = l.dur > 0 ? (time - l.t0) / l.dur : 1;
+    const lf = l.l1 === undefined ? l.lift : l.lift + (l.l1 - l.lift) * smooth((u - l.lu0) / (l.lu1 - l.lu0));
+    if (!l.path) return { x: l.ax, z: l.az, psi: l.psi, lift: lf, D: l.D, v: 0, k: null, rev: false };
+    const tt = time - l.t0, s = l.pr.s(tt), [x, z, tx, tz] = along(l.path, s), s0 = Math.max(0, s - 0.35), s1 = Math.min(l.L, s + 0.35);
+    const a = along(l.path, s0), b = along(l.path, s1);
+    const k = s1 - s0 > 1e-6 ? l.dir * wrapA(face(b[2], b[3], l.rev) - face(a[2], a[3], l.rev)) / (s1 - s0) : 0;
+    const v = (l.pr.s(Math.min(l.dur, tt + 0.02)) - l.pr.s(Math.max(0, tt - 0.02))) / 0.04;
+    return { x, z, psi: face(tx, tz, l.rev), lift: lf, D: l.D + l.dir * s, v, k, rev: l.rev };
+  };
+  // body origin (mast base) sits FL_AXLE ahead of the drive axle
+  const pose = time => { const p = at(time); p.ox = p.x - FL_AXLE * Math.sin(p.psi); p.oz = p.z - FL_AXLE * Math.cos(p.psi); return p; };
+  return { T: t, D, marks, pose };
+}
+// a forklift's moving parts, found by name so clones work too
+function forkliftRig(f, carY) {
+  const find = s => { let o; f.traverse(c => { if (!o && c.name.endsWith(s)) o = c; }); return o; };
+  return { f, carY, car: find('fl_carriage'), op: rigOf(find('fl_operator'), 3), steer: 0, back: 0,
+    wheels: ['rf', 'lf', 'rb', 'lb'].map(k => ({ steer: find(`fl_wheel_${k}_steer`), spin: find(`fl_wheel_${k}_spin`), r: k[1] === 'f' ? 0.32 : 0.26, rear: k[1] === 'b' })) };
+}
+// place the truck from its route: wheels roll with distance driven, the rear pair steers to the path's curvature
+function drive(k, R, el, loop, dt) {
+  const p = R.pose(el % loop), D = p.D + Math.floor(el / loop) * R.D;
+  k.f.position.set(p.ox, 0, p.oz); k.f.rotation.y = p.psi; k.car.position.y = p.lift + k.carY;
+  if (p.k !== null) k.steer += (-Math.atan(FL_BASE * p.k) - k.steer) * Math.min(1, dt * 8);
+  for (const w of k.wheels) { w.spin.rotation.x = -D / w.r; if (w.rear) w.steer.rotation.y = k.steer; }
+  k.back += (+p.rev - k.back) * Math.min(1, dt * 3.5);
+  seat(k.op, k.back, k.steer);
+  return p;
+}
+
+/* ---------- people: rig posing — walk cycle, work poses, seated drivers ---------- */
+// Joints are set every frame from a gait phase that advances with distance walked, so a stance foot stays
+// planted: legs are two-bone IK to ankle targets (heel strike → roll over the ball → toe-off → swing arc),
+// the pelvis dips at double support, arms counter-swing, the chest twists against the stride and the head
+// holds level. Turning on the spot marks time with small steps instead of sliding round.
+const HIP = 0.95, THIGH = 0.43, SHIN = 0.44, ANK = 0.085, UARM = 0.29, FARM = 0.285;
+const VN = 1.1, STRIDE = 1.1, DUTY = 0.62;
+const staff = {}, _m = new T.Matrix4(), _v = new T.Vector3();
+function rigOf(g, seed = 0) {
+  const f = s => { let o; g.traverse(c => { if (!o && c.name.endsWith(s)) o = c; }); return o; };
+  return { g, seed, phase: 0, hips: f('_hips'), sp: f('_spine'), neck: f('_neck'), head: f('_head'),
+    legs: ['l', 'r'].map(s => ({ hip: f('_hip_' + s), knee: f('_knee_' + s), ank: f('_ankle_' + s) })),
+    arms: ['l', 'r'].map(s => ({ sh: f('_shoulder_' + s), el: f('_elbow_' + s), wr: f('_wrist_' + s) })) };
+}
+// two-bone chain from a joint toward a target `up`/`fwd` of it → [aim, open, bend]
+function ik2(l1, l2, up, fwd) {
+  const d = Math.min(Math.max(Math.hypot(up, fwd), Math.abs(l1 - l2) + 1e-3), l1 + l2 - 1e-4);
+  return [Math.atan2(fwd, -up), Math.acos((l1 * l1 + d * d - l2 * l2) / (2 * l1 * d)), Math.PI - Math.acos((l1 * l1 + l2 * l2 - d * d) / (2 * l1 * l2))];
+}
+// knee forward, boot held at `pitch` (+ toe up) whatever the shin does
+function legTo(L, hipY, fwd, up, pitch) {
+  const [a, o, b] = ik2(THIGH, SHIN, up - hipY, fwd);
+  L.hip.rotation.x = a + o; L.knee.rotation.x = -b; L.ank.rotation.x = pitch - (a + o - b);
+}
+// ankle offset as the boot rocks on its heel (toe up) or on the ball of the foot (heel up)
+function rock(pitch) {
+  const f = pitch > 0 ? 0.08 : -0.135, c = Math.cos(pitch), s = Math.sin(pitch);
+  return [f * c - ANK * s - f, f * s + ANK * c - ANK];
+}
+// hand i toward a point in the rig's root space, blended in by w
+function aim(r, i, x, y, z, w) {
+  const A = r.arms[i], S = A.sh.rotation;
+  r.hips.updateMatrix(); r.sp.updateMatrix();
+  _v.set(x, y, z).applyMatrix4(_m.multiplyMatrices(r.hips.matrix, r.sp.matrix).invert()).sub(A.sh.position);
+  const [a, o, b] = ik2(UARM, FARM, _v.y, Math.hypot(_v.x, _v.z));
+  S.x += (a - o - S.x) * w; S.y += (Math.atan2(-_v.x, -_v.z) - S.y) * w; S.z -= S.z * w;
+  A.el.rotation.x += (b - A.el.rotation.x) * w;
+}
+// s: {v speed, w turn rate, act, aw action weight, at time into it, arg} from walkPlan
+function stride(r, s, dt, t) {
+  const a = Math.min(1, s.v / VN), turn = Math.min(1, Math.abs(s.w) / 2.2), idle = 1 - a;
+  if (Math.max(a, turn) > 0.01) r.phase = (r.phase + dt * Math.max(s.v, VN) / STRIDE) % 1;
+  const ph = r.phase, span = STRIDE * DUTY * a, lift = 0.1 * a + 0.055 * turn * idle, pa = Math.max(a, 0.3 * turn);
+  const hy = HIP - 0.006 - a * (0.012 + 0.036 * (0.5 + 0.5 * Math.cos(4 * Math.PI * (ph - 0.06)))) - 0.012 * turn;
+  r.hips.position.set(0, hy, 0);
+  r.legs.forEach((L, i) => {
+    const p = (ph + 0.5 * i) % 1, st = p < DUTY, u = st ? p / DUTY : (p - DUTY) / (1 - DUTY);
+    const pitch = pa * (st ? 0.26 * Math.max(0, 1 - u / 0.14) ** 2 - 0.42 * smooth((u - 0.62) / 0.38) : -0.42 + 0.68 * smooth(u / 0.7));
+    const [df, du] = rock(pitch);
+    legTo(L, hy, (st ? 0.5 - u : smooth(u) - 0.5) * span + df, ANK + du + (st ? 0 : lift * Math.sin(Math.PI * u)), pitch);
+  });
+  const c = Math.cos(2 * Math.PI * ph), sw = Math.sin(2 * Math.PI * (ph - 0.06)), br = Math.sin(t * 1.5 + r.seed);
+  r.sp.position.set(-0.016 * a * sw + 0.008 * idle * Math.sin(t * 0.45 + r.seed), 0.08, 0);
+  r.sp.rotation.set(-0.05 * a + 0.012 * br, 0.09 * a * c, 0.02 * a * sw);
+  r.neck.rotation.set(0.04 * a, -0.07 * a * c + 0.1 * idle * Math.sin(t * 0.31 + 2 * r.seed), 0);
+  r.head.rotation.set(0, 0, 0);
+  r.arms.forEach((A, i) => {
+    const side = i ? 1 : -1, fw = 0.42 * a * c * side;   // right arm swings with the left leg
+    A.sh.rotation.set(fw - 0.03, 0, side * (0.07 + 0.012 * br));
+    A.el.rotation.x = 0.16 + 0.2 * a + 0.4 * Math.max(0, fw);
+    A.wr.rotation.x = 0.1;
+  });
+  if (s.act && s.aw > 0) work(r, s);
+}
+// upper-body work poses layered over the stride, faded in and out with the step
+function work(r, s) {
+  const w = s.aw, at = s.at, mix = (o, k, v) => { o[k] += (v - o[k]) * w; }, [L, R] = r.arms;
+  if (s.act === 'look') { mix(r.neck.rotation, 'y', 0.75 * Math.sin(at * 0.8)); mix(r.head.rotation, 'x', 0.04); }
+  else if (s.act === 'inspect') {   // lean in, hands clasped behind the back, eyes on the job
+    mix(r.sp.rotation, 'x', -0.28); mix(r.head.rotation, 'x', -0.35 + 0.07 * Math.sin(at * 1.4)); mix(r.neck.rotation, 'y', 0.25 * Math.sin(at * 0.6));
+    for (const [A, sd] of [[L, -1], [R, 1]]) { mix(A.sh.rotation, 'x', 0); mix(A.sh.rotation, 'y', sd * 1.8); mix(A.sh.rotation, 'z', -sd * 0.3); mix(A.el.rotation, 'x', 1.2); }
+  } else if (s.act === 'signal') {  // arm up, beckoning the truck in
+    mix(R.sh.rotation, 'x', 2.75); mix(R.sh.rotation, 'z', 0.25); mix(R.el.rotation, 'x', 0.45 + 0.4 * (0.5 + 0.5 * Math.sin(at * 8)));
+    mix(r.head.rotation, 'x', 0.12);
+  } else if (s.act === 'hmi') {     // taps through the press recipe on the cabinet screen
+    const [x, y, z] = s.arg;
+    mix(r.sp.rotation, 'x', -0.06); mix(r.head.rotation, 'x', -0.1);
+    aim(r, 1, x, y, z + 0.035 * Math.max(0, Math.sin(at * 5.5)) ** 4, w);
+  } else if (s.act === 'type') {
+    const [x, y, z] = s.arg;
+    mix(r.sp.rotation, 'x', -0.1); mix(r.head.rotation, 'x', -0.12);
+    aim(r, 0, -x, y + 0.012 * Math.max(0, Math.sin(at * 11)), z, w); aim(r, 1, x, y + 0.012 * Math.max(0, Math.sin(at * 13 + 1)), z, w);
+  }
+}
+// a seated driver: hands on the wheel, boots on the pedals, glancing into turns and over the right shoulder in reverse
+function seat(r, back, steer) {
+  r.hips.position.set(0, HIP, 0); r.sp.position.set(0, 0.08, 0);
+  r.sp.rotation.set(-0.1 + 0.05 * back, -0.45 * back, 0);
+  r.neck.rotation.set(0, -1.0 * back - 0.5 * steer * (1 - back), 0); r.head.rotation.set(-0.08 + 0.06 * back, 0, 0);
+  r.legs.forEach((L, i) => { legTo(L, HIP, 0.84, 0.795, 0.3); L.hip.rotation.z = (i ? 1 : -1) * 0.1; });
+  r.arms.forEach((A, i) => { A.sh.rotation.set(0, 0, 0); A.el.rotation.x = 0; aim(r, i, i ? 0.16 : -0.16, 1.18, -0.53, 1); A.wr.rotation.x = -0.25; });
+}
+// a looping route on foot: ['walk', [[x, z], …], r] turns to face the way first, ['face', ψ] turns on the spot,
+// ['do', act, seconds, arg] stays put working. Returns position, heading and the rates the gait needs.
+function walkPlan([x, z, h], steps) {
+  const segs = []; let t = 0;
+  const turnTo = h1 => { const d = wrapA(h1 - h); if (Math.abs(d) < 0.02) return; const dur = 0.45 + Math.abs(d) / 2.4; segs.push({ t0: t, dur, x, z, h, d }); t += dur; h += d; };
+  for (const [k, a, b, arg] of steps) {
+    if (k === 'face') turnTo(a);
+    else if (k === 'walk') {
+      const path = fillet([[x, z], ...a], b || 0.6), L = path.reduce((s, p) => s + p.len, 0), s0 = along(path, 0), h0 = Math.atan2(-s0[2], -s0[3]);
+      turnTo(h0);
+      const pr = trapezoid(L, VN, 1.6), off = h - h0, e = along(path, L);
+      segs.push({ t0: t, dur: pr.dur, path, pr, off }); t += pr.dur;
+      [x, z] = e; h = Math.atan2(-e[2], -e[3]) + off;
+    } else { segs.push({ t0: t, dur: b, x, z, h, act: a, arg }); t += b; }
+  }
+  const at = time => {
+    const g = segs.find(q => time < q.t0 + q.dur) || segs[segs.length - 1], tt = Math.min(time - g.t0, g.dur);
+    if (g.path) {
+      const p = along(g.path, g.pr.s(tt)), v = (g.pr.s(Math.min(g.dur, tt + 0.02)) - g.pr.s(Math.max(0, tt - 0.02))) / 0.04;
+      return { x: p[0], z: p[1], h: Math.atan2(-p[2], -p[3]) + g.off, v, w: 0 };
+    }
+    if (g.d !== undefined) { const u = tt / g.dur; return { x: g.x, z: g.z, h: g.h + g.d * smooth(u), v: 0, w: g.d * 6 * u * (1 - u) / g.dur }; }
+    return { x: g.x, z: g.z, h: g.h, v: 0, w: 0, act: g.act, arg: g.arg, at: tt, aw: smooth(tt / 0.45) * smooth((g.dur - tt) / 0.45) };
+  };
+  return { T: t, at };
+}
+
+/* ---------- livery: cream line, white DECOSTAR truck, red forklift ---------- */
+{
+  const keep = { [M.steel.uuid]: M.steel.clone(), [M.steelDark.uuid]: M.steelDark.clone(), [M.steelLight.uuid]: M.steelLight.clone(), [M.glass.uuid]: M.glass.clone(), [M.paint.uuid]: null };
+  const truckPaint = std('truck_paint_white', 0xf4f3ef, 0.3, 0.2, { side: T.DoubleSide });
+  const forkPaint = std('forklift_paint_red', 0xb3342b, 0.35, 0.2, { side: T.DoubleSide });
+  for (const k in keep) if (keep[k]) keep[k].name = 'vehicle_' + keep[k].name;
+  const vg = keep[M.glass.uuid]; vg.transparent = false; vg.opacity = 1; vg.color.set(0x2b3034); vg.roughness = 0.1; vg.metalness = 0.3;
+  // closed box body: far wall, front wall, roof, rear doors; line side open under a logo fascia
+  const BL = 6.4, BXc = -1.15, BY0 = 1.35, BY1 = 3.4, BH = BY1 - BY0;
+  rbox(tk, 'body_far_wall', BL, BH, 0.04, 0.015, truckPaint, BXc, BY0 + BH / 2, -1.25);
+  rbox(tk, 'body_front_wall', 0.05, BH, 2.5, 0.015, truckPaint, 2.08, BY0 + BH / 2, 0);
+  rbox(tk, 'body_roof', BL + 0.06, 0.06, 2.56, 0.02, truckPaint, BXc, BY1 + 0.03, 0);
+  for (const sd of [1, -1]) rbox(tk, 'body_rear_door_' + (sd > 0 ? 'right' : 'left'), 0.04, BH, 1.24, 0.015, truckPaint, -4.37, BY0 + BH / 2, sd * 0.625);
+  for (const sd of [1, -1]) cylY(tk, 'body_rear_door_bar_' + (sd > 0 ? 'right' : 'left'), 0.02, BH - 0.1, M.steelLight, -4.4, BY0 + BH / 2, sd * 0.3, 10);
+  rbox(tk, 'body_near_fascia', BL, 0.45, 0.05, 0.015, truckPaint, BXc, BY1 - 0.225, 1.25);
+  for (const [i, x] of [-4.3, 2.03].entries()) rbox(tk, 'body_near_corner_post_' + (i + 1), 0.08, BH, 0.08, 0.02, truckPaint, x, BY0 + BH / 2, 1.23);
+  for (let i = 0; i < 9; i++) rbox(tk, 'body_far_rib_' + (i + 1), 0.05, BH, 0.03, 0.01, M.steelLight, -4.2 + i * 0.8, BY0 + BH / 2, -1.285);
+  // DECOSTAR logo artwork: key out white ground, crop; 'light' variant turns dark wordmark white for dark surfaces
+  const logoImg = await new Promise(r => { const i = new Image(); i.onload = () => r(i); i.onerror = () => r(null); i.src = new URL('decostar-logo.png', document.baseURI).href; });
+  const logoTex = (light) => {
+    const c = document.createElement('canvas');
+    if (!logoImg) { c.width = c.height = 4; }
+    else {
+      const s = document.createElement('canvas'); s.width = logoImg.width; s.height = logoImg.height;
+      const sg = s.getContext('2d'); sg.drawImage(logoImg, 0, 0);
+      const d = sg.getImageData(0, 0, s.width, s.height), p = d.data;
+      let x0 = s.width, y0 = s.height, x1 = 0, y1 = 0;
+      for (let i = 0; i < p.length; i += 4) {
+        const r = p[i], g = p[i + 1], b = p[i + 2], mn = Math.min(r, g, b), a = Math.min(255, (255 - mn) * 1.6);
+        if (a < 8) { p[i + 3] = 0; continue; }
+        const k = a / 255; // un-premultiply against white
+        let R = 255 - (255 - r) / k, G = 255 - (255 - g) / k, B = 255 - (255 - b) / k;
+        if (light && Math.max(R, G, B) - Math.min(R, G, B) < 40) R = G = B = 255;
+        p[i] = R; p[i + 1] = G; p[i + 2] = B; p[i + 3] = a;
+        const px = (i / 4) % s.width, py = (i / 4 / s.width) | 0;
+        if (px < x0) x0 = px; if (px > x1) x1 = px; if (py < y0) y0 = py; if (py > y1) y1 = py;
+      }
+      sg.putImageData(d, 0, 0);
+      const pad = 6; x0 -= pad; y0 -= pad; x1 += pad; y1 += pad;
+      c.width = 1024; c.height = Math.round(1024 * (y1 - y0) / (x1 - x0));
+      c.getContext('2d').drawImage(s, x0, y0, x1 - x0, y1 - y0, 0, 0, c.width, c.height);
+    }
+    const t = new T.CanvasTexture(c); t.colorSpace = T.SRGBColorSpace; t.anisotropy = 8; return t;
+  };
+  const logoMat = new T.MeshStandardMaterial({ name: 'decostar_logo', map: logoTex(false), transparent: true, alphaTest: 0.02, roughness: 0.4 });
+  const LA = logoMat.map.image.width / logoMat.map.image.height || 2.3;
+  const LP = h => new T.PlaneGeometry(h * LA, h);
+  const far = mesh(tk, 'logo_far_side', LP(1.7), logoMat, BXc, BY0 + BH * 0.52, -1.325); far.rotation.y = Math.PI;
+  mesh(tk, 'logo_near_fascia', LP(0.38), logoMat, BXc, BY1 - 0.225, 1.277);
+  const rear = mesh(tk, 'logo_rear_doors', LP(0.6), logoMat, -4.395, BY1 - 0.55, 0); rear.rotation.y = -Math.PI / 2;
+  const remap = (root, paint) =>
+    root.traverse(o => { if (o.isMesh && o.material.uuid in keep) o.material = keep[o.material.uuid] || paint; });
+  // roof + cab doors
+  const roofLogo = mesh(tk, 'logo_roof', LP(1.7), logoMat, BXc, BY1 + 0.062, 0); roofLogo.rotation.x = -Math.PI / 2;
+  for (const sd of [1, -1]) {
+    const d = mesh(tk, 'logo_cab_door_' + (sd > 0 ? 'right' : 'left'), LP(0.28), logoMat, CX + 1.52, CY + 0.72, sd * (CW / 2 + 0.006));
+    if (sd < 0) d.rotation.y = Math.PI;
+  }
+  // operators in DECOSTAR workwear, one per station: a jointed rig (hips › knees › ankles, spine › neck › head,
+  // shoulders › elbows › wrists) that the walk cycles and work poses drive every frame. Faces −z at rest.
+  const wLogo = new T.MeshStandardMaterial({ name: 'uniform_logo', map: logoTex(true), transparent: true, alphaTest: 0.02, roughness: 0.8 });
+  const jacket = std('uniform_jacket', 0x2b3034, 0.85), trousers = std('uniform_trousers', 0x1d1f20, 0.9), band = std('uniform_band', 0xb3342b, 0.6);
+  const hat = std('hard_hat_white', 0xf4f3ef, 0.4), refl = std('uniform_reflective', 0xd3d6d8, 0.3, 0.55), glove = std('work_glove', 0x8a7a64, 0.85);
+  const bootM = std('safety_boot', 0x2b2622, 0.6), soleM = std('boot_sole', 0x141414, 0.9), eyeM = std('eye', 0x16120f, 0.25);
+  const looks = [[0xd6b497, 0x2b211b], [0x9a6a4a, 0x16120f], [0xe2c1a2, 0x6b4a2e], [0x7a5038, 0x1c1714], [0xc49a78, 0x3a2a1f], [0xb07b58, 0x241c17], [0xdcb99a, 0x4a3526]]
+    .map(([s, h], i) => [std(`worker_skin_${i + 1}`, s, 0.7), std(`worker_hair_${i + 1}`, h, 0.9)]);
+  const limb = (p, n, r0, r1, len, mat) => mesh(p, n, new T.CylinderGeometry(r0, r1, len, 14), mat, 0, -len / 2, 0);
+  const oval = (p, n, geo, mat, x, y, z, sx, sy, sz) => { const m = mesh(p, n, geo, mat, x, y, z); m.scale.set(sx, sy, sz); return m; };
+  // logo plane bent round the elliptical torso so it doesn't stand off the back at its edges
+  const wrapLogo = (h, r) => {
+    const g = new T.PlaneGeometry(h * LA, h, 12, 1), p = g.attributes.position;
+    for (let i = 0; i < p.count; i++) { const a = p.getX(i) / r; p.setXYZ(i, r * Math.sin(a), p.getY(i), 0.6 * r * (Math.cos(a) - 1)); }
+    g.computeVertexNormals(); return g;
+  };
+  let who = 0;
+  const worker = (p, n, x, y, z, ry = 0) => {
+    const [skin, hair] = looks[who++ % looks.length], g = grp(p, n, x, y, z); g.rotation.y = ry;
+    const hips = grp(g, `${n}_hips`, 0, HIP, 0);
+    oval(hips, `${n}_pelvis`, new T.CylinderGeometry(0.17, 0.15, 0.22, 24), trousers, 0, 0, 0, 1, 1, 0.68);
+    for (const sd of [1, -1]) {
+      const s = sd > 0 ? 'r' : 'l', hip = grp(hips, `${n}_hip_${s}`, sd * 0.095, 0, 0);
+      limb(hip, `${n}_thigh_${s}`, 0.078, 0.062, THIGH, trousers);
+      const knee = grp(hip, `${n}_knee_${s}`, 0, -THIGH, 0);
+      mesh(knee, `${n}_kneecap_${s}`, new T.SphereGeometry(0.062, 14, 10), trousers, 0, 0, -0.004);
+      limb(knee, `${n}_shin_${s}`, 0.06, 0.047, SHIN, trousers);
+      cylY(knee, `${n}_shin_band_${s}`, 0.0545, 0.035, refl, 0, -0.27, 0, 16);
+      const ank = grp(knee, `${n}_ankle_${s}`, 0, -SHIN, 0);
+      cylY(ank, `${n}_boot_shaft_${s}`, 0.053, 0.11, bootM, 0, 0.005, 0.004, 14);
+      rbox(ank, `${n}_boot_${s}`, 0.11, 0.085, 0.26, 0.035, bootM, 0, -0.035, -0.05);
+      rbox(ank, `${n}_toe_bumper_${s}`, 0.114, 0.04, 0.05, 0.015, soleM, 0, -0.06, -0.158);
+      rbox(ank, `${n}_sole_${s}`, 0.118, 0.022, 0.275, 0.008, soleM, 0, -0.074, -0.05);
+    }
+    const sp = grp(hips, `${n}_spine`, 0, 0.08, 0);
+    oval(sp, `${n}_abdomen`, new T.CylinderGeometry(0.18, 0.172, 0.2, 24), jacket, 0, 0.1, 0, 1, 1, 0.62);
+    oval(sp, `${n}_chest`, new T.CylinderGeometry(0.205, 0.182, 0.3, 24), jacket, 0, 0.34, 0, 1, 1, 0.6);
+    oval(sp, `${n}_chest_top`, new T.SphereGeometry(0.205, 24, 12), jacket, 0, 0.49, 0, 1, 0.3, 0.6);
+    oval(sp, `${n}_yoke`, new T.CapsuleGeometry(0.062, 0.28, 6, 14), jacket, 0, 0.455, 0, 1, 1, 1.3).rotation.z = Math.PI / 2;
+    oval(sp, `${n}_hivis_band`, new T.CylinderGeometry(0.176, 0.176, 0.05, 24), band, 0, 0.03, 0, 1, 1, 0.63);
+    oval(sp, `${n}_chest_stripe`, new T.CylinderGeometry(0.19, 0.188, 0.04, 24), refl, 0, 0.235, 0, 1, 1, 0.61);
+    oval(sp, `${n}_collar`, new T.CylinderGeometry(0.066, 0.074, 0.06, 18), jacket, 0, 0.525, 0.004, 1, 1, 0.95);
+    box(sp, `${n}_zip`, 0.01, 0.4, 0.006, soleM, 0, 0.29, -0.112);
+    mesh(sp, `${n}_logo_back`, wrapLogo(0.13, 0.2), wLogo, 0, 0.395, 0.12);
+    mesh(sp, `${n}_logo_chest`, LP(0.045), wLogo, 0.085, 0.4, -0.109).rotation.y = Math.PI - 0.28;
+    const neck = grp(sp, `${n}_neck`, 0, 0.53, 0);
+    cylY(neck, `${n}_neck_skin`, 0.047, 0.11, skin, 0, 0.03, 0.006, 14);
+    const head = grp(neck, `${n}_head`, 0, 0.07, 0);
+    oval(head, `${n}_skull`, new T.SphereGeometry(0.1, 28, 20), skin, 0, 0.09, -0.005, 0.9, 1.08, 1);
+    oval(head, `${n}_jaw`, new T.SphereGeometry(0.07, 20, 14), skin, 0, 0.035, -0.032, 1, 0.9, 1);
+    oval(head, `${n}_hair`, new T.SphereGeometry(0.103, 24, 16), hair, 0, 0.1, 0.014, 0.93, 1.03, 1);
+    mesh(head, `${n}_nose`, new T.ConeGeometry(0.016, 0.04, 10), skin, 0, 0.078, -0.108).rotation.x = -Math.PI / 2;
+    for (const sd of [1, -1]) {
+      const s = sd > 0 ? 'r' : 'l';
+      oval(head, `${n}_ear_${s}`, new T.SphereGeometry(0.026, 10, 8), skin, sd * 0.09, 0.085, 0.006, 0.45, 1, 0.75);
+      mesh(head, `${n}_eye_${s}`, new T.SphereGeometry(0.012, 10, 8), eyeM, sd * 0.033, 0.103, -0.093);
+      box(head, `${n}_brow_${s}`, 0.034, 0.008, 0.01, hair, sd * 0.034, 0.124, -0.094);
+    }
+    oval(head, `${n}_hard_hat`, new T.SphereGeometry(0.123, 28, 12, 0, Math.PI * 2, 0, Math.PI / 2), hat, 0, 0.135, 0.004, 1, 0.88, 1);
+    cylY(head, `${n}_hard_hat_brim`, 0.133, 0.012, hat, 0, 0.139, 0.004, 28);
+    mesh(head, `${n}_hard_hat_peak`, new T.CylinderGeometry(0.158, 0.158, 0.01, 28, 1, false, Math.PI / 2, Math.PI), hat, 0, 0.137, 0.004).scale.x = 0.84;
+    oval(head, `${n}_hard_hat_ridge`, new T.TorusGeometry(0.119, 0.011, 6, 24, Math.PI), hat, 0, 0.135, 0.004, 1, 0.88, 1).rotation.y = Math.PI / 2;
+    for (const sd of [1, -1]) {
+      const s = sd > 0 ? 'r' : 'l', sh = grp(sp, `${n}_shoulder_${s}`, sd * 0.2, 0.44, 0); sh.rotation.order = 'YXZ';
+      mesh(sh, `${n}_deltoid_${s}`, new T.SphereGeometry(0.06, 16, 12), jacket, 0, -0.014, 0);
+      limb(sh, `${n}_upper_arm_${s}`, 0.056, 0.047, UARM, jacket);
+      cylY(sh, `${n}_sleeve_band_${s}`, 0.0555, 0.03, refl, 0, -0.1, 0, 14);
+      const el = grp(sh, `${n}_elbow_${s}`, 0, -UARM, 0);
+      mesh(el, `${n}_elbow_joint_${s}`, new T.SphereGeometry(0.047, 14, 10), jacket, 0, 0, 0);
+      limb(el, `${n}_forearm_${s}`, 0.046, 0.039, 0.23, jacket);
+      cylY(el, `${n}_cuff_${s}`, 0.042, 0.035, band, 0, -0.215, 0, 14);
+      const wr = grp(el, `${n}_wrist_${s}`, 0, -0.235, 0);
+      rbox(wr, `${n}_glove_${s}`, 0.042, 0.095, 0.082, 0.018, glove, 0, -0.05, 0);
+      rbox(wr, `${n}_thumb_${s}`, 0.024, 0.052, 0.024, 0.01, glove, -sd * 0.012, -0.038, -0.046).rotation.x = 0.4;
+    }
+    return g;
+  };
+  staff.worker = worker;
+  worker(s1, 'worker_01_unwind', -19.6, 0, 3.5);
+  worker(s2, 'worker_02_printing', PX - 1.1, 0.6, 2.2);
+  worker(s3, 'worker_03_impregnation', 1.1, 0, 3.5);
+  worker(s4, 'worker_04_pressing', 13.9, 0, 4.3, 0.5);
+  worker(s5, 'worker_05_quality', QX + 0.1, 0, QZ + 0.55);
+  seat(rigOf(worker(fl, 'fl_operator', 0, 0.19, 1.6)), 0, 0);   // the forklift driver
+  // cab roof deflector logo (front face) + top
+  {
+    const n = new T.Vector3(0.55, 1.1, 0).normalize(), xa = new T.Vector3(0, 0, -1), ya = new T.Vector3().crossVectors(n, xa);
+    const m = mesh(tk, 'logo_cab_roof_front', LP(0.5), logoMat, CX + 0.1 + 1.35 + n.x * 0.05, CY + 2.15 + 0.3125 + n.y * 0.05, 0);
+    m.quaternion.setFromRotationMatrix(new T.Matrix4().makeBasis(xa, ya, n));
+  }
+  // forklift: counterweight rear, chassis sides, overhead guard
+  mesh(fl, 'fl_logo_rear', LP(0.3), wLogo, 0, 0.8, 2.557);
+  for (const sd of [1, -1]) { const m = mesh(fl, 'fl_logo_side_' + (sd > 0 ? 'r' : 'l'), LP(0.32), wLogo, sd * 0.607, 0.62, 1.2); m.rotation.y = sd * Math.PI / 2; }
+  { const m = mesh(fl, 'fl_logo_guard', LP(0.3), wLogo, 0, 2.298, 1.36); m.rotation.x = -Math.PI / 2; }
+  remap(tk, truckPaint); remap(fl, forkPaint);
+  M.steel.color.set(0xf4eddc); M.steelDark.color.set(0x5e5446); M.steelLight.color.set(0xa99c84);
+  M.glass.color.set(0xd9d1bf); M.marking.color.set(0xd2c29c);
+}
+
+/* ---------- outbound: identical truck loads finished laminate pallets and drives away ---------- */
+{
+  const prefix = (root, p) => root.traverse(o => { if (o.name) o.name = p + o.name; });
+  const tk2 = tk.clone(true); tk2.position.set(37, 0, -4.6);
+  [...tk2.children].filter(o => /^truck_roll_/.test(o.name)).forEach(o => tk2.remove(o));
+  const wheels2 = tk2.children.filter(o => o.name.startsWith('wheel_')).map(wg => {
+    const tyre = wg.children.find(m => m.name.endsWith('_tyre'));
+    const pv = new T.Group(); pv.name = wg.name + '_hub'; pv.position.copy(tyre.position); wg.add(pv);
+    [...wg.children].filter(c => c !== pv).forEach(c => pv.attach(c));
+    return pv;
+  });
+  const hinge2 = new T.Group(); hinge2.name = 'hinge_dropside_right'; hinge2.position.set(0, 1.35, 1.21); tk2.add(hinge2);
+  tk2.children.filter(o => o.isMesh && /^dropside_(rib_|top_rail_)?right/.test(o.name)).forEach(m => hinge2.attach(m));
+  prefix(tk2, 'out_'); tk2.name = 'outbound_truck'; s5.add(tk2);
+
+  const fl2 = fl.clone(true); fl2.position.set(36.7, 0, 5.95); fl2.rotation.y = 0;
+  fl2.remove(fl2.getObjectByName('fl_operator'));
+  seat(rigOf(staff.worker(fl2, 'fl_operator', 0, 0.19, 1.6)), 0, 0);   // a different driver, not a clone
+  fl2.traverse(o => { if (o.name === 'fl_core_ram' || o.name === 'fl_ram_collar') o.visible = false; });
+  const car2 = fl2.getObjectByName('fl_carriage');
+  for (const sd of [1, -1]) box(car2, 'fl_fork_' + (sd > 0 ? 'r' : 'l'), 0.12, 0.05, 1.9, M.steelDark, sd * 0.6, -0.245, -1.0);
+  prefix(fl2, 'out_'); fl2.name = 'outbound_forklift'; s5.add(fl2);
+
+  const outPallet = n => {
+    const g = grp(s5, n);
+    for (const [i, x] of [-1.2, 0, 1.2].entries()) box(g, `${n}_skid_${i + 1}`, 0.15, 0.1, 2.1, M.mdf, x, 0.05, 0);
+    for (let i = 0; i < 6; i++) box(g, `${n}_deck_board_${i + 1}`, 2.6, 0.025, 0.12, M.mdf, 0, 0.1125, -0.95 + i * 0.38);
+    for (let i = 0; i < 14; i++) {
+      const y = 0.125 + i * 0.041;
+      box(g, `${n}_laminate_${i + 1}_core`, 2.6, 0.036, 2.0, M.mdf, 0, y + 0.018, 0);
+      box(g, `${n}_laminate_${i + 1}_decor`, 2.6, 0.004, 2.0, M.decor, 0, y + 0.038, 0);
+    }
+    const top = 0.125 + 14 * 0.041;
+    for (const dx of [-0.8, 0.8]) {
+      box(g, `${n}_strap_${dx < 0 ? 'a' : 'b'}_top`, 0.05, 0.004, 2.02, M.steelDark, dx, top + 0.002, 0);
+      for (const sd of [1, -1]) box(g, `${n}_strap_${dx < 0 ? 'a' : 'b'}_side_${sd > 0 ? 'o' : 'd'}`, 0.05, top - 0.125, 0.004, M.steelDark, dx, (top + 0.125) / 2, sd * 1.002);
+    }
+    return g;
+  };
+  // staged far enough in from the floor edge that the truck can square up to each pallet behind it
+  const SX = [36.7, 34.0], SZ = 2.9, TKX = 37, PZ = -2.91;
+  const pals = SX.map((x, i) => { const g = outPallet('dispatch_pallet_' + (i + 1)); g.position.set(x, 0, SZ); return g; });
+
+  const ease = u => u * u * (3 - 2 * u);
+  const key = (K, t) => {
+    if (t <= K[0][0]) return K[0].slice(1);
+    for (let i = 1; i < K.length; i++) if (t <= K[i][0]) { const a = K[i - 1], b = K[i], u = ease((t - a[0]) / (b[0] - a[0])); return a.slice(1).map((v, j) => v + (b[j + 1] - v) * u); }
+    return K[K.length - 1].slice(1);
+  };
+  // fork each pallet from behind, run it straight into its slot on the bed, reverse out swinging the tail into
+  // the aisle, then drive round and square up to the next one
+  const R = route([36.7, 6.4, 0], 0.08, [
+    { until: 4.2 },
+    { go: [[36.7, 4.45]], v: 1.0 },
+    { lift: 0.25, d: 0.5, mark: 'pick1' },
+    { go: [[36.7, PZ]], v: 2.2, lift: [1.55, 0.05, 0.6] },
+    { lift: 1.45, d: 0.45 },
+    { wait: 0.2, mark: 'drop1' },
+    { lift: 1.4, d: 0.2 },
+    { go: [[36.7, 7.0], [37.2, 7.0]], r: 0.5, rev: true, v: 2.2, lift: [0.08, 0.25, 0.8] },
+    { wait: 0.25 },
+    { go: [[34.0, 7.0], [34.0, 4.45]], r: 0.6, v: 2.0 },
+    { lift: 0.25, d: 0.5, mark: 'pick2' },
+    { go: [[34.0, PZ]], v: 2.2, lift: [1.55, 0.05, 0.6] },
+    { lift: 1.45, d: 0.45 },
+    { wait: 0.2, mark: 'drop2' },
+    { lift: 1.4, d: 0.2, mark: 'clear' },
+    { go: [[34.0, 7.0], [33.5, 7.0]], r: 0.5, rev: true, v: 2.2, lift: [0.08, 0.25, 0.8] },
+    { wait: 0.25 },
+    { go: [[36.7, 7.0], [36.7, 6.4]], r: 0.6, v: 2.0 },
+    { wait: 1.0 },
+  ]);
+  const mk = R.marks, LOOP = Math.max(R.T, mk.clear + 9.5), PICK = [mk.pick1, mk.pick2], DROP = [mk.drop1, mk.drop2];
+  const TK = [[0, 56], [6, TKX], [mk.clear + 3.5, TKX], [mk.clear + 9.5, 56]];
+  const DS = [[0, 0], [6, 0], [8, 0.94], [mk.clear + 2, 0.94], [mk.clear + 3.5, 0]];
+  const drv = forkliftRig(fl2, 0.22);
+  let prevX = null, last = performance.now(); const t0 = last;
+  const tick = now => {
+    const el = (now - t0) / 1000, t = el % LOOP, dt = Math.min((now - last) / 1000, 0.1); last = now;
+    const [tx] = key(TK, t); tk2.position.x = tx;
+    if (prevX !== null) wheels2.forEach(w => w.rotation.z -= (tx - prevX) / 0.52);
+    prevX = tx;
+    hinge2.rotation.x = key(DS, t)[0] * Math.PI;
+    const p = drive(drv, R, el, LOOP, dt), s = Math.sin(p.psi), c = Math.cos(p.psi);
+    pals.forEach((g, i) => {
+      if (t < PICK[i]) g.position.set(SX[i], 0, SZ), g.rotation.y = 0;
+      else if (t < DROP[i]) g.position.set(p.ox - 1.1 * s, p.lift - 0.1, p.oz - 1.1 * c), g.rotation.y = p.psi;
+      else g.position.set(SX[i] + tx - TKX, 1.35, PZ - FL_AXLE - 1.1), g.rotation.y = 0;
+    });
+    requestAnimationFrame(tick);
+  };
+  requestAnimationFrame(tick);
+}
+
+/* ---------- people: walks between stations and the work they do there ---------- */
+{
+  const KEYS = [0.12, 1.16, -0.44];   // hands on the QC keyboard, from where that operator stands
+  const crew = [
+    ['worker_01_unwind', [-19.6, 3.5, 0], [['do', 'look', 2.5], ['face', Math.PI / 2], ['do', 'signal', 2.6], ['walk', [[-16.6, 2.35]]], ['face', 0],
+      ['do', 'inspect', 3.2], ['walk', [[-19.6, 3.5]]], ['face', 0], ['do', 'rest', 2]]],
+    ['worker_02_printing', [PX - 1.1, 2.2, 0], [['do', 'rest', 1.5], ['walk', [[PX + 0.9, 2.2]]], ['face', -0.5], ['do', 'inspect', 3.5],
+      ['walk', [[PX - 1.1, 2.2]]], ['face', 0], ['do', 'look', 3]]],
+    ['worker_03_impregnation', [1.1, 3.5, 0], [['do', 'rest', 2], ['walk', [[1.1, 2.15]]], ['do', 'inspect', 3.2], ['walk', [[1.1, 3.5]]], ['face', 0], ['do', 'look', 2.5]]],
+    ['worker_04_pressing', [13.9, 4.3, 0.5], [['do', 'rest', 2], ['walk', [[12.6, 3.3]]], ['face', 0], ['do', 'hmi', 3.4, [0.075, 1.5, -0.42]],
+      ['walk', [[14.6, 4.05], [16.8, 4.2]], 0.8], ['face', 0], ['do', 'inspect', 3.5], ['walk', [[13.9, 4.3]]], ['face', 0.5]]],
+    ['worker_05_quality', [QX + 0.1, QZ + 0.55, 0], [['do', 'type', 5, KEYS], ['do', 'look', 2.2], ['walk', [[QX + 0.95, QZ + 0.6], [QX + 1.6, QZ - 0.55]], 0.5],
+      ['face', 0], ['do', 'inspect', 3], ['walk', [[QX + 0.95, QZ + 0.55], [QX + 0.1, QZ + 0.55]], 0.5], ['face', 0], ['do', 'type', 3, KEYS]]],
+  ].map(([n, start, steps], i) => { const g = model.getObjectByName(n); return { g, r: rigOf(g, i * 1.7), plan: walkPlan(start, steps) }; });
+  let last = performance.now(); const t0 = last;
+  const tick = now => {
+    const el = (now - t0) / 1000, dt = Math.min((now - last) / 1000, 0.1); last = now;
+    for (const w of crew) { const s = w.plan.at(el % w.plan.T); w.g.position.x = s.x; w.g.position.z = s.z; w.g.rotation.y = s.h; stride(w.r, s, dt, el); }
+    requestAnimationFrame(tick);
+  };
+  requestAnimationFrame(tick);
+}
+
+/* ---------- delivery + unload loop ---------- */
+{
+  const find = (root, test) => { const out = []; root.traverse(o => { if (test(o.name)) out.push(o); }); return out; };
+  const wheels = tk.children.filter(o => o.name.startsWith('wheel_')).map(wg => {
+    const tyre = wg.children.find(m => m.name.endsWith('_tyre'));
+    const pv = new T.Group(); pv.name = wg.name + '_hub'; pv.position.copy(tyre.position); wg.add(pv);
+    [...wg.children].filter(c => c !== pv).forEach(c => pv.attach(c));
+    return pv;
+  });
+  const hinge = new T.Group(); hinge.name = 'hinge_dropside_right'; hinge.position.set(0, 1.35, 1.21); tk.add(hinge);
+  find(tk, n => /^dropside_(rib_|top_rail_)?right/.test(n)).filter(o => o.isMesh).forEach(m => hinge.attach(m));
+  const straps = find(tk, n => /^truck_roll_\d_strap_/.test(n));
+  const rolls = [1, 2].map(i => tk.getObjectByName('truck_roll_' + i));
+  const RX = [-3.3, -1.9], RY = 1.35 + 0.62 + 0.001;
+  const tops = [stack.getObjectByName('roll_top_2'), stack.getObjectByName('roll_top_1')];
+  // square up to the bed and spear the core, lift, reverse out swinging the tail wide, carry forward at knee
+  // height, turn in, raise and set the roll on the pyramid; then back out and round for the next one
+  const xs1 = -23.325, xs2 = -24.575;
+  const R = route([-29.0, 4.4, Math.PI / 2], 0.3, [
+    { until: 5.2 },
+    { go: [[-33.3, 4.4], [-33.3, -2.8]], r: 1.2, v: 3.0, lift: [RY, 0.3, 0.8] },
+    { wait: 0.25 },
+    { lift: 2.08, d: 0.5, mark: 'pick1' },
+    { go: [[-33.3, 5.4], [-33.8, 5.4]], r: 0.5, rev: true, v: 2.2, lift: [1.0, 0.3, 0.9] },
+    { wait: 0.25 },
+    { go: [[xs1, 5.4], [xs1, 4.2]], r: 1.2, v: 2.6, lift: [2.08, 0.82, 1] },
+    { go: [[xs1, 1.8]], v: 1.2 },
+    { lift: 1.692, d: 0.5 },
+    { wait: 0.25, mark: 'drop1' },
+    { go: [[xs1, 4.4], [xs1 + 0.5, 4.4]], r: 0.5, rev: true, v: 2.0, lift: [RY, 0.76, 1] },
+    { wait: 0.25 },
+    { go: [[-31.9, 4.4], [-31.9, -2.8]], r: 1.2, v: 3.0 },
+    { wait: 0.25 },
+    { lift: 2.08, d: 0.5, mark: 'pick2' },
+    { go: [[-31.9, 5.4], [-32.4, 5.4]], r: 0.5, rev: true, v: 2.2, lift: [1.0, 0.3, 0.9] },
+    { wait: 0.25, mark: 'clear' },
+    { go: [[xs2, 5.4], [xs2, 4.2]], r: 1.2, v: 2.6, lift: [2.08, 0.82, 1] },
+    { go: [[xs2, 1.8]], v: 1.2 },
+    { lift: 1.692, d: 0.5 },
+    { wait: 0.25, mark: 'drop2' },
+    { go: [[xs2, 4.4], [xs2 + 0.5, 4.4]], r: 0.5, rev: true, v: 2.0, lift: [0.3, 0.76, 1] },
+    { wait: 0.25 },
+    { go: [[-29.0, 4.4]], v: 2.6 },
+    { wait: 1.0 },
+  ]);
+  const mk = R.marks, LOOP = R.T, PICK = [mk.pick1, mk.pick2], DROP = [mk.drop1, mk.drop2];
+  const TK = [[0, -50], [6, -30], [mk.clear + 1.5, -30], [mk.clear + 6.5, -50]];
+  const DS = [[0, 0], [6, 0], [8, 0.94], [mk.clear, 0.94], [mk.clear + 1.5, 0]];
+  const ease = u => u * u * (3 - 2 * u);
+  const key = (K, t) => {
+    if (t <= K[0][0]) return K[0].slice(1);
+    for (let i = 1; i < K.length; i++) if (t <= K[i][0]) {
+      const a = K[i - 1], b = K[i], u = ease((t - a[0]) / (b[0] - a[0]));
+      return a.slice(1).map((v, j) => v + (b[j + 1] - v) * u);
+    }
+    return K[K.length - 1].slice(1);
+  };
+  const drv = forkliftRig(fl, 0);
+  let prevX = null, last = performance.now(); const t0 = last;
+  const tick = now => {
+    const el = (now - t0) / 1000, t = el % LOOP, dt = Math.min((now - last) / 1000, 0.1); last = now;
+    const [tx] = key(TK, t); tk.position.x = tx;
+    if (prevX !== null) wheels.forEach(w => w.rotation.z -= (tx - prevX) / 0.52);
+    prevX = tx;
+    hinge.rotation.x = key(DS, t)[0] * Math.PI;
+    straps.forEach(m => m.visible = t < 6);
+    const p = drive(drv, R, el, LOOP, dt), s = Math.sin(p.psi), c = Math.cos(p.psi);
+    // a carried roll rides the ram 1.35 ahead of the mast and turns with the truck; its group origin is the bed slot
+    rolls.forEach((r, i) => {
+      r.visible = t < DROP[i]; tops[i].visible = t >= DROP[i];
+      if (t >= PICK[i] && t < DROP[i]) r.position.set(p.ox - 1.35 * s - RX[i] * c - tk.position.x, p.lift - RY, p.oz - 1.35 * c + RX[i] * s - tk.position.z), r.rotation.y = p.psi;
+      else r.position.set(0, 0, 0), r.rotation.y = 0;
+    });
+    requestAnimationFrame(tick);
+  };
+  requestAnimationFrame(tick);
+}
+
+/* ---------- line running: web travel, rollers, press cycle, stacker ---------- */
+{
+  const V = 0.6, TILE = 0.5, CYC = 8;
+  const cv = document.createElement('canvas'); cv.width = 64; cv.height = 4;
+  const cx = cv.getContext('2d'); cx.fillStyle = '#fff'; cx.fillRect(0, 0, 64, 4); cx.fillStyle = '#b9c2cb'; cx.fillRect(0, 0, 3, 4);
+  const scroll = (names, cont) => names.map(n => {
+    const m = flow.getObjectByName(n), L = m.geometry.parameters.width;
+    const tex = new T.CanvasTexture(cv); tex.wrapS = T.RepeatWrapping; tex.repeat.set(L / TILE, 1); tex.colorSpace = T.SRGBColorSpace;
+    m.material = m.material.clone(); m.material.name += '_running'; m.material.map = tex;
+    return { tex, cont };
+  });
+  const belts = [...scroll(['web_raw', 'web_printed', 'web_bath_descent', 'web_bath_immersion', 'web_bath_ascent', 'web_impregnated'], true)];
+  const spinners = [];
+  model.traverse(o => { if (o.isMesh && (/_shell$/.test(o.name) || /^conveyor_roller_\d+$/.test(o.name) || /^unwind_roll_/.test(o.name))) spinners.push({ m: o, r: o.geometry.parameters.radiusTop, cont: !o.name.startsWith('conveyor') }); });
+  const press = ['press_upper_platen', 'press_upper_heat_plate', 'hydraulic_ram_1', 'hydraulic_ram_2'].map(n => { const m = s4.getObjectByName(n); return { m, y: m.position.y }; });
+  model.updateMatrixWorld(true);
+  const sx = new T.Group(); sx.name = 'stacker_travel'; stk.add(sx);
+  sx.attach(stk.getObjectByName('stacker_carriage'));
+  const sy = new T.Group(); sy.name = 'stacker_lift'; sx.add(sy);
+  stk.children.filter(o => o.name === 'stacker_suction_frame' || o.name.startsWith('suction_cup_')).forEach(o => sy.attach(o));
+  const col = stk.getObjectByName('stacker_lift_column'); sx.attach(col);
+  const sheet = grp(sy, 'transfer_sheet');
+  box(sheet, 'transfer_sheet_core', 2.6, 0.036, 2.0, M.mdf, PLX, 1.522, 0);
+  box(sheet, 'transfer_sheet_decor', 2.6, 0.004, 2.0, M.decor, PLX, 1.542, 0);
+  sheet.traverse(o => { if (o.isMesh) o.castShadow = o.receiveShadow = true; });
+  const boards = Array.from({ length: 12 }, (_, i) => [pal.getObjectByName(`stacked_board_${i + 1}_core`), pal.getObjectByName(`stacked_board_${i + 1}_decor`)]);
+  pal.children.filter(o => o.name.startsWith('strap_')).forEach(o => o.visible = false);
+  const ease = u => u * u * (3 - 2 * u);
+  const seg = (p, K) => { for (let i = 1; i < K.length; i++) if (p <= K[i][0]) { const a = K[i - 1], b = K[i]; return a[1] + (b[1] - a[1]) * ease((p - a[0]) / (b[0] - a[0])); } return K[K.length - 1][1]; };
+  const t0 = performance.now(); let last = t0;
+  const tick = now => {
+    const dt = Math.min((now - last) / 1000, 0.1); last = now;
+    const t = (now - t0) / 1000, p = t % CYC, k = Math.floor(t / CYC) % 5;
+    const indexing = p > 5 && p < 8, bv = indexing ? V * Math.sin(Math.PI * (p - 5) / 3) * 1.6 : 0;
+    belts.forEach(b => b.tex.offset.x -= (b.cont ? V : bv) * dt / TILE);
+    spinners.forEach(s => s.m.rotation.y -= (s.cont ? V : bv) * dt / s.r);
+    const dp = -0.19 * seg(p, [[0, 0], [1, 1], [4, 1], [5, 0], [8, 0]]);
+    press.forEach(o => o.m.position.y = o.y + dp);
+    const pu = p < 5 ? 0 : ease(Math.min(1, (p - 5) / 3));
+    panels.forEach((g, i) => { g.position.x = PANEL_S[i] + PANEL_P * pu; g.visible = i < 5 || p < 2; });
+    const n = 7 + k, released = p >= 5.2;
+    boards.forEach((b, i) => b.forEach(m => m.visible = i < n + (released ? 1 : 0)));
+    const up = 0.3, pick = -0.2, place = PB + n * 0.041 - 1.52;
+    sx.position.x = seg(p, [[0, 0], [1.2, -1.3], [2.8, -1.3], [4.2, 0], [8, 0]]);
+    const dy = seg(p, [[0, up], [1.2, up], [1.8, pick], [2.2, pick], [2.8, up], [4.2, up], [5.2, place], [6, up], [8, up]]);
+    sy.position.y = dy;
+    const bot = 1.7 + dy; col.scale.y = (3.0 - bot) / 1.3; col.position.y = (3.0 + bot) / 2;
+    sheet.visible = p >= 2 && p < 5.2;
+    requestAnimationFrame(tick);
+  };
+  requestAnimationFrame(tick);
+}
 
 /* ---------- centre on origin, base at y = 0 ---------- */
 const bb = new T.Box3().setFromObject(model), c = bb.getCenter(new T.Vector3());
 model.position.set(-c.x, -bb.min.y, -c.z);
 model.traverse(o => { if (o.isMesh) { o.castShadow = true; o.receiveShadow = true; } });
 stage.setObject(model);
+{
+  const C = stage._controls, MB = T.MOUSE, TO = T.TOUCH;
+  C.mouseButtons = { LEFT: MB.ROTATE, MIDDLE: MB.DOLLY, RIGHT: MB.PAN };
+  C.touches = { ONE: TO.ROTATE, TWO: TO.DOLLY_PAN };
+  C.screenSpacePanning = false;
+  C.panSpeed = 1.2;
+  const note = (stage.shadowRoot || stage).querySelector('.note');
+  if (note) note.textContent = 'Drag to orbit · right-drag to pan · scroll to zoom';
+}
+{
+  const cam = stage._camera, tgt = stage._controls.target;
+  cam.position.sub(tgt).multiplyScalar(0.44).add(tgt);
+  cam.near = Math.max(cam.near * 0.44, 0.01);
+  cam.updateProjectionMatrix();
+  stage._controls.update();
+}
