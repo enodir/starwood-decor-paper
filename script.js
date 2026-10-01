@@ -570,13 +570,18 @@
       if (match && isHidden) {
         /* Entering: unhide, start from the faded/scaled-down state, force a
            reflow so the browser registers it, then transition to normal —
-           staggered a beat apart per card. */
+           staggered a beat apart per card. Capped at 12 cards' worth of
+           stagger: with only 3 cards per category this never mattered, but
+           the real STW catalog puts up to ~54 cards in one category, and
+           40ms x 54 is a 2+ second wait for the last one to appear — past
+           that count every remaining card releases together instead of
+           each pushing the wait further out. */
         card.style.display = '';
         card.classList.add('is-filtered-out');
         void card.offsetWidth;
         (function (el, delay) {
           setTimeout(function () { el.classList.remove('is-filtered-out'); }, delay);
-        })(card, enterIndex * 40);
+        })(card, Math.min(enterIndex, 12) * 40);
         enterIndex++;
       } else if (!match && !isHidden) {
         /* Leaving: fade out, then drop from layout once the transition
@@ -593,8 +598,10 @@
     });
 
     /* And again after the entering cards have all been released, so the
-       last one to arrive lands at its correct depth rather than flat. */
-    setTimeout(layoutCoverflow, enterIndex * 40 + 60);
+       last one to arrive lands at its correct depth rather than flat. Same
+       12-card cap as the stagger above, so this fires with them instead of
+       waiting out the uncapped full count. */
+    setTimeout(layoutCoverflow, Math.min(enterIndex, 12) * 40 + 60);
     layoutCoverflow();
   }
 

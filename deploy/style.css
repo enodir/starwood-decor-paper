@@ -41,6 +41,11 @@
      separately-tuned --footer-bg. One flat value in both themes, same as
      the header pills themselves (no day/night variant exists for them). */
   --header-pill-bg: rgba(159, 148, 135, 0.9);
+  /* The header islands' own, semi-transparent version of that tone, one
+     step lighter so that at 0.6 alpha --press-black ink still clears AA
+     over the darkest section behind it (measured ≥5:1 in both themes) —
+     see .logo/.nav-island/.action-island. */
+  --header-island-bg: rgba(178, 167, 153, 0.6);
 
   --font-display: 'PT Sans Narrow', 'Arial Narrow', sans-serif;
   --font-body: 'IBM Plex Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
@@ -667,7 +672,14 @@ p.lead { font-size: clamp(1.05rem, 1.6vw, 1.25rem); color: var(--ink-grey); }
 .btn-3d {
   position: relative;
   color: #ffffff;
-  background: linear-gradient(180deg, #2296aa 0%, #187d90 50%, #136b7c 100%);
+  /* Semi-transparent glass face, on request: the same cyan gradient at 0.7
+     alpha, with the backdrop blurred and darkened (brightness 0.55) so the
+     section photo shows through as colour rather than detail, and the white
+     label keeps AA over the light day-theme backdrop too (measured ≥4.8:1
+     day, ≥6.1:1 night). */
+  background: linear-gradient(180deg, rgba(34, 150, 170, 0.7) 0%, rgba(24, 125, 144, 0.7) 50%, rgba(19, 107, 124, 0.7) 100%);
+  backdrop-filter: blur(10px) brightness(0.55);
+  -webkit-backdrop-filter: blur(10px) brightness(0.55);
   border: 1px solid rgba(0, 0, 0, 0.25);
   text-shadow: 0 -1px 0 rgba(0, 0, 0, 0.3);
   box-shadow:
@@ -785,10 +797,18 @@ p.lead { font-size: clamp(1.05rem, 1.6vw, 1.25rem); color: var(--ink-grey); }
      because this is now a specific colour rather than "light": at 0.7 the
      pill would read markedly darker over the hero than over a paper-stock
      section and stop matching the reference at all. The remaining 0.1 plus
-     the blur keep it glass rather than an opaque chip. */
-  background: var(--header-pill-bg);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
+     the blur keep it glass rather than an opaque chip.
+
+     Now semi-transparent on request: --header-island-bg is a slightly
+     lighter tone at 0.6 alpha (the footer keeps the opaque
+     --header-pill-bg). A heavier blur plus a brightness lift in the
+     backdrop-filter stand in for the opacity that was doing the contrast
+     work, so --press-black ink still clears AA over the darkest section
+     that scrolls under it — measured off rendered pixels down the whole
+     page, ≥5:1 in both themes. */
+  background: var(--header-island-bg);
+  backdrop-filter: blur(16px) saturate(120%) brightness(1.4);
+  -webkit-backdrop-filter: blur(16px) saturate(120%) brightness(1.4);
   /* Bolder on request now that background is gone — the border is the
      pill's only visible edge, so 1px/0.16 read as too faint on its own. */
   border: 1.5px solid rgba(30, 26, 23, 0.32);

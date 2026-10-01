@@ -52,7 +52,9 @@ three.js (`unpkg.com/three@0.184.0`), is loaded only for the hero motif — see 
   studio via Pexels, free for commercial use, no attribution required), and `hero-swatch-{1..8}-{480,960}.
   {webp,jpg}` (square center-crops of real mill samples from `assets/img/Papers/` via a one-off Pillow
   script — these fed the retired Swatch Float hero motif and are currently **unreferenced**; keep them
-  only if a future section wants sample thumbnails). Everything else in the decor catalog is a CSS gradient placeholder (see "Content placeholders" below).
+  only if a future section wants sample thumbnails). The decor catalog's own 147 card photos
+  (`<category>-<slug>-card-{300,600}.{jpg,webp}`) are real crops from the mill's `STW Каталог 2026
+  FINAL.pdf` catalog, not placeholders — see "Content placeholders" below for how they were extracted.
 - `deploy/` — a separate Vercel deployment target (has its own `.vercel/`). It is **not** auto-synced with
   the root files — copy `index.html`/`style.css`/`script.js` into it manually before deploying.
 
@@ -412,10 +414,33 @@ placeholders below.
 ## Content placeholders
 
 Most content is intentionally a placeholder pending real data from the mill (see PRD.md §5 for the full
-list): decor images/names beyond the one real wood-texture photo, certificate badges, company stats
-(tonnage/years/countries), client logos, social links (Instagram/Telegram/LinkedIn point to `#`), and the
-catalog/sustainability PDFs. Don't treat any of these as real when reasoning about the business — they're
-structural placeholders, not approved copy.
+list): certificate badges, company stats (tonnage/years/countries), client logos, social links
+(Instagram/Telegram/LinkedIn point to `#`), and the catalog/sustainability PDFs. Don't treat any of these
+as real when reasoning about the business — they're structural placeholders, not approved copy.
+
+**The decor catalog (`#decors`, `.decor-grid`) is real, not a placeholder** — all 147 decors, names, codes
+and swatch photos are sourced from the mill's own `STW Каталог 2026 FINAL.pdf` (lives in the user's
+Downloads folder, not the repo — ask for it again if it needs re-reading), one card per catalog decor, in
+the same five categories the PDF itself uses (`exclusive`/`marble`/`wood`/`abstract`/`background` —
+matches `.decor-filter[data-filter]` exactly, no "all" button). Swatch photos are real crops from the PDF:
+each page follows a fixed template (a name label in `size 18-22` text sits directly under its swatch, in a
+2-column, 1-or-2-row grid), so extraction located every name label, derived a crop box from its column/row
+position rather than the swatch's own embedded-image bbox (which includes an invisible bleed margin the
+rounded-corner mask clips — using it directly crops in the wrong place), and took a centred square inset
+from that box to land inside the swatch and clear of its printed frame/shadow. Codes continue the original
+three-per-category numbering (`EX-501..503` → `EX-504..`, etc., in catalog page order). RU names are the
+catalog's own (title-cased to match this site's existing card convention — the PDF itself only capitalises
+the first word); EN/UZ names are a glossary+transliteration machine pass (same "good-faith machine-quality,
+not reviewed by a native speaker" standard as the rest of the site's i18n — see below), not hand-translated
+per card. If the catalog is revised, re-derive rather than hand-editing: the crop geometry, category page
+ranges, and name→translation glossary all live in the extraction session's scratchpad, not the repo.
+
+Scaling from 3 cards/category to up to 54 (`wood`) surfaced a real bug worth knowing about:
+`initDecorFilters()`'s enter-stagger in `script.js` used to delay each newly-shown card by
+`enterIndex * 40`ms with no ceiling, harmless at 3 cards but a 2+ second wait for the last card at 54 —
+capped at `Math.min(enterIndex, 12) * 40` now (and the matching `layoutCoverflow()` re-run timeout capped
+the same way). Keep that cap if the catalog grows further; don't remove it as dead code because it "never
+gets exercised" at some catalog size.
 
 Production contacts/geography (footer, §3.10) ARE real: Tashkent, Uzbekistan; export to Uzbekistan's
 regions and neighbouring countries; phone +998 99 000 00 00. The sales email is still a placeholder
