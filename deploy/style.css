@@ -706,6 +706,14 @@ p.lead { font-size: clamp(1.05rem, 1.6vw, 1.25rem); color: var(--ink-grey); }
    a lit top rather than a wireframe. */
 .btn-3d__cube { flex-shrink: 0; }
 .btn-3d__cube-top { opacity: 0.35; }
+/* Hover turns the cube once, like a model on a turntable, and leaving winds
+   it back the other way. A transition rather than a keyframe so a pointer
+   that leaves mid-turn reverses from where the cube is, with no snap;
+   ease-out so it starts on the hover, not after it. */
+@media (hover: hover) and (pointer: fine) and (prefers-reduced-motion: no-preference) {
+  .btn-3d__cube { transition: transform 800ms var(--ease-out); }
+  .btn-3d:hover .btn-3d__cube { transform: rotate(360deg); }
+}
 
 .btn-link {
   padding: 0.9em 0.2em;
