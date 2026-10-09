@@ -72,17 +72,22 @@ function strip(p, n, x0, y0, x1, y1, mat, th = 0.02) {
   return box(p, n, Math.hypot(x1 - x0, y1 - y0), th, W, mat, (x0 + x1) / 2, (y0 + y1) / 2, 0, Math.atan2(y1 - y0, x1 - x0));
 }
 
-// forklift heading from path direction: z legs 0/π, x legs ±π/2 — nearest to current heading, forks-first on a tie; stationary keeps heading
+// forklift heading: follow the path tangent forks-first. Direction is decided each time the truck pulls away from rest:
+// reverse only when the move starts (near) straight away from where the forks point — a back-out — and hold that until it stops again
 const wrapA = a => Math.atan2(Math.sin(a), Math.cos(a));
 function steer(f, a, b) {
-  const dx = b[0] - a[0], dz = b[1] - a[1];
-  let y = f.userData.yaw ?? 0, tgt = y;
-  if (Math.hypot(dx, dz) > 1e-5) {
-    const o = Math.abs(dz) >= Math.abs(dx) ? [0, Math.PI] : [Math.PI / 2, -Math.PI / 2], ff = Math.atan2(-dx, -dz);
-    const d0 = Math.abs(wrapA(o[0] - y)), d1 = Math.abs(wrapA(o[1] - y));
-    tgt = Math.abs(d0 - d1) < 0.3 ? (Math.abs(wrapA(o[0] - ff)) < Math.abs(wrapA(o[1] - ff)) ? o[0] : o[1]) : d0 < d1 ? o[0] : o[1];
+  const u = f.userData, now = performance.now(), dt = Math.min(0.1, (now - (u.tLast ?? now)) / 1000); u.tLast = now;
+  // instantaneous travel direction (per-frame displacement): eased key legs stop dead at each join, so corners register sharply
+  const dx = u.pA ? a[0] - u.pA[0] : 0, dz = u.pA ? a[1] - u.pA[1] : 0, dl = Math.hypot(dx, dz); u.pA = [a[0], a[1]];
+  let y = u.yaw ?? f.rotation.y, tgt = y;
+  if (dl > 1e-4 && dl < 2) {
+    // forks-first unless the motion points (near) straight behind the forks — a back-out or reverse arc; a 90° corner or
+    // segment join always flips back to forks-first. Hysteresis keeps reverse arcs (heading lag) from flickering.
+    const ff = Math.atan2(-dx, -dz), off = Math.abs(wrapA(ff - y));
+    u.rev = off > (u.rev ? 1.8 : 2.3);
+    tgt = u.rev ? wrapA(ff + Math.PI) : ff;
   }
-  y += wrapA(tgt - y) * 0.2; f.userData.yaw = y; f.rotation.y = y; return y;
+  y += wrapA(tgt - y) * (1 - Math.exp(-dt / 0.16)); u.yaw = y; f.rotation.y = y; return y;
 }
 // walking gait: hip + shoulder pivots, legs and arms swing in opposition
 function gait(w) {
@@ -1020,7 +1025,7 @@ const panels = PANEL_S.map((x, i) => {
     hinge2.rotation.x = key(DS, t)[0] * Math.PI;
     const [fx, fz] = key(FX, t), L = key(LF, t)[0];
     fl2.position.set(fx, 0, fz); car2.position.y = L + 0.22;
-    const y2 = steer(fl2, key(FX, t), key(FX, t + 0.05));
+    const y2 = steer(fl2, key(FX, t), key(FX, t + 0.3));
     pals.forEach((p, i) => {
       p.rotation.y = 0;
       if (t < PICK[i]) p.position.set(SX[i], 0, SZ);
@@ -1098,7 +1103,7 @@ const panels = PANEL_S.map((x, i) => {
     straps.forEach(m => m.visible = t < 6);
     const [fx, fz] = key(FX, t), lift = key(LF, t)[0];
     fl.position.set(fx, 0, fz); car.position.y = lift;
-    const yw = steer(fl, key(FX, t), key(FX, t + 0.05)), sn = Math.sin(yw), cs = Math.cos(yw);
+    const yw = steer(fl, key(FX, t), key(FX, t + 0.3)), sn = Math.sin(yw), cs = Math.cos(yw);
     rolls.forEach((r, i) => {
       const carried = t >= PICK[i] && t < DROP[i];
       r.visible = t < DROP[i]; tops[i].visible = t < GONE[i] || t >= DROP[i];
@@ -1173,11 +1178,41 @@ const panels = PANEL_S.map((x, i) => {
     return K[K.length - 1].slice(1);
   };
   // glide: one eased run through several waypoints at even speed (no stop at the corners)
-  const glide = (t0, t1, pts) => {
+  // corners are rounded into arcs (radius R_TURN) so forklifts swing wide through hangar doors and aisle ends
+  // corners out in the yard (east of the hangar ends, x > HX) feed the back doors: wider radius, and the yard lane sits far
+  // enough out that the turn finishes before the load reaches the wall — forklift + cargo pass the door dead straight
+  const R_TURN = 2.2, R_DOOR = 3.2, R_DOOR3 = 4.0, HX = 15.6;
+  const roundPts = P => {
+    if (P.length < 3) return P;
+    const out = [P[0]];
+    for (let i = 1; i < P.length - 1; i++) {
+      const A = P[i - 1], C = P[i], B = P[i + 1], la = Math.hypot(C[0] - A[0], C[1] - A[1]), lb = Math.hypot(B[0] - C[0], B[1] - C[1]);
+      if (la < 1e-6 || lb < 1e-6) { out.push(C); continue; }
+      const u = [(C[0] - A[0]) / la, (C[1] - A[1]) / la], v = [(B[0] - C[0]) / lb, (B[1] - C[1]) / lb], cs = u[0] * v[0] + u[1] * v[1];
+      if (cs > 0.999 || cs < -0.99) { out.push(C); continue; }
+      const d = Math.min((C[0] > HX ? (C[1] > 33 ? R_DOOR3 : R_DOOR) : R_TURN) * Math.tan(Math.acos(cs) / 2), la / 2, lb / 2), s0 = [C[0] - u[0] * d, C[1] - u[1] * d], s1 = [C[0] + v[0] * d, C[1] + v[1] * d];
+      for (let k = 0; k <= 10; k++) { const s = k / 10, a = (1 - s) * (1 - s), b = 2 * s * (1 - s), c = s * s; out.push([a * s0[0] + b * C[0] + c * s1[0], a * s0[1] + b * C[1] + c * s1[1]]); }
+    }
+    out.push(P[P.length - 1]); return out;
+  };
+  const glide = (t0, t1, pts, raw) => {
+    if (!raw) pts = roundPts(pts);
     const S = [0]; for (let i = 1; i < pts.length; i++) S.push(S[i - 1] + Math.hypot(pts[i][0] - pts[i - 1][0], pts[i][1] - pts[i - 1][1]));
     const tot = S[S.length - 1];
     const run = t => { const s = ease(Math.min(1, Math.max(0, (t - t0) / (t1 - t0)))) * tot; let j = 1; while (j < S.length - 1 && S[j] < s) j++; const u = (s - S[j - 1]) / ((S[j] - S[j - 1]) || 1); return [0, 1].map(k => pts[j - 1][k] + (pts[j][k] - pts[j - 1][k]) * u); };
     return pts.slice(1).map((p, i) => { const k = [t0 + (t1 - t0) * S[i + 1] / tot, ...p]; k.run = run; return k; });
+  };
+  // back-out start: reverse off the stack while swinging the tail away from the travel direction (radius-limited arc),
+  // stop, then drive forks-first — forklifts never reverse along a whole route
+  const backOut = (t0, t1, P) => {
+    const [A, C, N] = P, la = Math.hypot(C[0] - A[0], C[1] - A[1]), lb = Math.hypot(N[0] - C[0], N[1] - C[1]);
+    const u = [(C[0] - A[0]) / la, (C[1] - A[1]) / la], v = [(N[0] - C[0]) / lb, (N[1] - C[1]) / lb];
+    if (Math.abs(u[0] * v[0] + u[1] * v[1]) > 0.2) return glide(t0, t1, P);
+    const r = Math.min(R_TURN, la), S = [C[0] - u[0] * r, C[1] - u[1] * r], E = [C[0] - v[0] * r, C[1] - v[1] * r], rev = [A, S];
+    for (let k = 1; k <= 12; k++) { const s = k / 12, a = (1 - s) * (1 - s), b = 2 * s * (1 - s), c = s * s; rev.push([a * S[0] + b * C[0] + c * E[0], a * S[1] + b * C[1] + c * E[1]]); }
+    const len = Q => Q.slice(1).reduce((m, p, i) => m + Math.hypot(p[0] - Q[i][0], p[1] - Q[i][1]), 0);
+    const L1 = len(rev), L2 = len([E, ...P.slice(1)]), tb = t0 + (t1 - t0) * Math.min(0.45, Math.max(0.2, (L1 * 1.4) / (L1 * 1.4 + L2)));
+    return [...glide(t0, tb, rev, true), ...glide(tb, t1, [E, ...P.slice(1)])];
   };
   const lg = grp(model, 'sheet_transfer_logistics');
   const prefix = (root, p) => root.traverse(o => { if (o.name) o.name = p + o.name; });
@@ -1239,24 +1274,27 @@ const panels = PANEL_S.map((x, i) => {
   // hangar 2 is turned 180° and set beside hangar 1: its local (x, z) → world (TX - x, TZ - z)
   const TX = 35.9, TZ = 44, LX2 = PRX - 5.2 + OFF;
   const ISX = TX - LX2, ISZ = TZ - 3.0, BBX = TX - 25.6, BBZ = TZ - 3.0;
-  const LN = TZ - 6.1, AP = TZ - 4.1, RT = TZ - 4.9, PK = ISX;      // lane, bay approach, retract, park
+  const LN = TZ - 6.4, AP = TZ - 4.1, RT = TZ - 4.9, PK = ISX;      // lane, bay approach, retract, park
   // stores live in hangar 3 (z 13–31): drive-through along z, south aisle SL (collector), north aisle NL (press feeder), yard lane YX east of the hangar ends
-  const BUF = 10.5, BZ = 22.0, SX0 = -6.3, PX0 = 4.5, SZ0 = 23.1, YX = 17.2, SL = 16, NL = 28, SZ_0 = 18.5, SZ_1 = 25.5;
+  // LN is centred on the HANGAR-3 back door (z = TZ − 6.4) and YX leaves a ≥1.5 m straight after the R_DOOR3 turn, so a 2.6 m load
+  // is square to the 3.4 m opening (0.4 m each side) before it reaches the jambs
+  const BUF = 10.5, BZ = 22.0, SX0 = -6.3, PX0 = 4.5, SZ0 = 23.1, YX = HX + 2.3 + R_DOOR3 + 1.5, SL = 16, NL = 28, SZ_0 = 18.5, SZ_1 = 25.5;
   const clad = std('store_cladding', 0xf2f1ec, 0.5, 0.2, { side: T.DoubleSide }), shutMat = std('store_shutter', 0xd6d3cc, 0.5, 0.3);
   // floor places only (no store buildings): empty-pallet place at PX0, impregnated paper place at BUF
   const pStore = { st: grp(lg, 'empty_pallet_place'), back: SZ_0 + 0.1 + 1.05 };
   const stockTop = [];   // top three of the stack leave together on the collector
-  for (let k = 0; k < 6; k++) { const g = grp(pStore.st, 'empty_pallet_stock_' + (k + 1), PX0, k * 0.125, pStore.back); palletBase(g, 'empty_pallet_stock_' + (k + 1)); if (k >= 3) stockTop.push(g); }
+  for (let k = 0; k < 5; k++) { const g = grp(pStore.st, 'empty_pallet_stock_' + (k + 1), PX0, k * 0.125, pStore.back); palletBase(g, 'empty_pallet_stock_' + (k + 1)); if (k >= 2) stockTop.push(g); }
   // particleboard truck: arrives from the west like the other trucks, parks west of hangar 2 (side open to the north);
   // the board unloader carries its two-high load through the west door to the particleboard pile beside the paper rolls
-  const BTX = -26, BTZ = 12.0, UPX = BTX - 1.15, UDX = -15.5, UDZ = 22;
+  const BTX = -26, BTZ = 12.0, UPXA = BTX - 2.45, UPXB = BTX + 0.15, UDX = -15.5, UDZ = 22;   // full bed: two 2-high stacks (rear A, front B)
   const bt = tk.clone(true);
   [...bt.children].filter(o => /^truck_roll_/.test(o.name)).forEach(o => bt.remove(o));
   const bHubs = []; bt.traverse(o => { if (/^wheel_.*_hub$/.test(o.name)) bHubs.push(o); });
   const bHinge = bt.getObjectByName('hinge_dropside_right');
   prefix(bt, 'board_'); bt.name = 'particleboard_truck'; bt.position.set(-66, 0, BTZ); lg.add(bt);
-  const TKB = [[0, -66], [20, -66], [26, BTX], [54, BTX], [LL, -66]];
-  const DSB = [[0, 0], [26, 0], [27.5, 0.94], [52.5, 0.94], [54, 0], [LL, 0]];
+  const DCY = 120;   // delivery runs over two logistics loops (two unloader trips), truck calls every 4th loop
+  const TKB = [[0, -66], [20, -66], [26, BTX], [64, BTX], [70, -66], [DCY, -66]];
+  const DSB = [[0, 0], [26, 0], [27.5, 0.94], [62.5, 0.94], [64, 0], [DCY, 0]];
   let prevBX = null;
   // empty-pallet dispenser beside the stacker (hangar 1): stack hidden in the cabinet, one pallet at the pick slot
   const DPX = 10.0, DPZ = 5.8, emptyPallet = n => { const g = grp(lg, n); palletBase(g, n); return { g }; };
@@ -1277,25 +1315,28 @@ const panels = PANEL_S.map((x, i) => {
   const [f5, c5] = truck('unload_', 'forklift_board_unloader', UDX, UDZ); f5.userData.yaw = Math.PI / 2;
   const pt = sheetPallet('stacking_pallet'), pc = sheetPallet('transfer_pallet'), pi = sheetPallet('press_feed_pallet');
   const pe = sheetPallet('empty_return_pallet'), pb = boardPallet('particleboard_pallet'), pdl = boardPallet('delivered_particleboard_pallet'), pdl2 = boardPallet('delivered_particleboard_pallet_top'), prs = emptyPallet('restock_empty_pallet');
-  pdl.fill(NB); pdl2.fill(NB);
+  const pdl3 = boardPallet('delivered_particleboard_pallet_front'), pdl4 = boardPallet('delivered_particleboard_pallet_front_top');
+  pdl.fill(NB); pdl2.fill(NB); pdl3.fill(NB); pdl4.fill(NB);
   for (const k of [1, 2]) { const g = grp(prs.g, 'restock_empty_pallet_' + (k + 1), 0, k * 0.125, 0); palletBase(g, 'restock_empty_pallet_' + (k + 1)); }
   const MDFM = std('mdf_board', 0x9c6f45, 0.75);
   // particleboard truck calls every 2nd loop with two pallets (stacked) → particleboard pile (x 11, z 20.3); the press feeder takes one per loop off the top
-  const BT_EVERY = 2, PH2 = 0.125 + NB * BH + 0.02, PILE_X = -4.0, PILE_Z = 23.7, PZF = PILE_Z + 1.1, PZR = PZF + 1.8;   // low pile on the north row, picked from the north aisle
-  const PT1 = boardPallet('pile_top_pallet_1'), PT2 = boardPallet('pile_top_pallet_2'); PT1.fill(NB); PT2.fill(NB);
-  PT1.g.position.set(PILE_X, 2 * PH2, PILE_Z); PT2.g.position.set(PILE_X, 3 * PH2, PILE_Z);
-  { // hangar 2 east end (between the aisles): raw paper roll stock + one particleboard pile + one MDF pile
+  const BT_EVERY = 2, PH2 = 0.125 + NB * BH + 0.02, PILE_X = -11.0, PILE_Z = 25.0, PZF = PILE_Z + 1.1, PZR = PZF + 1.8;   // low pile on the north row, picked from the north aisle
+  // working pile (0–4 high) over a 4-loop cycle: τ = (L % 4)·60 + t; feeder takes one per loop, truck brings four
+  const PTS = [0, 1, 2, 3].map(i => { const p = boardPallet('pile_pallet_' + (i + 1)); p.fill(NB); p.g.position.set(PILE_X, i * PH2, PILE_Z); return p; });
+  const pileCnt = u => u < 29.45 ? 1 : u < 45.6 ? 0 : u < 75.6 ? 2 : u < 89.45 ? 4 : u < 149.45 ? 3 : u < 209.45 ? 2 : 1;
+  const PICK_TIER = [0, 3, 2, 1];
+  { // hangar 2 west entrance (door on z 22): paper rolls on the left (south), particleboard piles on the right (north); MDF further east
     const st = grp(lg, 'hangar_2_stock');
-    for (const [r, z] of [[1, 19.6], [2, 21.8], [3, 24.0]]) for (let i = 0; i < 4; i++) {   // rolls stored standing on end
-      const n = `stock_roll_r${r}_${i + 1}`, g = grp(st, n), x = -11.6 + i * 1.3;
+    for (const [r, z] of [[1, 17.9], [2, 19.3]]) for (let i = 0; i < 6; i++) {   // rolls stored standing on end
+      const n = `stock_roll_r${r}_${i + 1}`, g = grp(st, n), x = -13.6 + i * 1.3;
       cylY(g, n + '_paper', 0.62, 2.0, M.paper, x, 1.0, z, 64);
       cylY(g, n + '_core', 0.076, 2.012, M.steelDark, x, 1.0, z, 24);
     }
     const PH = 0.125 + NB * BH + 0.02, MDF = MDFM;
     let k = 0, m = 0;
     for (const z of [20.3, 23.7]) for (let tier = 0; tier < (z < 22 ? 6 : 3); tier++) {
-      if (!(z > 22 && tier >= 2)) { const p = boardPallet('stock_particleboard_pallet_' + (++k)); p.fill(NB); st.attach(p.g); p.g.position.set(PILE_X, tier * PH, z); }
-      const n = 'stock_mdf_pallet_' + (++m), g = grp(st, n, PILE_X + 3.0, tier * PH, z);
+      if (z < 22) { const p = boardPallet('stock_particleboard_pallet_' + (++k)); p.fill(NB); st.attach(p.g); p.g.position.set(PILE_X + 3.0, tier * PH, PILE_Z); }
+      const n = 'stock_mdf_pallet_' + (++m), g = grp(st, n, -1.0, tier * PH, z);
       palletBase(g, n);
       for (let j = 0; j < NB; j++) box(g, `${n}_mdf_${j + 1}`, 2.6, BH - 0.003, 2.0, MDF, 0, 0.125 + j * BH + (BH - 0.003) / 2, 0);
     }
@@ -1331,31 +1372,34 @@ const panels = PANEL_S.map((x, i) => {
   const PSB = pStore.back - 1.1;
   const F3 = [[0, LX, 5.6], [14.6, LX, 5.6], [16.6, LX, 1.1], [17.2, LX, 1.1], [18.6, LX, 5.8],
     ...glide(18.6, 25.8, [[LX, 5.8], [YX, 5.8], [YX, SL], [BUF, SL], [BUF, BZ - 1.1]]), [26.2, BUF, BZ - 1.1],
-    ...glide(26.2, 29.6, [[BUF, BZ - 1.1], [BUF, SL], [PX0, SL], [PX0, PSB]]), [30.2, PX0, PSB], ...glide(30.2, 39.2, [[PX0, PSB], [PX0, SL], [YX, SL], [YX, 5.8], [DPX + 2.2, 5.8]]),
+    ...backOut(26.2, 29.6, [[BUF, BZ - 1.1], [BUF, SL], [PX0, SL], [PX0, PSB]]), [30.5, PX0, PSB], ...backOut(30.5, 39.2, [[PX0, PSB], [PX0, SL], [YX, SL], [YX, 5.8], [DPX + 2.2, 5.8]]),
     [40.2, DPX + 1.1, DPZ], [40.7, DPX + 1.1, DPZ], [41.5, DPX + 2.2, DPZ], [42.1, DPX + 2.2, DPZ], [42.9, DPX + 1.1, DPZ], [43.3, DPX + 1.1, DPZ], [44.0, LX, 5.8], [45.6, LX, 1.1], [PLACE, LX, 1.1], [48.0, LX, 5.8], [48.5, LX, 5.6], [LL, LX, 5.6]];
-  const L3 = [[0, 0.35], [16.6, 0.35], [17.2, 0.5], [25.8, 0.5], [26.2, 0.1], [27.5, 0.1], [29.2, 0.38], [29.6, 0.38], [30.2, 0.6], [31.5, 0.6], [32.5, 0.4], [37.5, 0.4], [38.7, 1.2], [40.2, 1.2],
+  const L3 = [[0, 0.35], [16.6, 0.35], [17.2, 0.5], [25.8, 0.5], [26.2, 0.1], [27.5, 0.1], [29.2, 0.35], [29.9, 0.35], [30.5, 0.6], [31.5, 0.6], [32.5, 0.4], [37.5, 0.4], [38.7, 1.2], [40.2, 1.2],
     [40.7, 1.0], [41.5, 1.0], [42.1, 0.1], [42.9, 0.1], [43.3, 0.35], [45.6, 0.35], [PLACE, 0.3], [48.0, 0.3], [49, 0.35], [LL, 0.35]];
   // board unloader: west door → truck bed → back through the door → north aisle → particleboard pile (from the north)
-  const F5 = [[0, UDX, UDZ], [27.5, UDX, UDZ], ...glide(27.5, 32, [[UDX, UDZ], [UPX, UDZ], [UPX, BTZ + 1.1]]), [32.5, UPX, BTZ + 1.1], [35, UPX, UDZ],
-    ...glide(35, 44, [[UPX, UDZ], [UDX, UDZ], [UDX, NL], [PILE_X, NL], [PILE_X, PZR]]), [45, PILE_X, PZF], [45.6, PILE_X, PZF], ...glide(45.6, 55, [[PILE_X, PZF], [PILE_X, NL], [UDX, NL], [UDX, UDZ]]), [LL, UDX, UDZ]];
-  const L5 = [[0, 0.3], [30, 0.3], [31.5, 1.3], [32, 1.3], [32.5, 1.55], [35, 1.55], [37, 0.4], [42.5, 0.4], [43.8, 2 * PH2 + 0.25], [45, 2 * PH2 + 0.25], [45.6, 2 * PH2 + 0.1], [46.3, 2 * PH2 + 0.1], [47.5, 0.3], [LL, 0.3]];
+  const trip5 = (o, ux) => [[o + 27.5, UDX, UDZ], ...glide(o + 27.5, o + 32, [[UDX, UDZ], [ux, UDZ], [ux, BTZ + 1.1]]), [o + 32.5, ux, BTZ + 1.1], [o + 35, ux, UDZ],
+    ...glide(o + 35, o + 44, [[ux, UDZ], [UDX, UDZ], [UDX, NL], [PILE_X, NL], [PILE_X, PZR]]), [o + 45, PILE_X, PZF], [o + 45.6, PILE_X, PZF], ...backOut(o + 45.6, o + 55, [[PILE_X, PZF], [PILE_X, NL], [UDX, NL], [UDX, UDZ]])];
+  const lift5 = (o, y) => [[o + 30, 0.3], [o + 31.5, 1.3], [o + 32, 1.3], [o + 32.5, 1.55], [o + 35, 1.55], [o + 37, 0.4], [o + 42.5, 0.4], [o + 43.8, y + 0.25], [o + 45, y + 0.25], [o + 45.6, y + 0.1], [o + 46.3, y + 0.1], [o + 47.5, 0.3]];
+  const F5 = [[0, UDX, UDZ], ...trip5(0, UPXA), ...trip5(30, UPXB), [DCY, UDX, UDZ]];
+  const L5 = [[0, 0.3], ...lift5(0, 0), ...lift5(30, 2 * PH2), [DCY, 0.3]];
   // press feeder (hangar 2): empty sheet pallet → onto the empty board pallet → both to the empty-pallet place → fresh particleboard
   // off the top of the low particleboard pile (from the north aisle) → board bay → full sheet pallet from the paper place (north side) → press feed bay (05)
+  const SDROP = pStore.back + 1.1;   // creep-in point: load sits exactly over the empty-pallet stack
   const F4 = [[0, ISX, LN], [1, ISX, LN], [2, ISX, AP], [2.5, ISX, AP], [3.4, ISX, LN], [4.7, BBX, LN], [5.7, BBX, AP], [6.2, BBX, AP], [6.5, BBX, RT], [6.8, BBX, RT], [7.1, BBX, AP], [7.4, BBX, AP], [8.4, BBX, LN],
-    ...glide(8.4, 17.2, [[BBX, LN], [YX, LN], [YX, NL], [PX0, NL], [PX0, SZ0]]), [18.4, PX0, SZ0], ...glide(18.4, 26.0, [[PX0, SZ0], [PX0, NL], [PILE_X, NL], [PILE_X, PZR]]), [27.0, PILE_X, PZR], [29.0, PILE_X, PZF], [29.6, PILE_X, PZF],
-    ...glide(29.6, 37.0, [[PILE_X, PZF], [PILE_X, NL], [YX, NL], [YX, LN], [BBX, LN]]), [38.0, BBX, AP], [38.5, BBX, AP], [39.5, BBX, LN],
-    ...glide(39.5, 47.0, [[BBX, LN], [YX, LN], [YX, NL], [BUF, NL], [BUF, BZ + 1.1]]), [47.5, BUF, BZ + 1.1], ...glide(47.5, 54.6, [[BUF, BZ + 1.1], [BUF, NL], [YX, NL], [YX, LN], [ISX, LN]]),
+    ...glide(8.4, 16.3, [[BBX, LN], [YX, LN], [YX, NL], [PX0, NL], [PX0, SZ0]]), [17.6, PX0, SDROP], [18.4, PX0, SDROP], [19.5, PX0, SZ0], ...backOut(19.5, 26.0, [[PX0, SZ0], [PX0, NL], [PILE_X, NL], [PILE_X, PZR]]), [27.0, PILE_X, PZR], [29.0, PILE_X, PZF], [29.6, PILE_X, PZF],
+    ...backOut(29.6, 37.0, [[PILE_X, PZF], [PILE_X, NL], [YX, NL], [YX, LN], [BBX, LN]]), [38.0, BBX, AP], [38.5, BBX, AP], [39.5, BBX, LN],
+    ...glide(39.5, 47.0, [[BBX, LN], [YX, LN], [YX, NL], [BUF, NL], [BUF, BZ + 1.1]]), [47.5, BUF, BZ + 1.1], ...backOut(47.5, 54.6, [[BUF, BZ + 1.1], [BUF, NL], [YX, NL], [YX, LN], [ISX, LN]]),
     [55.1, ISX, AP], [55.6, ISX, AP], [56.6, ISX, LN], [LL, ISX, LN]];
   // pile pick height depends on the loop: delivery loops take tier 3 (P1), the others tier 4 (P2)
-  const L4f = y => [[0, 0.1], [2, 0.1], [2.5, 0.4], [5.7, 0.4], [6.2, 0.225], [6.5, 0.225], [6.8, 0.1], [7.1, 0.1], [7.4, 0.3], [18.0, 0.3], [18.2, 0.1], [19.5, 0.1], [22, 0.4], [25.5, 0.4], [27.0, y + 0.05],
-    [29.0, y + 0.05], [29.3, y + 0.05], [29.6, y + 0.25], [31, y + 0.25], [32.5, 0.4], [38.0, 0.4], [38.5, 0.1], [47.1, 0.1], [47.5, 0.3], [55.1, 0.3], [55.6, 0.1], [LL, 0.1]];
-  const L4D = L4f(2 * PH2), L4N = L4f(3 * PH2);
+  const L4f = y => [[0, 0.1], [2, 0.1], [2.5, 0.4], [5.7, 0.4], [6.2, 0.225], [6.5, 0.225], [6.8, 0.1], [7.1, 0.1], [7.4, 0.3], [15.3, 0.3], [16.3, 0.6], [17.6, 0.6], [18.1, 0.475], [18.4, 0.38], [19.5, 0.38], [22, 0.4], [25.5, 0.4], [27.0, y + 0.1],
+    [29.0, y + 0.1], [29.45, y + 0.1], [29.6, y + 0.25], [31, y + 0.25], [32.5, 0.4], [38.0, 0.4], [38.5, 0.1], [47.1, 0.1], [47.5, 0.3], [55.1, 0.3], [55.6, 0.1], [LL, 0.1]];
+  const L4S = PICK_TIER.map(k => L4f(k * PH2));
   const TOPY = 1.26, LOW = TOPY - 0.125 - N * SH, EMPTY = TOPY - 0.125;
   const onForks = (p, f, l) => { const y = f.rotation.y; p.g.position.set(f.position.x - 1.1 * Math.sin(y), l - 0.1, f.position.z - 1.1 * Math.cos(y)); p.g.rotation.y = y; };
   const place = (p, x, y, z, ry = 0) => { p.g.position.set(x, y, z); p.g.rotation.y = ry; };
   const t0 = performance.now();
   const tick = now => {
-    const T = (now - t0) / 1000, L = Math.floor(T / LL), t = T - LL * L;
+    const T = Math.max(0, (now - t0) / 1000), L = Math.floor(T / LL), t = T - LL * L, q = L % 4, tau = q * LL + t;   // first rAF stamp can precede t0 → negative q
     // decor colours
     const FRONT_T = PAL0 - CUT_P - BELT_T, jobAt = Ta => { const La = Math.floor(Ta / LL); return Ta - LL * La >= PAL0 ? La : La - 1; };
     const jp = Math.floor((T - FRONT_T + WEB_T) / LL), dist = (T - (LL * jp + FRONT_T - WEB_T)) * WEB_V, dNew = decOf(jp), dOld = decOf(jp - 1), done = dist >= WEB_LEN, dWeb = done ? dNew : dOld;
@@ -1396,23 +1440,23 @@ const panels = PANEL_S.map((x, i) => {
     ltPlat.position.y = tt - 0.03; ltCol.scale.y = tt - 0.18; ltCol.position.y = (0.12 + tt - 0.06) / 2;
     pt.g.visible = t < 16.6 || t >= PLACE; pt.g.position.set(LX, tt, 0); pt.fill(shown);
     // forklifts
-    const [x3, z3] = key(F3, t), l3 = key(L3, t)[0], [x4, z4] = key(F4, t), l4 = key(L % BT_EVERY === 0 ? L4D : L4N, t)[0];
-    f3.position.set(x3, 0, z3); c3.position.y = l3 + 0.22; steer(f3, key(F3, t), key(F3, t + 0.05));
-    f4.position.set(x4, 0, z4); c4.position.y = l4 + 0.22; steer(f4, key(F4, t), key(F4, t + 0.05));
-    const tB = L % BT_EVERY === 0 ? t : 0;   // truck + unloader only run on delivery loops
+    const [x3, z3] = key(F3, t), l3 = key(L3, t)[0], [x4, z4] = key(F4, t), l4 = key(L4S[q], t)[0];
+    f3.position.set(x3, 0, z3); c3.position.y = l3 + 0.22; steer(f3, key(F3, t), key(F3, t + 0.3));
+    f4.position.set(x4, 0, z4); c4.position.y = l4 + 0.22; steer(f4, key(F4, t), key(F4, t + 0.3));
+    const tB = q < 2 ? tau : 0;   // truck + unloader run over the first two loops of each 4-loop cycle
     const [x5, z5] = key(F5, tB), l5 = key(L5, tB)[0];
-    f5.position.set(x5, 0, z5); c5.position.y = l5 + 0.22; steer(f5, key(F5, tB), key(F5, tB + 0.05));
+    f5.position.set(x5, 0, z5); c5.position.y = l5 + 0.22; steer(f5, key(F5, tB), key(F5, tB + 0.3));
     // particleboard truck + delivered pallet: truck bed → unloader forks (32.25) → board store floor (44.9) → taken by the press feeder (22.3)
     const bx = key(TKB, tB)[0]; bt.position.x = bx; bt.visible = bx > -65.5;
     if (prevBX !== null) bHubs.forEach(h => h.rotation.z -= (bx - prevBX) / 0.52); prevBX = bx;
     if (bHinge) bHinge.rotation.x = key(DSB, tB)[0] * Math.PI;
     pdl.g.visible = pdl2.g.visible = tB >= 20 && tB < 45.6;
-    if (tB < 32.25) { place(pdl, bx - 1.15, 1.35, BTZ); place(pdl2, bx - 1.15, 1.35 + PH2 - 0.02, BTZ); } else { onForks(pdl, f5, l5); onForks(pdl2, f5, l5); pdl2.g.position.y += PH2 - 0.02; }
-    // pile top: delivery adds two (45.6), press feeder takes one per loop (29.45)
-    const DL = L % BT_EVERY === 0;
-    PT1.g.visible = DL ? (t < 29.45 || t >= 45.6) : true; PT2.g.visible = DL ? t >= 45.6 : t < 29.45;
+    pdl3.g.visible = pdl4.g.visible = tB >= 20 && tB < 75.6;
+    if (tB < 32.25) { place(pdl, bx - 2.45, 1.35, BTZ); place(pdl2, bx - 2.45, 1.35 + PH2 - 0.02, BTZ); } else { onForks(pdl, f5, l5); onForks(pdl2, f5, l5); pdl2.g.position.y += PH2 - 0.02; }
+    if (tB < 62.25) { place(pdl3, bx + 0.15, 1.35, BTZ); place(pdl4, bx + 0.15, 1.35 + PH2 - 0.02, BTZ); } else { onForks(pdl3, f5, l5); onForks(pdl4, f5, l5); pdl4.g.position.y += PH2 - 0.02; }
+    const pc0 = pileCnt(tau); PTS.forEach((p, i) => p.g.visible = i < pc0);
     // restock on the return leg: three empty pallets off the stack (29.9) → dispenser stack top (40.45), feeds the slot at 43.9
-    stockTop.forEach(g => g.visible = t >= 18.2 && t < 29.9);
+    stockTop.forEach((g, i) => g.visible = t >= (i === 0 ? 17.6 : 18.1) && t < 29.9);
     prs.g.visible = t >= 29.9 && t < 43.9;
     if (t < 40.45) onForks(prs, f3, l3); else place(prs, DPX, 1.0, DPZ, Math.PI / 2);
     // new stacking pallet: dispenser slot → collector forks (42.9) → lift table (46.0); next one drops into the slot
@@ -1422,13 +1466,13 @@ const panels = PANEL_S.map((x, i) => {
     if (t < 26.2) onForks(pc, f3, l3);
     else if (t < 47.5) place(pc, BUF, 0, BZ);
     else onForks(pc, f4, l4);
-    pi.g.visible = !(t >= 2 && t < DROP_T); pi.fill(t >= DROP_T ? N : Math.round(N * Math.max(0, 1 - (t + LL - DROP_T) / 11)));
+    pi.g.visible = !(t >= 2 && t < DROP_T); pi.fill(t >= DROP_T ? N : Math.round(N * Math.max(0, 1 - (t + LL - DROP_T) / 5.2)));   // last sheet gone at t 0.8, before the feeder pulls in (1.0) and lifts the empty (2.0)
     // particleboard: in the bay 38.5 → 7.1; out with the empties, left at the pallet place (18.2), fresh stack off the pile (29.45)
     const inBay = t >= 38.5 || t < 7.1;
-    pb.g.visible = inBay || t < 18.2 || t >= 29.45;
+    pb.g.visible = inBay || t < 18.1 || t >= 29.45;
     if (inBay) place(pb, BBX, 0, BBZ); else onForks(pb, f4, l4);
-    pb.fill(inBay ? Math.round(NB * Math.max(0, 1 - (t >= 38.5 ? t - 38.5 : t + LL - 38.5) / 28)) : t < 18.2 ? 0 : NB);
-    pe.g.visible = t >= 2 && t < 18.2;
+    pb.fill(inBay ? Math.round(NB * Math.max(0, 1 - (t >= 38.5 ? t - 38.5 : t + LL - 38.5) / 28)) : t < 18.1 ? 0 : NB);
+    pe.g.visible = t >= 2 && t < 18.1;
     if (t < 6.2) onForks(pe, f4, l4);
     else { pe.g.position.copy(pb.g.position); pe.g.position.y += 0.125; pe.g.rotation.y = pb.g.rotation.y; }
     requestAnimationFrame(tick);
@@ -1570,8 +1614,10 @@ for (const [n, label] of [['delivery_truck', 'PAPER'], ['particleboard_truck', '
 /* ---------- centre on origin, base at y = 0 ---------- */
 const bb = new T.Box3().setFromObject(model), c = bb.getCenter(new T.Vector3());
 model.position.set(-c.x, -bb.min.y, -c.z);
-model.traverse(o => { if (o.isMesh) { o.castShadow = !o.userData.noCast; o.receiveShadow = true; } });
+// small parts (bolts, straps, trims) skip the shadow pass — far fewer draw calls per frame
+model.traverse(o => { if (o.isMesh) { if (!o.geometry.boundingSphere) o.geometry.computeBoundingSphere(); const r = o.geometry.boundingSphere.radius * Math.max(o.scale.x, o.scale.y, o.scale.z); o.castShadow = !o.userData.noCast && r > 0.18; o.receiveShadow = true; } });
 stage.setObject(model);
+if (stage._renderer) { stage._renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 1.5)); if (stage.clientWidth) stage._renderer.setSize(stage.clientWidth, stage.clientHeight); }
 {
   const C = stage._controls, MB = T.MOUSE, TO = T.TOUCH;
   C.mouseButtons = { LEFT: MB.ROTATE, MIDDLE: MB.DOLLY, RIGHT: MB.PAN };
