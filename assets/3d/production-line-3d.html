@@ -21,15 +21,20 @@
   }
 }
 </script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600&family=Barlow+Condensed:wght@500;600;700&display=swap">
 <style>
   html, body { margin: 0; height: 100%; background: #f2f2f3; }
   three-d-stage:not(:defined) { visibility: hidden; }
   three-d-stage { display: block; width: 100vw; height: 100vh; }
+  /* Top-left, under line3d.js's 36px-tall hangar toggle: the top-right
+     corner belongs to its shipment-tracking panel. z-index above the
+     script's overlays (10) so the panel never hides it on narrow screens. */
   .back-link {
-    position: absolute;
-    right: 16px;
-    top: 16px;
-    z-index: 1;
+    position: fixed;
+    left: 16px;
+    top: 60px;
+    z-index: 11;
     display: inline-flex;
     align-items: center;
     gap: 6px;
