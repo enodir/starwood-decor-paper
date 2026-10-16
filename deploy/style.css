@@ -991,6 +991,8 @@ p.lead { font-size: clamp(1.05rem, 1.6vw, 1.25rem); color: var(--ink-grey); }
   color: var(--press-black);
 }
 .main-nav a:hover { opacity: 1; }
+/* Desktop has .header-cta; this copy only shows in the mobile dropdown. */
+.main-nav .main-nav__cta { display: none; }
 
 /* Third island: CTA + language switch + day/night toggle (+ mobile nav
    toggle) bundled into one glass pill, sharing the .logo/.nav-island
@@ -1252,6 +1254,19 @@ html[data-theme="day"] .theme-toggle__icon--day { opacity: 1; }
   }
   .nav-toggle { display: flex; }
   .header-cta { display: none; }
+  /* The hidden header CTA moves into the dropdown, last, as a full kraft
+     button rather than another text link. Overrides what .main-nav a gives
+     every link: the underline sweep, the 600/700 weights, and the
+     press-black ink, which only reaches 4.10:1 on kraft (see .btn-primary
+     for the pure black it needs). */
+  .main-nav .main-nav__cta {
+    display: inline-flex;
+    margin-top: 0.25rem;
+    color: #000000;
+    font-weight: 500;
+  }
+  .main-nav .main-nav__cta:hover { font-weight: 500; }
+  .main-nav .main-nav__cta::after { display: none; }
   /* nav-island now holds only .main-nav, which goes position:absolute
      right above. display:contents drops the pill's own box entirely: no
      empty translucent chip between the logo and the controls, and no
