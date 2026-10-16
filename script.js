@@ -149,28 +149,79 @@
     }, { passive: true });
   }
 
-  /* ---------- Hero headline: "Bouncy Period" load animation ----------
-     The headline unfolds line by line (see .hero-title in style.css), so
-     every .hw needs the index of the visual line it wrapped onto — which
-     moves with viewport width and language, so it's measured, not
-     authored. Waits for the webfonts (capped at 500ms) because the fallback
-     face wraps differently, then tags each word with --l, the heading with
-     --lines, and adds .is-playing. Only the active language is visible, so
-     only its words have real offsets. */
+  /* ---------- Hero headline: "Elastic Text" load animation ----------
+     After jitter.video's Elastic Text template (motion lives in style.css,
+     .hero-title): line by line, letters appear one after another spread
+     wide, then the line snaps together. Wrap points move with viewport and
+     language, so the layout is measured, not authored:
+
+     1. Waits for the webfonts (capped at 500ms) — the fallback face wraps
+        differently.
+     2. Splits the active language's words into .ch letters. The words go
+        aria-hidden with one .sr-only copy of the sentence beside them, the
+        same trade the h2 cascade makes, so screen readers don't spell it.
+        The other two languages are left untouched.
+     3. Groups letters into visual lines by their top, and gives each
+        letter --dx: the offset from its set position to where it sits in
+        its line spread out by SPREAD and centred on the heading — clamped
+        so a long line never spreads past the viewport edges.
+     4. Staggers --in (STEP apart within a line) and --snap (once the line
+        is complete); the next line starts as the previous one snaps. */
   var heroTitle = document.querySelector('.hero-title');
   if (heroTitle) {
+    var SPREAD = 1.55, STEP = 18, START = 120, SNAP_GAP = 60, NEXT_GAP = 80;
     var playHeadline = function () {
       var words = Array.prototype.filter.call(heroTitle.querySelectorAll('.hw'), function (w) {
         return w.offsetParent !== null;
       });
-      var tops = [];
+      if (!words.length) return heroTitle.classList.add('is-playing');
+      var langSpan = words[0].closest('[data-i18n-lang]');
+      var readable = document.createElement('span');
+      readable.className = 'sr-only';
+      readable.textContent = langSpan.textContent.replace(/\s+/g, ' ').trim();
+      langSpan.insertBefore(readable, langSpan.firstChild);
+
+      var chars = [];
       words.forEach(function (w) {
-        var top = Math.round(w.offsetTop);
-        var line = tops.findIndex(function (t) { return Math.abs(t - top) < 4; });
-        if (line === -1) { tops.push(top); line = tops.length - 1; }
-        w.style.setProperty('--l', line);
+        var text = w.textContent;
+        w.textContent = '';
+        w.setAttribute('aria-hidden', 'true');
+        text.split('').forEach(function (c) {
+          var ch = document.createElement('span');
+          ch.className = 'ch';
+          ch.textContent = c;
+          w.appendChild(ch);
+          chars.push(ch);
+        });
       });
-      heroTitle.style.setProperty('--lines', Math.max(1, tops.length));
+
+      var box = heroTitle.getBoundingClientRect(), vw = document.documentElement.clientWidth;
+      var lines = [];
+      chars.forEach(function (ch) {
+        var r = ch.getBoundingClientRect(), top = Math.round(r.top);
+        var line = lines.find(function (l) { return Math.abs(l.top - top) < 4; });
+        if (!line) { line = { top: top, items: [] }; lines.push(line); }
+        line.items.push({ ch: ch, x: r.left - box.left, right: r.right - box.left });
+      });
+      lines.sort(function (a, b) { return a.top - b.top; });
+
+      var t = START, lastSnap = START;
+      lines.forEach(function (line) {
+        var x0 = Math.min.apply(null, line.items.map(function (i) { return i.x; }));
+        var w = Math.max.apply(null, line.items.map(function (i) { return i.right; })) - x0;
+        var k = Math.max(1, Math.min(SPREAD, (vw - 16) / w));
+        var start = box.width / 2 - (w * k) / 2;
+        start = Math.min(Math.max(start, 8 - box.left), vw - box.left - 8 - w * k);
+        var snap = t + line.items.length * STEP + SNAP_GAP;
+        line.items.forEach(function (item, i) {
+          item.ch.style.setProperty('--dx', (start + (item.x - x0) * k - item.x).toFixed(1) + 'px');
+          item.ch.style.setProperty('--in', (t + i * STEP) + 'ms');
+          item.ch.style.setProperty('--snap', snap + 'ms');
+        });
+        lastSnap = snap;
+        t = snap + NEXT_GAP;
+      });
+      heroTitle.style.setProperty('--ink-at', (lastSnap + 520) + 'ms');
       heroTitle.classList.add('is-playing');
     };
     var fontsReady = document.fonts && document.fonts.ready ? document.fonts.ready : Promise.resolve();
@@ -182,11 +233,12 @@
      (Decors, Contact, menu button); see style.css for the motion. The menu
      button restores the full header where the reader is, and it stays
      until they scroll RESTORE_SPAN px further or back to the top — so
-     reaching for a link doesn't instantly re-minimize it. Below the 1120px
-     breakpoint the full header's links live in the hamburger dropdown, so
-     the button opens that too rather than making it a two-tap trip.
-     `inert` follows whichever side is hidden, keeping it out of the tab
-     order and away from screen readers. */
+     reaching for a link doesn't instantly re-minimize it. Desktop only:
+     at the 1120px breakpoint and below the header is already its compact
+     hamburger layout, so on request it stays exactly as is while
+     scrolling (FULL_HEADER_MQ, kept in sync with that breakpoint in
+     style.css). `inert` follows whichever side is hidden, keeping it out
+     of the tab order and away from screen readers. */
   var siteHeader = document.querySelector('.site-header');
   var headerMini = siteHeader && siteHeader.querySelector('.header-mini');
   if (headerMini) {
@@ -196,6 +248,7 @@
     var fullIslands = siteHeader.querySelectorAll('.logo, .nav-island, .action-island');
     var restoredAt = null;
     var minimized = false;
+    var fullHeaderMq = window.matchMedia('(max-width: 1120px)');
 
     var setMinimized = function (min) {
       if (min === minimized) return;
@@ -210,24 +263,19 @@
     var onHeaderScroll = function () {
       var y = window.scrollY;
       if (restoredAt !== null && (y < MINIMIZE_AT || Math.abs(y - restoredAt) > RESTORE_SPAN)) restoredAt = null;
-      if (mainNav && mainNav.classList.contains('is-open')) return;
+      if (fullHeaderMq.matches) return setMinimized(false);
       setMinimized(y > MINIMIZE_AT && restoredAt === null);
     };
 
     miniBurger.addEventListener('click', function () {
       restoredAt = window.scrollY;
       setMinimized(false);
-      // Next frame: this click is still bubbling to the dropdown's
-      // outside-click handler, which would close it straight away.
-      if (navToggle && navToggle.offsetParent !== null) {
-        requestAnimationFrame(function () { navToggle.click(); navToggle.focus({ preventScroll: true }); });
-      } else {
-        var firstLink = siteHeader.querySelector('.main-nav a');
-        if (firstLink) firstLink.focus({ preventScroll: true });
-      }
+      var firstLink = siteHeader.querySelector('.main-nav a');
+      if (firstLink) firstLink.focus({ preventScroll: true });
     });
 
     window.addEventListener('scroll', onHeaderScroll, { passive: true });
+    fullHeaderMq.addEventListener('change', onHeaderScroll);
     onHeaderScroll();
   }
 

@@ -367,8 +367,8 @@ dark bar — it sits on request at 70% opacity over both the dark hero and the l
 text color is `--press-black` (not `--pulp-white`). Nav links and the logo underline on hover
 (`text-decoration: underline` on `:hover`, not just an opacity change). Past 120px of scroll it minimizes
 after jitter.video (`.is-minimized` on `.site-header`): the three islands lift away and `.header-mini`
-(Decors, Contact, round menu button) slides in on the right; the menu button restores the full header
-(and on ≤1120px also opens the hamburger dropdown). `inert` always sits on whichever side is hidden.
+(Decors, Contact, Request a sample, round menu button) slides in on the right; the menu button restores the full header. Desktop only — at ≤1120px (the header's own hamburger layout) it never minimizes
+and keeps the full header while scrolling. `inert` always sits on whichever side is hidden.
 
 **Anti-cliché constraints** (from the design skill critique in research §03, don't reintroduce these):
 - No warm-cream (`#F4F1EA`-style) background paired with a contrast serif display font.
