@@ -149,6 +149,88 @@
     }, { passive: true });
   }
 
+  /* ---------- Hero headline: "Bouncy Period" load animation ----------
+     The headline unfolds line by line (see .hero-title in style.css), so
+     every .hw needs the index of the visual line it wrapped onto — which
+     moves with viewport width and language, so it's measured, not
+     authored. Waits for the webfonts (capped at 500ms) because the fallback
+     face wraps differently, then tags each word with --l, the heading with
+     --lines, and adds .is-playing. Only the active language is visible, so
+     only its words have real offsets. */
+  var heroTitle = document.querySelector('.hero-title');
+  if (heroTitle) {
+    var playHeadline = function () {
+      var words = Array.prototype.filter.call(heroTitle.querySelectorAll('.hw'), function (w) {
+        return w.offsetParent !== null;
+      });
+      var tops = [];
+      words.forEach(function (w) {
+        var top = Math.round(w.offsetTop);
+        var line = tops.findIndex(function (t) { return Math.abs(t - top) < 4; });
+        if (line === -1) { tops.push(top); line = tops.length - 1; }
+        w.style.setProperty('--l', line);
+      });
+      heroTitle.style.setProperty('--lines', Math.max(1, tops.length));
+      heroTitle.classList.add('is-playing');
+    };
+    var fontsReady = document.fonts && document.fonts.ready ? document.fonts.ready : Promise.resolve();
+    Promise.race([fontsReady, new Promise(function (r) { setTimeout(r, 500); })]).then(playHeadline);
+  }
+
+  /* ---------- Minimized header (after jitter.video) ----------
+     Past MINIMIZE_AT px of scroll the header drops to .header-mini
+     (Decors, Contact, menu button); see style.css for the motion. The menu
+     button restores the full header where the reader is, and it stays
+     until they scroll RESTORE_SPAN px further or back to the top — so
+     reaching for a link doesn't instantly re-minimize it. Below the 1120px
+     breakpoint the full header's links live in the hamburger dropdown, so
+     the button opens that too rather than making it a two-tap trip.
+     `inert` follows whichever side is hidden, keeping it out of the tab
+     order and away from screen readers. */
+  var siteHeader = document.querySelector('.site-header');
+  var headerMini = siteHeader && siteHeader.querySelector('.header-mini');
+  if (headerMini) {
+    var MINIMIZE_AT = 120;
+    var RESTORE_SPAN = 200;
+    var miniBurger = headerMini.querySelector('.mini-burger');
+    var fullIslands = siteHeader.querySelectorAll('.logo, .nav-island, .action-island');
+    var restoredAt = null;
+    var minimized = false;
+
+    var setMinimized = function (min) {
+      if (min === minimized) return;
+      minimized = min;
+      siteHeader.classList.toggle('is-minimized', min);
+      fullIslands.forEach(function (el) { el.inert = min; });
+      headerMini.inert = !min;
+      headerMini.setAttribute('aria-hidden', String(!min));
+      if (min) setLangMenu(false);
+    };
+
+    var onHeaderScroll = function () {
+      var y = window.scrollY;
+      if (restoredAt !== null && (y < MINIMIZE_AT || Math.abs(y - restoredAt) > RESTORE_SPAN)) restoredAt = null;
+      if (mainNav && mainNav.classList.contains('is-open')) return;
+      setMinimized(y > MINIMIZE_AT && restoredAt === null);
+    };
+
+    miniBurger.addEventListener('click', function () {
+      restoredAt = window.scrollY;
+      setMinimized(false);
+      // Next frame: this click is still bubbling to the dropdown's
+      // outside-click handler, which would close it straight away.
+      if (navToggle && navToggle.offsetParent !== null) {
+        requestAnimationFrame(function () { navToggle.click(); navToggle.focus({ preventScroll: true }); });
+      } else {
+        var firstLink = siteHeader.querySelector('.main-nav a');
+        if (firstLink) firstLink.focus({ preventScroll: true });
+      }
+    });
+
+    window.addEventListener('scroll', onHeaderScroll, { passive: true });
+    onHeaderScroll();
+  }
+
   /* ---------- Section names resolve a letter at a time ----------
      Splits every section <h2> into per-letter spans so the heading types
      itself in as the section scrolls in, instead of arriving as one block.
@@ -853,4 +935,56 @@
   }
 
   window.addEventListener('DOMContentLoaded', initLmdfBackground);
+
+  /* ---------- Production film modal ----------
+     The hero's "Watch Production Process" button opens the mill film in a
+     native <dialog>. The video only gets its src on first open (the file is
+     ~20 MB), plays on open and pauses on close. .is-open is added a frame
+     after showModal() so the CSS entrance transition has a start state to
+     run from; closing removes it and waits for the fade before close(). Esc
+     arrives as a 'cancel' event and is routed through the same animated
+     close, as is a click on the backdrop (the dialog itself, outside the
+     frame). */
+  function initFilmModal() {
+    var modal = document.getElementById('film-modal');
+    var openBtn = document.querySelector('[data-film-open]');
+    if (!modal || !openBtn || typeof modal.showModal !== 'function') return;
+    var video = modal.querySelector('video');
+    var closing = false;
+
+    function open() {
+      if (modal.open) return;
+      if (!video.getAttribute('src')) video.src = video.dataset.src;
+      modal.showModal();
+      requestAnimationFrame(function () { modal.classList.add('is-open'); });
+      var p = video.play();
+      if (p && p.catch) p.catch(function () { /* autoplay refused — controls are there */ });
+    }
+
+    function close() {
+      if (!modal.open || closing) return;
+      closing = true;
+      video.pause();
+      modal.classList.remove('is-open');
+      var done = function () { closing = false; modal.close(); };
+      if (reduceMotion) return done();
+      var timer = setTimeout(done, 300);
+      modal.addEventListener('transitionend', function onEnd(e) {
+        if (e.target !== modal || e.propertyName !== 'opacity') return;
+        modal.removeEventListener('transitionend', onEnd);
+        clearTimeout(timer);
+        done();
+      });
+    }
+
+    openBtn.addEventListener('click', open);
+    modal.querySelector('[data-film-close]').addEventListener('click', close);
+    modal.addEventListener('cancel', function (e) { e.preventDefault(); close(); });
+    modal.addEventListener('click', function (e) { if (e.target === modal) close(); });
+    // Hand focus back to the opener explicitly — the deferred close() runs
+    // after a transition, not in the click task that started it.
+    modal.addEventListener('close', function () { openBtn.focus(); });
+  }
+
+  window.addEventListener('DOMContentLoaded', initFilmModal);
 })();

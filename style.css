@@ -1264,6 +1264,104 @@ html[data-theme="day"] .theme-toggle__icon--day { opacity: 1; }
   .header-inner { grid-template-columns: 1fr 1fr; }
 }
 
+/* ---------- Minimized header (scrolled) ----------
+   After jitter.video: past the top of the page script.js sets
+   .is-minimized, the three islands lift up and out (left to right, a beat
+   apart) and .header-mini — Decors, Contact and a round menu button —
+   slides in on the right edge of the same row (menu button first, then the
+   pills one after another). The menu button clears .is-minimized again so
+   the full header returns; scrolling on re-minimizes it.
+
+   Every hidden state pairs opacity with visibility so nothing invisible
+   stays clickable, and script.js toggles `inert` on the hidden side so it
+   also leaves the tab order. Exits run without delays (responsive),
+   entrances carry the stagger. */
+.logo,
+.nav-island,
+.action-island {
+  transition:
+    box-shadow 200ms var(--ease-out), border-color 200ms, background-color 200ms, color 200ms,
+    transform 520ms var(--ease-out), opacity 260ms var(--ease-out), visibility 0s;
+}
+.nav-island { transition-delay: 0s, 0s, 0s, 0s, 50ms, 50ms, 0s; }
+.action-island { transition-delay: 0s, 0s, 0s, 0s, 100ms, 100ms, 0s; }
+.site-header.is-minimized .logo,
+.site-header.is-minimized .nav-island,
+.site-header.is-minimized .action-island {
+  opacity: 0;
+  transform: translateY(calc(-100% - 2rem));
+  visibility: hidden;
+  pointer-events: none;
+  transition-delay: 0s, 0s, 0s, 0s, 0s, 0s, 520ms;
+}
+.site-header.is-minimized .nav-island { transition-delay: 0s, 0s, 0s, 0s, 40ms, 40ms, 560ms; }
+.site-header.is-minimized .action-island { transition-delay: 0s, 0s, 0s, 0s, 80ms, 80ms, 600ms; }
+
+/* Pinned to the same right edge and the same top/bottom insets as the
+   island row, so the pills come out exactly as tall as the islands they
+   replace and the round button lands where the action island ended. */
+.header-mini {
+  position: absolute;
+  top: var(--header-pad);
+  bottom: var(--header-pad);
+  right: calc(min(150px, max(0px, (100vw - var(--container-w)) / 2)) + var(--header-pad));
+  display: flex;
+  align-items: stretch;
+  gap: var(--island-pad);
+}
+.mini-pill,
+.mini-burger {
+  pointer-events: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--header-island-bg);
+  backdrop-filter: blur(16px) saturate(120%) brightness(1.4);
+  -webkit-backdrop-filter: blur(16px) saturate(120%) brightness(1.4);
+  border: 0;
+  border-radius: var(--radius-island);
+  box-shadow: 0 6px 18px -6px rgba(30, 26, 23, 0.22), 0 1px 2px rgba(0, 0, 0, 0.05);
+  color: var(--press-black);
+  opacity: 0;
+  visibility: hidden;
+  transition:
+    transform 520ms var(--ease-out), opacity 220ms var(--ease-out), visibility 0s 520ms,
+    box-shadow 200ms var(--ease-out), background-color 200ms;
+}
+.mini-pill {
+  padding: 0 1.15rem;
+  font-size: 0.92rem;
+  font-weight: 600;
+  white-space: nowrap;
+  transform: translateX(1.5rem);
+}
+.mini-burger {
+  aspect-ratio: 1;
+  padding: 0;
+  transform: scale(0.4);
+}
+.site-header.is-minimized .mini-pill,
+.site-header.is-minimized .mini-burger {
+  pointer-events: auto;
+  opacity: 1;
+  visibility: visible;
+  transform: none;
+  transition-delay: 160ms, 160ms, 0s, 0s, 0s;
+}
+.site-header.is-minimized .mini-pill:nth-child(2) { transition-delay: 210ms, 210ms, 0s, 0s, 0s; }
+.site-header.is-minimized .mini-pill:nth-child(1) { transition-delay: 260ms, 260ms, 0s, 0s, 0s; }
+@media (hover: hover) and (pointer: fine) {
+  .mini-pill:hover,
+  .mini-burger:hover {
+    box-shadow: 0 14px 30px -8px rgba(30, 26, 23, 0.32), 0 1px 2px rgba(0, 0, 0, 0.05);
+  }
+  .mini-pill:hover { text-decoration: underline; text-underline-offset: 4px; }
+}
+.site-header.is-minimized .mini-pill:active,
+.site-header.is-minimized .mini-burger:active { transform: scale(0.96); transition-duration: 100ms; transition-delay: 0s; }
+.mini-pill:focus-visible,
+.mini-burger:focus-visible { outline: 2px solid var(--registration-cyan); outline-offset: 2px; }
+
 /* ---------- Hero ---------- */
 .hero {
   background-color: var(--shell-bg);
@@ -1322,6 +1420,169 @@ html[data-theme="day"] .theme-toggle__icon--day { opacity: 1; }
   color: var(--registration-cyan);
 }
 .hero-copy .lead { color: var(--shell-muted); max-width: 42ch; margin-bottom: 2rem; }
+
+/* Headline load — after jitter.video's "Bouncy Period" template. Each
+   visual line arrives squashed flat against its own top edge and springs
+   open to full height with a small overshoot, one line after another
+   (--l = line index, set by script.js from the words' measured offsetTop,
+   since the wrap points move with viewport and language). Once the last
+   line has landed, .hero-dot fades in above the line end, falls onto the
+   baseline, squashes on impact and bounces once — the full stop that
+   closes the claim. The accent word then takes its cyan.
+
+   Words stay hidden until script.js adds .is-playing (a noscript rule in
+   the markup shows them for no-JS), so there's no flash of the static line
+   before the line indices exist. The keyframes carry the spring
+   themselves; each segment eases on its own. */
+.hero-title .hw,
+.hero-title .hero-dot { opacity: 0; }
+.hero-title .hw { display: inline-block; transform-origin: 50% 0; }
+.hero-title .hw-end { white-space: nowrap; }
+.hero-title .hero-dot {
+  display: inline-block;
+  width: 0.2em;
+  height: 0.2em;
+  margin-left: 0.06em;
+  border-radius: 50%;
+  background: var(--registration-cyan);
+}
+.hero-title.is-playing .hw {
+  animation: hero-line-unfold 640ms linear both;
+  animation-delay: calc(120ms + var(--l, 0) * 110ms);
+}
+.hero-title.is-playing .hero-accent.hw {
+  animation:
+    hero-line-unfold 640ms linear both,
+    hero-accent-ink 420ms ease-out both;
+  animation-delay: calc(120ms + var(--l, 0) * 110ms), calc(var(--dot-at) + 520ms);
+}
+.hero-title.is-playing .hero-dot {
+  transform-origin: 50% 100%;
+  animation: hero-dot-drop 760ms linear both;
+  animation-delay: var(--dot-at);
+}
+/* --dot-at: once the last line (--lines − 1) has finished unfolding, plus
+   the template's beat of stillness before the dot. */
+.hero-title.is-playing { --dot-at: calc(120ms + (var(--lines, 4) - 1) * 110ms + 640ms + 160ms); }
+@keyframes hero-line-unfold {
+  0% { opacity: 0; transform: scaleY(0.06); animation-timing-function: cubic-bezier(0.2, 0.8, 0.3, 1); }
+  12% { opacity: 1; }
+  55% { transform: scaleY(1.1); animation-timing-function: cubic-bezier(0.45, 0, 0.55, 1); }
+  78% { transform: scaleY(0.97); animation-timing-function: cubic-bezier(0.45, 0, 0.55, 1); }
+  100% { opacity: 1; transform: scaleY(1); }
+}
+@keyframes hero-dot-drop {
+  0% { opacity: 0; transform: translateY(-1.1em) scale(0.85); animation-timing-function: cubic-bezier(0.55, 0, 0.9, 0.45); }
+  20% { opacity: 0.6; }
+  48% { opacity: 1; transform: translateY(0) scale(1.25, 0.72); animation-timing-function: cubic-bezier(0.2, 0.7, 0.4, 1); }
+  68% { transform: translateY(-0.28em) scale(0.92, 1.08); animation-timing-function: cubic-bezier(0.55, 0, 0.9, 0.45); }
+  84% { transform: translateY(0) scale(1.1, 0.9); animation-timing-function: cubic-bezier(0.2, 0.7, 0.4, 1); }
+  100% { opacity: 1; transform: none; }
+}
+@keyframes hero-accent-ink {
+  from { color: var(--shell-ink); }
+  to { color: var(--registration-cyan); }
+}
+/* The sitewide reduced-motion rule shortens durations but keeps delays,
+   which would leave the headline blank for up to a second — show it
+   finished instead. */
+@media (prefers-reduced-motion: reduce) {
+  .hero-title .hw,
+  .hero-title .hero-dot { opacity: 1; animation: none !important; }
+}
+
+/* "Watch Production Process": the secondary action, so an outline rather
+   than a second filled button competing with the kraft CTA. The play disc
+   fills on hover — the one cue that this opens media, not a page. */
+/* text-align: left because the longest label (UZ) wraps on phones, and a
+   centred second line drifts away from the play disc. */
+.btn-film { color: var(--shell-ink); text-align: left; }
+.btn-film__play {
+  display: inline-grid;
+  place-items: center;
+  width: 1.5em;
+  height: 1.5em;
+  margin-left: -0.35em;
+  border: 1px solid currentColor;
+  border-radius: 50%;
+  transition: background-color 200ms var(--ease-out), color 200ms var(--ease-out);
+}
+.btn-film__play svg { margin-left: 1px; }
+@media (hover: hover) and (pointer: fine) {
+  .btn-film:hover .btn-film__play { background: var(--shell-ink); color: var(--surface-dark); }
+}
+.btn-film:focus-visible { outline: 2px solid var(--registration-cyan); outline-offset: 3px; }
+
+/* ---------- Production film modal ----------
+   Native <dialog> (top layer, focus trap, Esc) — script.js only adds
+   .is-open a frame after showModal() and waits for the exit transition
+   before close(), so it scales in from 96% and fades out instead of
+   popping. */
+.film-modal {
+  width: min(1100px, calc(100vw - 32px));
+  max-width: none;
+  max-height: calc(100vh - 32px);
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--pulp-white);
+  overflow: visible;
+  opacity: 0;
+  transform: scale(0.96);
+  transition: opacity 220ms var(--ease-out), transform 220ms var(--ease-out);
+}
+.film-modal.is-open { opacity: 1; transform: none; }
+.film-modal::backdrop {
+  background: rgba(20, 17, 15, 0.82);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  opacity: 0;
+  transition: opacity 220ms var(--ease-out);
+}
+.film-modal.is-open::backdrop { opacity: 1; }
+.film-modal__frame {
+  background: var(--press-black);
+  border: 1px solid rgba(247, 245, 241, 0.12);
+  border-radius: var(--radius-control);
+  overflow: hidden;
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.45);
+}
+.film-modal__bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.6rem 0.6rem 0.6rem 1rem;
+}
+.film-modal__title {
+  margin: 0;
+  font-family: var(--font-mono);
+  font-size: 0.78rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--muted-on-dark);
+}
+.film-modal__close {
+  display: grid;
+  place-items: center;
+  width: 2.25rem;
+  height: 2.25rem;
+  border: 1px solid rgba(247, 245, 241, 0.18);
+  border-radius: var(--radius-control);
+  background: transparent;
+  color: var(--pulp-white);
+  transition: background-color 150ms, transform 150ms var(--ease-out);
+}
+.film-modal__close:hover { background: rgba(247, 245, 241, 0.1); }
+.film-modal__close:active { transform: scale(0.94); }
+.film-modal__close:focus-visible { outline: 2px solid var(--registration-cyan); outline-offset: 2px; }
+.film-modal__video {
+  display: block;
+  width: 100%;
+  max-height: calc(100vh - 32px - 3.5rem);
+  aspect-ratio: 16 / 9;
+  background: #000;
+}
 
 .hero-actions {
   display: flex;
