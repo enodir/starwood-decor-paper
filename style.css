@@ -868,24 +868,55 @@ p.lead { font-size: clamp(1.05rem, 1.6vw, 1.25rem); color: var(--ink-grey); }
 .logo-img {
   height: 38px;
   width: auto;
-  /* width/height attributes on the <img> (see index.html) reserve the
-     correct box from first paint via the browser's default aspect-ratio
-     mapping — without them the element had no intrinsic size to lay out
-     with, so it popped to full width the instant the PNG finished
-     decoding, stomping on the entrance animation below (which assumes a
-     stable box and only ever transforms/fades). That layout jump, not the
-     animation itself, was the "broken" part. */
-  transform-origin: 14% 50%;
-  /* linear, deliberately — any ease-in/ease-out curve on the shorthand
-     remaps elapsed time before it ever reaches the keyframe percentages
-     below, and an ease-out curve in particular reaches ~90% of its output
-     range in the first third of the duration. That collapsed this
-     multi-stage animation's whole rotate/scale/brightness sequence into
-     its first ~300ms regardless of the keyframes' own percentages — the
-     "bounce" is already authored into the keyframe values themselves, so
-     the timing function just needs to get out of the way and let real
-     time map straight to keyframe position. */
-  animation: logo-press-in 1100ms linear both;
+  /* width/height attributes on the inline <svg> (see index.html) fix its
+     box from first paint, so the entrance below only ever transforms and
+     fades inside a stable box. */
+  /* The star scales in from larger than its box (see below). */
+  overflow: visible;
+}
+/* One-time entrance on page load, after jitter.video's "Logo: Sliding
+   Name" template. The logo is inline SVG with the star (.logo-mark) and
+   each letter (.logo-l, --i = index) as separate paths:
+   1. the star fades in large and settles to size, standing alone at the
+      centre of the logo's box (.logo-slide is shifted right by the
+      distance from the star's centre to the logo's centre, 125 user
+      units — measured off the paths, change it if the artwork changes);
+   2. the whole logo glides left into place while the name fades in
+      beside the star one letter at a time, each drifting in from the
+      right.
+   SVG user units, so px values inside these transforms scale with the
+   logo, not the screen. */
+.logo-slide {
+  animation: logo-slide-home 720ms cubic-bezier(0.65, 0, 0.35, 1) 520ms both;
+}
+.logo-mark {
+  transform-box: fill-box;
+  transform-origin: 50% 50%;
+  animation: logo-mark-in 520ms var(--ease-out) both;
+}
+.logo-l {
+  animation: logo-letter-in 420ms var(--ease-out) both;
+  animation-delay: calc(600ms + var(--i) * 55ms);
+}
+@keyframes logo-slide-home {
+  from { transform: translateX(125px); }
+  to { transform: none; }
+}
+@keyframes logo-mark-in {
+  from { opacity: 0; transform: scale(1.6); }
+  60% { opacity: 1; }
+  to { opacity: 1; transform: none; }
+}
+@keyframes logo-letter-in {
+  from { opacity: 0; transform: translateX(10px); }
+  to { opacity: 1; transform: none; }
+}
+/* The sitewide reduced-motion rule keeps delays, which would hold the
+   letters invisible for over a second — show the set logo instead. */
+@media (prefers-reduced-motion: reduce) {
+  .logo-slide,
+  .logo-mark,
+  .logo-l { animation: none !important; }
 }
 
 .nav-island {
@@ -904,36 +935,6 @@ p.lead { font-size: clamp(1.05rem, 1.6vw, 1.25rem); color: var(--ink-grey); }
      from the pill's round ends. */
   --nav-gap: clamp(var(--island-pad), 9vw - 6rem, var(--header-pad));
   padding: var(--island-pad) var(--nav-gap);
-}
-/* One-time entrance on page load — a plate dropping in slightly askew,
-   oversized and hot off the press, then stamping down and settling into
-   registration with a small rebound. Same spring curve as the crosshair
-   snap below, so the two read as one language instead of two competing
-   entrance styles; the brightness flash at the impact frame sells the
-   "stamp hitting paper" moment the site's Layer Press motif is built on. */
-@keyframes logo-press-in {
-  0% {
-    opacity: 0;
-    transform: scale(1.55) rotate(-9deg) translateY(-20px);
-    filter: brightness(1.7) saturate(0.4);
-    animation-timing-function: cubic-bezier(0.16, 1, 0.3, 1);
-  }
-  42% {
-    opacity: 1;
-    transform: scale(0.93) rotate(2.5deg) translateY(2px);
-    filter: brightness(1.2) saturate(1);
-    animation-timing-function: cubic-bezier(0.34, 1.56, 0.64, 1);
-  }
-  70% {
-    transform: scale(1.04) rotate(-0.8deg) translateY(-1px);
-    filter: brightness(1) saturate(1);
-    animation-timing-function: cubic-bezier(0.34, 1.56, 0.64, 1);
-  }
-  100% {
-    opacity: 1;
-    transform: scale(1) rotate(0deg) translateY(0);
-    filter: brightness(1) saturate(1);
-  }
 }
 
 /* Left-to-right underline sweep + bold-down, used for the main nav links
@@ -1446,57 +1447,66 @@ html[data-theme="day"] .theme-toggle__icon--day { opacity: 1; }
 }
 .hero-copy .lead { color: var(--shell-muted); max-width: 42ch; margin-bottom: 2rem; }
 
-/* Headline load — after jitter.video's "Elastic Text" template. Line by
-   line, the letters appear one after another spread wide and centred, then
-   the whole line snaps together into the set headline with an elastic
-   overshoot, and the next line starts as it lands. The accent word takes
-   its cyan once the last line is home.
+/* Headline load — after jitter.video's "Animated Feature List" template.
+   A cyan rule draws in left to right above the headline, then each visual
+   line rises into view from behind its own mask, a beat after the line
+   above, and the accent word takes its cyan once the last line is in.
 
-   script.js splits the active language's words into .ch letters after the
-   webfonts load, measures each letter's final position, and gives it
-   --dx (its offset in the spread layout), --in (when it appears) and
-   --snap (when its line snaps). Everything here is transform + opacity,
-   never letter-spacing, so wrap points can't shift mid-animation. The
-   words stay hidden until .is-playing (noscript in the markup shows them
-   for no-JS) so there's no flash of the set line first. */
-/* inline-block + nowrap: once a word is split into inline-block letters
-   the browser may otherwise wrap between them ("TRUST / ED"). */
-.hero-title .hw { display: inline-block; white-space: nowrap; opacity: 0; }
-.hero-title.is-playing .hw { opacity: 1; }
-.hero-title .ch { display: inline-block; }
-.hero-title.is-playing .ch {
-  animation:
-    hero-ch-in 160ms ease-out both,
-    hero-ch-snap 680ms linear both;
-  animation-delay: var(--in, 0ms), var(--snap, 0ms);
+   Every word is a mask (.hw, clip-path) around the text that moves
+   (.hw-in). Words on one line share --l (set by script.js from their
+   measured offsetTop — wrap points move with width and language), so a
+   line rises as one piece. clip-path rather than overflow keeps each
+   word's baseline where the text puts it (an overflow-clipped
+   inline-block takes its bottom edge as baseline). The rule stays as the
+   item's top edge, as in the template. Before script.js adds .is-playing
+   the text sits below its mask; the noscript rule in the markup sets it. */
+.hero-title::before {
+  content: '';
+  display: block;
+  width: 100%;
+  height: 2px;
+  margin-bottom: clamp(0.9rem, 1.6vw, 1.25rem);
+  background: var(--registration-cyan);
+  transform: scaleX(0);
+  transform-origin: 0 50%;
+}
+.hero-title .hw {
+  display: inline-block;
+  clip-path: inset(-0.25em -0.2em -0.14em -0.2em);
+}
+.hero-title .hw-in {
+  display: inline-block;
+  transform: translateY(135%);
+}
+.hero-title.is-playing::before {
+  animation: hero-rule-draw 720ms cubic-bezier(0.65, 0, 0.35, 1) 80ms both;
+}
+.hero-title.is-playing .hw-in {
+  animation: hero-line-rise 760ms var(--ease-out) both;
+  animation-delay: calc(380ms + var(--l, 0) * 95ms);
 }
 .hero-title.is-playing .hero-accent.hw {
   animation: hero-accent-ink 420ms ease-out both;
-  animation-delay: var(--ink-at, 0ms);
+  animation-delay: calc(380ms + (var(--lines, 4) - 1) * 95ms + 760ms);
 }
-@keyframes hero-ch-in {
-  from { opacity: 0; }
-  to { opacity: 1; }
+@keyframes hero-rule-draw {
+  from { transform: scaleX(0); }
+  to { transform: scaleX(1); }
 }
-/* Snap: a fast ease into a small overshoot past home, back a touch, then
-   settle — the "elastic" in the template. Overshoot scales with each
-   letter's own travel, so far letters swing more than near ones. */
-@keyframes hero-ch-snap {
-  0% { transform: translateX(var(--dx, 0px)); animation-timing-function: cubic-bezier(0.6, 0, 0.2, 1); }
-  52% { transform: translateX(calc(var(--dx, 0px) * -0.07)); animation-timing-function: cubic-bezier(0.45, 0, 0.55, 1); }
-  76% { transform: translateX(calc(var(--dx, 0px) * 0.025)); animation-timing-function: cubic-bezier(0.45, 0, 0.55, 1); }
-  100% { transform: none; }
+@keyframes hero-line-rise {
+  from { transform: translateY(135%); }
+  to { transform: none; }
 }
 @keyframes hero-accent-ink {
   from { color: var(--shell-ink); }
   to { color: var(--registration-cyan); }
 }
 /* The sitewide reduced-motion rule shortens durations but keeps delays,
-   which would leave letters blank for a second or more — show the set
-   headline instead. */
+   which would hold lines below their masks for up to a second — show the
+   set headline instead. */
 @media (prefers-reduced-motion: reduce) {
-  .hero-title .hw,
-  .hero-title .ch { opacity: 1; animation: none !important; }
+  .hero-title::before,
+  .hero-title .hw-in { transform: none; animation: none !important; }
 }
 
 /* "Watch Production Process": the secondary action, so an outline rather
