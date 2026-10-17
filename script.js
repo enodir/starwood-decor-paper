@@ -149,6 +149,39 @@
     }, { passive: true });
   }
 
+  /* ---------- Loading screen ----------
+     .site-loader (the logo draw-on from assets/Draw-on reveal-html/) is up
+     from the first frame — an inline script in <head> sets .has-loader and
+     .is-loading. It lifts once the window has loaded, but never before
+     LOADER_MIN — the logo finishes drawing at ~3.95s (56.43% of its 7s
+     timeline in style.css) and gets a short beat complete — and never
+     after LOADER_MAX (a slow photo shouldn't hold the whole page). Lifting drops .is-loading (releasing the header/hero
+     CSS entrances held in style.css), fires 'decostar:loaded' for the
+     hero board stack in assets/mdf-stack.js, resolves loaderDone for the
+     headline below, then fades the screen out and removes it. */
+  var LOADER_MIN = 4200, LOADER_MAX = 6500;
+  var siteLoader = document.querySelector('.site-loader');
+  var loaderDone = new Promise(function (resolve) {
+    if (!siteLoader || !document.documentElement.classList.contains('has-loader')) return resolve();
+    var lifted = false;
+    var lift = function () {
+      if (lifted) return;
+      lifted = true;
+      document.documentElement.classList.remove('is-loading');
+      window.dispatchEvent(new Event('decostar:loaded'));
+      resolve();
+      siteLoader.classList.add('is-done');
+      setTimeout(function () { siteLoader.remove(); }, 700);
+    };
+    var pageLoaded = new Promise(function (r) {
+      if (document.readyState === 'complete') r();
+      else window.addEventListener('load', r, { once: true });
+    });
+    var minShown = new Promise(function (r) { setTimeout(r, Math.max(0, LOADER_MIN - performance.now())); });
+    Promise.all([pageLoaded, minShown]).then(lift);
+    setTimeout(lift, LOADER_MAX);
+  });
+
   /* ---------- Hero headline: "Animated Feature List" load animation ----------
      After jitter.video's Animated Feature List template (motion lives in
      style.css, .hero-title): a rule draws in, then each visual line rises
@@ -156,7 +189,8 @@
      viewport and language, so they're measured: wait for the webfonts
      (capped at 500ms — the fallback face wraps differently), give each
      visible word --l by its offsetTop, set --lines on the heading, then
-     add .is-playing. Only the active language has real offsets. */
+     add .is-playing — once the loading screen has lifted (loaderDone).
+     Only the active language has real offsets. */
   var heroTitle = document.querySelector('.hero-title');
   if (heroTitle) {
     var playHeadline = function () {
@@ -174,7 +208,10 @@
       heroTitle.classList.add('is-playing');
     };
     var fontsReady = document.fonts && document.fonts.ready ? document.fonts.ready : Promise.resolve();
-    Promise.race([fontsReady, new Promise(function (r) { setTimeout(r, 500); })]).then(playHeadline);
+    Promise.all([
+      Promise.race([fontsReady, new Promise(function (r) { setTimeout(r, 500); })]),
+      loaderDone
+    ]).then(playHeadline);
   }
 
   /* ---------- Minimized header (after jitter.video) ----------

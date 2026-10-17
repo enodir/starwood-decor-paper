@@ -3241,3 +3241,79 @@ html[data-theme="day"] .process {
 html[lang="ru"] [data-i18n-lang="ru"],
 html[lang="en"] [data-i18n-lang="en"],
 html[lang="uz"] [data-i18n-lang="uz"] { display: inline; }
+
+/* ---------- Loading screen ----------
+   The DECOSTAR logo drawing itself on — ported from the "Draw-on reveal"
+   design in assets/Draw-on reveal-html/ (Main.dc.html, dark theme).
+   Every part has pathLength="1", so stroke-dasharray/offset 1 → 0 traces
+   its outline; once traced, the fill comes up as the stroke fades. The
+   parts run on one 7s timeline with staggered keyframe stops (the
+   design's own values, kept verbatim): star, swoosh, then the letters
+   D-E-C-O-S-T-A-R a beat apart; the logo is complete at 56.43% (~3.95s).
+   Played once — the design's loop and fade-out outro are for its preview
+   — and held on its final frame until script.js adds .is-done, which
+   fades the screen and removes it.
+
+   Shown only while <html> has .has-loader (set by an inline script in
+   <head>, so no-JS never sees it). Colours are the design's dark theme
+   (#282828 ground, #F1F1F1 letters, #339087 star) and live on the paths. */
+.site-loader {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  background: #282828;
+  transition: opacity 560ms var(--ease-out), visibility 0s 560ms;
+}
+html.has-loader .site-loader { display: flex; }
+.site-loader.is-done { opacity: 0; visibility: hidden; pointer-events: none; }
+/* 640px on the design's 960px artboard: two thirds of the frame. */
+.site-loader__logo {
+  display: block;
+  width: min(640px, 66.7vw);
+  height: auto;
+}
+.ds-draw {
+  stroke-width: 1.3;
+  stroke-linejoin: miter;
+  stroke-dasharray: 1;
+  animation-duration: 7s;
+  animation-timing-function: ease-in-out;
+  animation-fill-mode: both;
+}
+.ds-mk { animation-name: ds-mk; }
+.ds-bl { animation-name: ds-bl; }
+.ds-l0 { animation-name: ds-l0; }
+.ds-l1 { animation-name: ds-l1; }
+.ds-l2 { animation-name: ds-l2; }
+.ds-l3 { animation-name: ds-l3; }
+.ds-l4 { animation-name: ds-l4; }
+.ds-l5 { animation-name: ds-l5; }
+.ds-l6 { animation-name: ds-l6; }
+.ds-l7 { animation-name: ds-l7; }
+@keyframes ds-mk{0%,2.86%{stroke-dashoffset:1;fill-opacity:0;stroke-opacity:1}20%{fill-opacity:0;stroke-opacity:1}24.29%{stroke-dashoffset:0}28.57%,100%{stroke-dashoffset:0;fill-opacity:1;stroke-opacity:0}}
+@keyframes ds-bl{0%,8.57%{stroke-dashoffset:1;fill-opacity:0;stroke-opacity:1}22.86%{fill-opacity:0;stroke-opacity:1}27.14%{stroke-dashoffset:0}30%,100%{stroke-dashoffset:0;fill-opacity:1;stroke-opacity:0}}
+@keyframes ds-l0{0%,24.29%{stroke-dashoffset:1;fill-opacity:0;stroke-opacity:1}34.29%{fill-opacity:0;stroke-opacity:1}38.57%{stroke-dashoffset:0}41.43%,100%{stroke-dashoffset:0;fill-opacity:1;stroke-opacity:0}}
+@keyframes ds-l1{0%,26.43%{stroke-dashoffset:1;fill-opacity:0;stroke-opacity:1}36.43%{fill-opacity:0;stroke-opacity:1}40.71%{stroke-dashoffset:0}43.57%,100%{stroke-dashoffset:0;fill-opacity:1;stroke-opacity:0}}
+@keyframes ds-l2{0%,28.57%{stroke-dashoffset:1;fill-opacity:0;stroke-opacity:1}38.57%{fill-opacity:0;stroke-opacity:1}42.86%{stroke-dashoffset:0}45.71%,100%{stroke-dashoffset:0;fill-opacity:1;stroke-opacity:0}}
+@keyframes ds-l3{0%,30.71%{stroke-dashoffset:1;fill-opacity:0;stroke-opacity:1}40.71%{fill-opacity:0;stroke-opacity:1}45%{stroke-dashoffset:0}47.86%,100%{stroke-dashoffset:0;fill-opacity:1;stroke-opacity:0}}
+@keyframes ds-l4{0%,32.86%{stroke-dashoffset:1;fill-opacity:0;stroke-opacity:1}42.86%{fill-opacity:0;stroke-opacity:1}47.14%{stroke-dashoffset:0}50%,100%{stroke-dashoffset:0;fill-opacity:1;stroke-opacity:0}}
+@keyframes ds-l5{0%,35%{stroke-dashoffset:1;fill-opacity:0;stroke-opacity:1}45%{fill-opacity:0;stroke-opacity:1}49.29%{stroke-dashoffset:0}52.14%,100%{stroke-dashoffset:0;fill-opacity:1;stroke-opacity:0}}
+@keyframes ds-l6{0%,37.14%{stroke-dashoffset:1;fill-opacity:0;stroke-opacity:1}47.14%{fill-opacity:0;stroke-opacity:1}51.43%{stroke-dashoffset:0}54.29%,100%{stroke-dashoffset:0;fill-opacity:1;stroke-opacity:0}}
+@keyframes ds-l7{0%,39.29%{stroke-dashoffset:1;fill-opacity:0;stroke-opacity:1}49.29%{fill-opacity:0;stroke-opacity:1}53.57%{stroke-dashoffset:0}56.43%,100%{stroke-dashoffset:0;fill-opacity:1;stroke-opacity:0}}
+
+/* Hold the page's own entrances on their first frame while the loader is
+   up, so they play when it lifts. (The headline and the hero board stack
+   wait on script.js / mdf-stack.js instead — see 'decostar:loaded'.) */
+html.is-loading .site-header *,
+html.is-loading .hero *,
+html.is-loading .hero *::before,
+html.is-loading .hero *::after { animation-play-state: paused !important; }
+
+/* Reduced motion: the finished logo, no drawing (the paths' own
+   fill-opacity=1 / stroke-opacity=0 are the final frame). */
+@media (prefers-reduced-motion: reduce) {
+  .ds-draw { animation: none !important; }
+}

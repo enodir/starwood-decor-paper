@@ -449,3 +449,13 @@ Production contacts/geography (footer, §3.10) ARE real: Tashkent, Uzbekistan; e
 regions and neighbouring countries; phone +998 99 000 00 00. The sales email is still a placeholder
 domain. The Uzbek (UZ-Latin) translation of all copy is machine-quality, not reviewed by a native
 speaker — treat it the same as other placeholders needing sign-off before a real launch.
+
+**Loading screen** (`.site-loader`, `loaderDone` in `script.js`): the DECOSTAR logo drawing itself on,
+ported from the "Draw-on reveal" design in `assets/Draw-on reveal-html/` (dark theme, played once — its loop
+and outro are preview-only). Paths, colours and the 7s keyframe timeline are the design's own; the logo is
+complete at ~3.95s. Up from the first frame — an inline `<script>` in `<head>` sets
+`html.has-loader.is-loading`, so with JS off it never shows — and lifted at window `load`, at least 4.2s
+(`LOADER_MIN`, so the drawing finishes) and at most 6.5s. The hero's entrances must not play behind it:
+`html.is-loading` pauses the header/hero CSS animations, the headline waits on `loaderDone`, and
+`assets/mdf-stack.js` holds the board fly-in until the `decostar:loaded` event. Anything new that animates on
+load in the hero should wait the same way.

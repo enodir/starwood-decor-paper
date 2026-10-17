@@ -329,6 +329,13 @@ if (reduceMotion) {
   introStart = performance.now() + 200;   // let the hero copy land first
   layout(current, introStart, true);
   renderer.render(scene, camera);
+  // While the loading screen is up (script.js; <html>.is-loading) keep the
+  // boards parked off-frame — an infinite start time reads as "not yet" —
+  // and start the fly-in when it lifts, so it isn't spent behind it.
+  if (document.documentElement.classList.contains('is-loading')) {
+    introStart = Infinity;
+    addEventListener('decostar:loaded', () => { introStart = performance.now() + 200; }, { once: true });
+  }
   WRAP.classList.add('is-live');
   requestAnimationFrame(tick);
 }
