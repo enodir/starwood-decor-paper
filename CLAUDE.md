@@ -343,6 +343,13 @@ them:
    overlap only makes sense once cards are rotated and scaled down to tuck under each other; on flat
    full-size cards it just hides half of each one.
 
+4. **Only cards near the visible rail get a transform or a layer.** Every transformed card is its own
+   composited layer; with all 147 transformed (plus `will-change` on every card) the page held ~830MB of
+   layers at 3x density and mobile Safari killed and silently reloaded the tab ("the page refreshes by
+   itself"). `layoutCoverflow()` clears cards more than a card and a half beyond the rail's visible width,
+   and `will-change` lives on `.is-decor-near`, which follows the same rule. Don't put `will-change` back on
+   `.decor-card` itself.
+
 Measure spacing with `decorStep()` (from `offsetLeft`), never from `--decor-card-w` + gap — the negative
 margins mean the two disagree. And anything the layout function sets on a card (transform, opacity,
 z-index, `.is-decor-focus`, `data-decor-offset`) has to be cleared again in its filtered-out branch, or a

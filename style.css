@@ -2131,8 +2131,10 @@ html[data-theme="day"] #sustainability { background: rgba(223, 204, 190, 0.55); 
      comes from the scroll itself, which is already smooth. */
   transition: opacity 280ms var(--ease-out), box-shadow 280ms var(--ease-out);
   transform-origin: 50% 50%;
-  will-change: transform;
 }
+/* Only cards on or near the visible rail (script.js, layoutCoverflow) get
+   a layer hint — on all 147 it held ~450MB of layers on a phone. */
+.decor-card.is-decor-near { will-change: transform; }
 /* The card at the centre of the stage. script.js toggles this; the shadow
    is what sells it as lifted forward off the rail. */
 .decor-card.is-decor-focus {

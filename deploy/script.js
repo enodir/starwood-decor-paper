@@ -553,7 +553,7 @@
         card.style.transform = '';
         card.style.opacity = '';
         card.style.zIndex = '';
-        card.classList.remove('is-decor-focus');
+        card.classList.remove('is-decor-focus', 'is-decor-near');
         card.removeAttribute('data-decor-offset');
         continue;
       }
@@ -562,6 +562,25 @@
          which would feed its own output back into its input. */
       var centre = box.left - decorGrid.scrollLeft + card.offsetLeft + card.offsetWidth / 2;
       var d = (centre - mid) / unit;
+
+      /* Off the rail's visible width (plus a card and a half either side,
+         so nothing pops at the edge): no 3D transform and no layer. Every
+         transformed card is its own composited layer — all 147 at once was
+         ~450MB of layers at 3x density, enough for mobile Safari to kill
+         and silently reload the tab. Cards pick their transform back up on
+         the scroll frame that brings them near; .is-decor-near is what
+         grants will-change, so it follows the same rule. */
+      if (Math.abs(centre - mid) > box.width / 2 + unit * 1.5) {
+        if (card.classList.contains('is-decor-near')) {
+          card.classList.remove('is-decor-near', 'is-decor-focus');
+          card.style.transform = '';
+          card.style.opacity = '';
+          card.style.zIndex = '';
+        }
+        card.setAttribute('data-decor-offset', d > 0 ? 'after' : 'before');
+        continue;
+      }
+      card.classList.add('is-decor-near');
       /* Past ~2.2 cards out the difference is invisible but the maths keeps
          going; clamping stops far-off cards from collapsing to nothing and
          from fighting each other for z-index. */
