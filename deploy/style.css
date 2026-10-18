@@ -405,6 +405,29 @@ body.is-lang-switching {
   background-attachment: scroll, scroll, fixed;
   background-blend-mode: normal, color, normal;
 }
+/* Footer: the CTA's finish (same data-lmdf) a step darker, on request, so
+   the page's last block settles below the one above it. A neutral black
+   wash on top rather than more scrim — the scrim is light in the day
+   theme, so raising it would lighten the footer there instead. */
+.site-footer[data-lmdf] .lmdf-parallax {
+  background-image:
+    linear-gradient(rgba(0, 0, 0, 0.12), rgba(0, 0, 0, 0.12)),
+    linear-gradient(rgba(var(--shell-scrim-rgb), 0.72), rgba(var(--shell-scrim-rgb), 0.72)),
+    linear-gradient(var(--lmdf-a), var(--lmdf-b)),
+    var(--lmdf-photo);
+  background-size: cover, cover, cover, cover;
+  background-position: center, center, center, center;
+  background-attachment: scroll, scroll, scroll, fixed;
+  background-blend-mode: normal, normal, color, normal;
+}
+/* Day theme: the darker footer pulls the shared muted inks under AA
+   (colophon --shell-muted 3.5:1, column heads / © line --shell-muted-soft
+   2.2:1, measured on the rendered footer). Footer-only overrides, still in
+   two steps so the hierarchy holds: 5.1:1 and 4.7:1. */
+html[data-theme="day"] .site-footer {
+  --shell-muted: #2F2A25;
+  --shell-muted-soft: #36302A;
+}
 /* Mirror of the above for the light (pulp) sections: --ink-grey/--press-
    black body text has no opaque card behind it here either, and the photo
    has genuinely dark patches (board edges, shadow between sheets) that

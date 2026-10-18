@@ -191,8 +191,10 @@ flat colour. Two cooperating pieces:
 2. `.lmdf-parallax` is that bold visual: every section below the hero (plus the footer) carries its own
    layer showing that same photo, statically recoloured via a `data-lmdf="<finish-name>"` attribute on the
    section (`decors`→belaya-korona, `process`→uludag-mese, `advantages`→acik-kok, `sustainability`→wenge,
-   `certificates`→dub-kataniya, `clients`→astana, `cta`→belaya-korona again, footer→uludag-mese again —
-   cycling the same six hero finishes in page order). The photo is now each section's actual visible
+   `certificates`→dub-kataniya, `clients`→astana, `cta`→belaya-korona again, footer→belaya-korona too —
+   cycling the same six hero finishes in page order; the footer matches the CTA above it on request, so the two
+   read as one closing block — then a 12% black wash on the footer's layer makes it a step darker, also on
+   request; in day theme that needs the footer-only `--shell-muted`/`--shell-muted-soft` overrides to keep AA). The photo is now each section's actual visible
    background, not a subtle accent behind it — and it's **one continuous image across every section, not
    each one re-cropping its own copy**: the photo layer's `background-attachment` is `fixed`, so it's sized
    and positioned against the *viewport*, not each section's own box. A section is just a window moving over
