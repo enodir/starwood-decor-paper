@@ -1041,7 +1041,7 @@
 
   window.addEventListener('DOMContentLoaded', initFilmModal);
 
-  /* ---------- Visitor count (footer colophon) ----------
+  /* ---------- Visitor count (footer, after the © line) ----------
      No backend on this static site, so the tally lives in Abacus
      (abacus.jasoncameron.dev), a free CORS-enabled counter. Only the
      production host increments it — local and preview builds just read —

@@ -316,11 +316,12 @@ if (reduceMotion) {
     // by a couple of hundred ms, which read as the animation starting late
     // rather than as weight. 0.12 still takes the jitter off a trackpad.
     current += (target - current) * 0.12;
-    idle += 0.0045;
+    idle += 0.009;    // ~12s per sway at 60fps (originally 0.0045, ~23s)
     layout(current, now, true);
     // Ambient drift, same intent as the old Swatch Float bob: slow, never
     // resting, deliberately out of step with the scroll-driven motion.
-    group.rotation.y += Math.sin(idle) * 0.028;
+    // ±0.05 rad (~±3°): at the old ±0.028 a faster sway barely read as faster.
+    group.rotation.y += Math.sin(idle) * 0.05;
     group.position.y = Math.sin(idle * 0.8) * 0.018;
     renderer.render(scene, camera);
   }

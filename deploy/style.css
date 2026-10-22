@@ -3207,11 +3207,6 @@ html[data-theme="day"] .process {
   line-height: 1.8;
 }
 .colophon strong { color: var(--shell-ink); }
-/* Visitor count: one more colophon line, revealed by script.js only once
-   the counter service answers — a failed fetch leaves no empty label. */
-.visit-count { animation: visit-in 400ms var(--ease-out) both; }
-.visit-count strong { font-variant-numeric: tabular-nums; }
-@keyframes visit-in { from { opacity: 0; } }
 
 .footer-lower {
   display: grid;
@@ -3262,6 +3257,11 @@ html[data-theme="day"] .process {
   flex-wrap: wrap;
   gap: 1rem;
 }
+/* Visitor count, trailing the © line. Revealed by script.js only once the
+   counter service answers — a failed fetch leaves no empty label. */
+.visit-count { animation: visit-in 400ms var(--ease-out) both; }
+.visit-count strong { color: var(--shell-ink); font-weight: 500; font-variant-numeric: tabular-nums; }
+@keyframes visit-in { from { opacity: 0; } }
 
 /* ---------- i18n visibility ----------
    All translatable nodes are <span data-i18n-lang="ru|en|uz"> inline elements
