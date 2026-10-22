@@ -3294,6 +3294,54 @@ html[lang="uz"] [data-i18n-lang="uz"] { display: inline; }
 }
 html.has-loader .site-loader { display: flex; }
 .site-loader.is-done { opacity: 0; visibility: hidden; pointer-events: none; }
+/* While the logo draws, the design's #282828 ground cross-fades into the
+   CTA's background (on request), so the screen ends on the page's own
+   closing surface rather than a foreign grey. The layers are a copy of
+   .cta-section[data-lmdf] .lmdf-parallax — scrim, belaya-korona duotone,
+   the fixed board photo — and the tokens it reads are restated here
+   because the loader sits outside <main>, where the warmed scrim and the
+   finish are scoped. The fade ends at ~3.8s, just as the last letter
+   fills (56.43% of 7s), and theme changes reach it live through var().
+   Day theme lands on a light ground, so the letters cross-fade from the
+   design's #F1F1F1 to --press-black on the same clock (--loader-ink is
+   registered so it interpolates instead of flipping halfway). */
+@property --loader-ink {
+  syntax: '<color>';
+  inherits: true;
+  initial-value: #F1F1F1;
+}
+.site-loader {
+  --shell-scrim-rgb: 93, 66, 49;
+  --lmdf-a: #efe9e0;
+  --lmdf-b: #ffffff;
+  --loader-ink-end: #F1F1F1;
+  animation: ds-ink 3.6s ease-in-out 0.2s both;
+}
+html[data-theme="day"] .site-loader {
+  --shell-scrim-rgb: 223, 204, 190;
+  --loader-ink-end: var(--press-black);
+}
+.site-loader::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background-image:
+    linear-gradient(rgba(var(--shell-scrim-rgb), 0.72), rgba(var(--shell-scrim-rgb), 0.72)),
+    linear-gradient(var(--lmdf-a), var(--lmdf-b)),
+    var(--lmdf-photo);
+  background-size: cover, cover, cover;
+  background-position: center, center, center;
+  background-attachment: scroll, scroll, fixed;
+  background-blend-mode: normal, color, normal;
+  animation: ds-ground 3.6s ease-in-out 0.2s both;
+}
+.site-loader :is(.ds-l0, .ds-l1, .ds-l2, .ds-l3, .ds-l4, .ds-l5, .ds-l6, .ds-l7) {
+  fill: var(--loader-ink);
+  stroke: var(--loader-ink);
+}
+@keyframes ds-ground { from { opacity: 0; } to { opacity: 1; } }
+@keyframes ds-ink { from { --loader-ink: #F1F1F1; } to { --loader-ink: var(--loader-ink-end); } }
 /* 640px on the design's 960px artboard: two thirds of the frame. */
 .site-loader__logo {
   display: block;
@@ -3341,4 +3389,6 @@ html.is-loading .hero *::after { animation-play-state: paused !important; }
    fill-opacity=1 / stroke-opacity=0 are the final frame). */
 @media (prefers-reduced-motion: reduce) {
   .ds-draw { animation: none !important; }
+  .site-loader { animation: none; --loader-ink: var(--loader-ink-end); }
+  .site-loader::before { animation: none; opacity: 1; }
 }
