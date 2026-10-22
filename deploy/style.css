@@ -3207,6 +3207,11 @@ html[data-theme="day"] .process {
   line-height: 1.8;
 }
 .colophon strong { color: var(--shell-ink); }
+/* Visitor count: one more colophon line, revealed by script.js only once
+   the counter service answers — a failed fetch leaves no empty label. */
+.visit-count { animation: visit-in 400ms var(--ease-out) both; }
+.visit-count strong { font-variant-numeric: tabular-nums; }
+@keyframes visit-in { from { opacity: 0; } }
 
 .footer-lower {
   display: grid;

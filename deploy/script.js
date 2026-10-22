@@ -1040,4 +1040,28 @@
   }
 
   window.addEventListener('DOMContentLoaded', initFilmModal);
+
+  /* ---------- Visitor count (footer colophon) ----------
+     No backend on this static site, so the tally lives in Abacus
+     (abacus.jasoncameron.dev), a free CORS-enabled counter. Only the
+     production host increments it — local and preview builds just read —
+     and only once per browser session, so reloads and in-page navigation
+     don't inflate it. The line stays hidden unless a number comes back. */
+  var visitLine = document.querySelector('.visit-count');
+  if (visitLine && window.fetch) {
+    var VISIT_URL = 'https://abacus.jasoncameron.dev/';
+    var VISIT_KEY = 'decostar-vercel-app/visits';
+    var counted = false;
+    try { counted = sessionStorage.getItem('decostar-visit') === '1'; } catch (e) {}
+    var hit = location.hostname === 'decostar.vercel.app' && !counted;
+    fetch(VISIT_URL + (hit ? 'hit/' : 'get/') + VISIT_KEY)
+      .then(function (r) { return r.ok ? r.json() : null; })
+      .then(function (data) {
+        if (!data || typeof data.value !== 'number') return;
+        if (hit) { try { sessionStorage.setItem('decostar-visit', '1'); } catch (e) {} }
+        visitLine.querySelector('[data-visit-count]').textContent = data.value.toLocaleString('ru-RU');
+        visitLine.hidden = false;
+      })
+      .catch(function () {});
+  }
 })();
