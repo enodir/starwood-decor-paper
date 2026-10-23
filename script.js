@@ -150,16 +150,16 @@
   }
 
   /* ---------- Loading screen ----------
-     .site-loader (the logo draw-on from assets/Draw-on reveal-html/) is up
+     .site-loader (the logo's "Sliding Name" entrance, style.css) is up
      from the first frame — an inline script in <head> sets .has-loader and
      .is-loading. It lifts once the window has loaded, but never before
-     LOADER_MIN — the logo finishes drawing at ~3.95s (56.43% of its 7s
-     timeline in style.css) and gets a short beat complete — and never
+     LOADER_MIN — the template's 3s: the name settles at 2s and holds for
+     the rest — and never
      after LOADER_MAX (a slow photo shouldn't hold the whole page). Lifting drops .is-loading (releasing the header/hero
      CSS entrances held in style.css), fires 'decostar:loaded' for the
      hero board stack in assets/mdf-stack.js, resolves loaderDone for the
      headline below, then fades the screen out and removes it. */
-  var LOADER_MIN = 4200, LOADER_MAX = 6500;
+  var LOADER_MIN = 3000, LOADER_MAX = 6500;
   var siteLoader = document.querySelector('.site-loader');
   var loaderDone = new Promise(function (resolve) {
     if (!siteLoader || !document.documentElement.classList.contains('has-loader')) return resolve();

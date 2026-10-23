@@ -3273,20 +3273,24 @@ html[lang="en"] [data-i18n-lang="en"],
 html[lang="uz"] [data-i18n-lang="uz"] { display: inline; }
 
 /* ---------- Loading screen ----------
-   The DECOSTAR logo drawing itself on — ported from the "Draw-on reveal"
-   design in assets/Draw-on reveal-html/ (Main.dc.html, dark theme).
-   Every part has pathLength="1", so stroke-dasharray/offset 1 → 0 traces
-   its outline; once traced, the fill comes up as the stroke fades. The
-   parts run on one 7s timeline with staggered keyframe stops (the
-   design's own values, kept verbatim): star, swoosh, then the letters
-   D-E-C-O-S-T-A-R a beat apart; the logo is complete at 56.43% (~3.95s).
-   Played once — the design's loop and fade-out outro are for its preview
-   — and held on its final frame until script.js adds .is-done, which
-   fades the screen and removes it.
+   The DECOSTAR logo as jitter.video's "Logo: Sliding Name" template, 3s
+   (see the markup in index.html). Three moves, all inside one SVG so the
+   px in these transforms are user units and scale with the logo:
+   1. .ds-mark — the star fades and grows in, alone. .ds-slide starts
+      shifted right by the distance from the star's centre to the
+      viewBox's (141 user units, measured off the paths), so it lands at
+      the centre of the screen;
+   2. .ds-slide glides home to the left, and .ds-name slides out from
+      behind the star on the same beat — it starts 370 units left, wholly
+      outside the clip rect (whose left edge sits just before the D), and
+      reads as unrolling from the mark because the mask travels with it;
+   3. a hold on the set logo until the 3s are up (LOADER_MIN in script.js).
+   Played once and held on its final frame until script.js adds .is-done,
+   which fades the screen and removes it.
 
    Shown only while <html> has .has-loader (set by an inline script in
-   <head>, so no-JS never sees it). Colours are the design's dark theme
-   (#282828 ground, #F1F1F1 letters, #339087 star) and live on the paths. */
+   <head>, so no-JS never sees it). The ground starts on #282828 and the
+   letters on #F1F1F1, the draw-on design's dark theme. */
 .site-loader {
   position: fixed;
   inset: 0;
@@ -3305,8 +3309,8 @@ html.has-loader .site-loader { display: flex; }
    .cta-section[data-lmdf] .lmdf-parallax — scrim, belaya-korona duotone,
    the fixed board photo — and the tokens it reads are restated here
    because the loader sits outside <main>, where the warmed scrim and the
-   finish are scoped. The fade ends at ~3.8s, just as the last letter
-   fills (56.43% of 7s), and theme changes reach it live through var().
+   finish are scoped. The fade ends at 2s, as the name settles, and theme
+   changes reach it live through var().
    Day theme lands on a light ground, so the letters cross-fade from the
    design's #F1F1F1 to --press-black on the same clock (--loader-ink is
    registered so it interpolates instead of flipping halfway). */
@@ -3320,7 +3324,7 @@ html.has-loader .site-loader { display: flex; }
   --lmdf-a: #efe9e0;
   --lmdf-b: #ffffff;
   --loader-ink-end: #F1F1F1;
-  animation: ds-ink 3.6s ease-in-out 0.2s both;
+  animation: ds-ink 1.8s ease-in-out 0.2s both;
 }
 html[data-theme="day"] .site-loader {
   --shell-scrim-rgb: 223, 204, 190;
@@ -3339,12 +3343,9 @@ html[data-theme="day"] .site-loader {
   background-position: center, center, center;
   background-attachment: scroll, scroll, fixed;
   background-blend-mode: normal, color, normal;
-  animation: ds-ground 3.6s ease-in-out 0.2s both;
+  animation: ds-ground 1.8s ease-in-out 0.2s both;
 }
-.site-loader :is(.ds-l0, .ds-l1, .ds-l2, .ds-l3, .ds-l4, .ds-l5, .ds-l6, .ds-l7) {
-  fill: var(--loader-ink);
-  stroke: var(--loader-ink);
-}
+.ds-name { fill: var(--loader-ink); }
 @keyframes ds-ground { from { opacity: 0; } to { opacity: 1; } }
 @keyframes ds-ink { from { --loader-ink: #F1F1F1; } to { --loader-ink: var(--loader-ink-end); } }
 /* 640px on the design's 960px artboard: two thirds of the frame. */
@@ -3352,35 +3353,29 @@ html[data-theme="day"] .site-loader {
   display: block;
   width: min(640px, 66.7vw);
   height: auto;
+  /* Mid-slide the logo still sits right of its viewBox. */
+  overflow: visible;
 }
-.ds-draw {
-  stroke-width: 1.3;
-  stroke-linejoin: miter;
-  stroke-dasharray: 1;
-  animation-duration: 7s;
-  animation-timing-function: ease-in-out;
-  animation-fill-mode: both;
+.ds-mark {
+  transform-box: fill-box;
+  transform-origin: 50% 50%;
+  animation: ds-mark-in 650ms cubic-bezier(0.22, 1, 0.36, 1) 150ms both;
 }
-.ds-mk { animation-name: ds-mk; }
-.ds-bl { animation-name: ds-bl; }
-.ds-l0 { animation-name: ds-l0; }
-.ds-l1 { animation-name: ds-l1; }
-.ds-l2 { animation-name: ds-l2; }
-.ds-l3 { animation-name: ds-l3; }
-.ds-l4 { animation-name: ds-l4; }
-.ds-l5 { animation-name: ds-l5; }
-.ds-l6 { animation-name: ds-l6; }
-.ds-l7 { animation-name: ds-l7; }
-@keyframes ds-mk{0%,2.86%{stroke-dashoffset:1;fill-opacity:0;stroke-opacity:1}20%{fill-opacity:0;stroke-opacity:1}24.29%{stroke-dashoffset:0}28.57%,100%{stroke-dashoffset:0;fill-opacity:1;stroke-opacity:0}}
-@keyframes ds-bl{0%,8.57%{stroke-dashoffset:1;fill-opacity:0;stroke-opacity:1}22.86%{fill-opacity:0;stroke-opacity:1}27.14%{stroke-dashoffset:0}30%,100%{stroke-dashoffset:0;fill-opacity:1;stroke-opacity:0}}
-@keyframes ds-l0{0%,24.29%{stroke-dashoffset:1;fill-opacity:0;stroke-opacity:1}34.29%{fill-opacity:0;stroke-opacity:1}38.57%{stroke-dashoffset:0}41.43%,100%{stroke-dashoffset:0;fill-opacity:1;stroke-opacity:0}}
-@keyframes ds-l1{0%,26.43%{stroke-dashoffset:1;fill-opacity:0;stroke-opacity:1}36.43%{fill-opacity:0;stroke-opacity:1}40.71%{stroke-dashoffset:0}43.57%,100%{stroke-dashoffset:0;fill-opacity:1;stroke-opacity:0}}
-@keyframes ds-l2{0%,28.57%{stroke-dashoffset:1;fill-opacity:0;stroke-opacity:1}38.57%{fill-opacity:0;stroke-opacity:1}42.86%{stroke-dashoffset:0}45.71%,100%{stroke-dashoffset:0;fill-opacity:1;stroke-opacity:0}}
-@keyframes ds-l3{0%,30.71%{stroke-dashoffset:1;fill-opacity:0;stroke-opacity:1}40.71%{fill-opacity:0;stroke-opacity:1}45%{stroke-dashoffset:0}47.86%,100%{stroke-dashoffset:0;fill-opacity:1;stroke-opacity:0}}
-@keyframes ds-l4{0%,32.86%{stroke-dashoffset:1;fill-opacity:0;stroke-opacity:1}42.86%{fill-opacity:0;stroke-opacity:1}47.14%{stroke-dashoffset:0}50%,100%{stroke-dashoffset:0;fill-opacity:1;stroke-opacity:0}}
-@keyframes ds-l5{0%,35%{stroke-dashoffset:1;fill-opacity:0;stroke-opacity:1}45%{fill-opacity:0;stroke-opacity:1}49.29%{stroke-dashoffset:0}52.14%,100%{stroke-dashoffset:0;fill-opacity:1;stroke-opacity:0}}
-@keyframes ds-l6{0%,37.14%{stroke-dashoffset:1;fill-opacity:0;stroke-opacity:1}47.14%{fill-opacity:0;stroke-opacity:1}51.43%{stroke-dashoffset:0}54.29%,100%{stroke-dashoffset:0;fill-opacity:1;stroke-opacity:0}}
-@keyframes ds-l7{0%,39.29%{stroke-dashoffset:1;fill-opacity:0;stroke-opacity:1}49.29%{fill-opacity:0;stroke-opacity:1}53.57%{stroke-dashoffset:0}56.43%,100%{stroke-dashoffset:0;fill-opacity:1;stroke-opacity:0}}
+.ds-slide { animation: ds-slide-home 1100ms cubic-bezier(0.65, 0, 0.35, 1) 800ms both; }
+.ds-name { animation: ds-name-out 1150ms cubic-bezier(0.16, 1, 0.3, 1) 850ms both; }
+@keyframes ds-mark-in {
+  from { opacity: 0; transform: scale(0.55); }
+  50% { opacity: 1; }
+  to { opacity: 1; transform: none; }
+}
+@keyframes ds-slide-home {
+  from { transform: translateX(141px); }
+  to { transform: none; }
+}
+@keyframes ds-name-out {
+  from { transform: translateX(-370px); }
+  to { transform: none; }
+}
 
 /* Hold the page's own entrances on their first frame while the loader is
    up, so they play when it lifts. (The headline and the hero board stack
@@ -3390,10 +3385,9 @@ html.is-loading .hero *,
 html.is-loading .hero *::before,
 html.is-loading .hero *::after { animation-play-state: paused !important; }
 
-/* Reduced motion: the finished logo, no drawing (the paths' own
-   fill-opacity=1 / stroke-opacity=0 are the final frame). */
+/* Reduced motion: the set logo, no slide. */
 @media (prefers-reduced-motion: reduce) {
-  .ds-draw { animation: none !important; }
+  .ds-mark, .ds-slide, .ds-name { animation: none !important; }
   .site-loader { animation: none; --loader-ink: var(--loader-ink-end); }
   .site-loader::before { animation: none; opacity: 1; }
 }
