@@ -3304,13 +3304,14 @@ html[lang="uz"] [data-i18n-lang="uz"] { display: inline; }
 html.has-loader .site-loader { display: flex; }
 .site-loader.is-done { opacity: 0; visibility: hidden; pointer-events: none; }
 /* While the logo draws, the design's #282828 ground cross-fades into the
-   CTA's background (on request), so the screen ends on the page's own
-   closing surface rather than a foreign grey. The layers are a copy of
-   .cta-section[data-lmdf] .lmdf-parallax — scrim, belaya-korona duotone,
-   the fixed board photo — and the tokens it reads are restated here
-   because the loader sits outside <main>, where the warmed scrim and the
-   finish are scoped. The fade ends at 2s, as the name settles, and theme
-   changes reach it live through var().
+   hero's background (on request), so when the screen lifts the hero is
+   already the surface behind it and the hand-off reads as one surface.
+   The layers are a copy of .hero's — --shell-bg under a same-hue scrim
+   multiplied over the white-board photo, 768px file on phones. The loader
+   sits outside <main>, so it already inherits the hero's unwarmed
+   --shell-* values (the warmed ones are scoped to sections after .hero),
+   and theme changes reach it live through var(). The fade ends at 2s, as
+   the name settles.
    Day theme lands on a light ground, so the letters cross-fade from the
    design's #F1F1F1 to --press-black on the same clock (--loader-ink is
    registered so it interpolates instead of flipping halfway). */
@@ -3320,14 +3321,10 @@ html.has-loader .site-loader { display: flex; }
   initial-value: #F1F1F1;
 }
 .site-loader {
-  --shell-scrim-rgb: 93, 66, 49;
-  --lmdf-a: #efe9e0;
-  --lmdf-b: #ffffff;
   --loader-ink-end: #F1F1F1;
   animation: ds-ink 1.8s ease-in-out 0.2s both;
 }
 html[data-theme="day"] .site-loader {
-  --shell-scrim-rgb: 223, 204, 190;
   --loader-ink-end: var(--press-black);
 }
 .site-loader::before {
@@ -3335,15 +3332,17 @@ html[data-theme="day"] .site-loader {
   position: absolute;
   inset: 0;
   z-index: -1;
-  background-image:
-    linear-gradient(rgba(var(--shell-scrim-rgb), 0.72), rgba(var(--shell-scrim-rgb), 0.72)),
-    linear-gradient(var(--lmdf-a), var(--lmdf-b)),
-    var(--lmdf-photo);
-  background-size: cover, cover, cover;
-  background-position: center, center, center;
-  background-attachment: scroll, scroll, fixed;
-  background-blend-mode: normal, color, normal;
+  background-color: var(--shell-bg);
+  background-image: linear-gradient(rgba(var(--shell-scrim-rgb), 0.72), rgba(var(--shell-scrim-rgb), 0.72)), var(--certificates-bg-photo);
+  background-size: cover, cover;
+  background-position: center, center;
+  background-blend-mode: normal, multiply;
   animation: ds-ground 1.8s ease-in-out 0.2s both;
+}
+@media (max-width: 760px) {
+  .site-loader::before {
+    background-image: linear-gradient(rgba(var(--shell-scrim-rgb), 0.72), rgba(var(--shell-scrim-rgb), 0.72)), url('assets/img/process-flow/certificates-belayakorona-768.jpg');
+  }
 }
 .ds-name { fill: var(--loader-ink); }
 @keyframes ds-ground { from { opacity: 0; } to { opacity: 1; } }

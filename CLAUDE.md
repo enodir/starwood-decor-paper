@@ -463,7 +463,7 @@ speaker — treat it the same as other placeholders needing sign-off before a re
 Sliding Name" (3s) — the star lands alone at screen centre, then the logo glides left while the name slides out
 from behind it through a clip-path mask that travels with the logo (`.ds-mark`/`.ds-slide`/`.ds-name`). The
 `141px`/`-370px` offsets are SVG user units measured off the paths (paths are from `assets/Draw-on reveal-html/`,
-the draw-on design this replaced). Meanwhile its `#282828` ground cross-fades into the CTA's background and, in
+the draw-on design this replaced). Meanwhile its `#282828` ground cross-fades into the hero's background and, in
 day theme, the letters into `--press-black` (`ds-ground`/`ds-ink`). Up from the first frame — an inline `<script>`
 in `<head>` sets
 `html.has-loader.is-loading`, so with JS off it never shows — and lifted at window `load`, at least 3s
