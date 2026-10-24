@@ -190,11 +190,14 @@ flat colour. Two cooperating pieces:
    tints. This is the literal "stuck to the page" continuity; it is not the bold visual.
 2. `.lmdf-parallax` is that bold visual: every section below the hero (plus the footer) carries its own
    layer showing that same photo, statically recoloured via a `data-lmdf="<finish-name>"` attribute on the
-   section (`decors`→belaya-korona, `process`→uludag-mese, `advantages`→acik-kok, `sustainability`→wenge,
-   `certificates`→dub-kataniya, `clients`→astana, `cta`→belaya-korona again, footer→belaya-korona too —
-   cycling the same six hero finishes in page order; the footer matches the CTA above it on request, so the two
-   read as one closing block — then a 12% black wash on the footer's layer makes it a step darker, also on
-   request; in day theme that needs the footer-only `--shell-muted`/`--shell-muted-soft` overrides to keep AA). The photo is now each section's actual visible
+   section. From Decor Collections down to the footer the sections alternate between just two backgrounds, on
+   request: Sustainability's original one (`.section--pulp` + `wenge`, light scrim) on `decors`/`advantages`/
+   `certificates`/`cta`, and the footer's (`.section--dark` + `belaya-korona` + a 12% black wash) on `process`/
+   `sustainability`/`clients`, which carry `.section--footer-tone` to share the footer's layer rule, ending on the
+   footer itself. Former dark shells that are now light (`certificates`, `cta`) keep working because
+   `.section--pulp` restates the light-shell `--shell-*` values in both themes; `.sustain-card` sets its own
+   ink and drops the inherited text-shadow since it now sits on a dark section. In day theme the footer tone
+   needs `--shell-muted`/`--shell-muted-soft`/`--shell-cta-lead` overrides to keep AA). The photo is now each section's actual visible
    background, not a subtle accent behind it — and it's **one continuous image across every section, not
    each one re-cropping its own copy**: the photo layer's `background-attachment` is `fixed`, so it's sized
    and positioned against the *viewport*, not each section's own box. A section is just a window moving over

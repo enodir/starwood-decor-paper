@@ -394,7 +394,6 @@ body.is-lang-switching {
    down) — a drop shadow lifts text off a busy backdrop without hiding the
    backdrop itself, which more scrim can't do. */
 .section--dark[data-lmdf] .lmdf-parallax,
-.cta-section[data-lmdf] .lmdf-parallax,
 .site-footer[data-lmdf] .lmdf-parallax {
   background-image:
     linear-gradient(rgba(var(--shell-scrim-rgb), 0.72), rgba(var(--shell-scrim-rgb), 0.72)),
@@ -405,10 +404,17 @@ body.is-lang-switching {
   background-attachment: scroll, scroll, fixed;
   background-blend-mode: normal, color, normal;
 }
-/* Footer: the CTA's finish (same data-lmdf) a step darker, on request, so
-   the page's last block settles below the one above it. A neutral black
-   wash on top rather than more scrim — the scrim is light in the day
-   theme, so raising it would lighten the footer there instead. */
+/* Footer: the CTA's finish (same data-lmdf) a step darker, on request. A
+   neutral black wash on top rather than more scrim — the scrim is light in
+   the day theme, so raising it would lighten the footer there instead.
+
+   From Decor Collections down, the sections alternate between two
+   backgrounds only, on request: Sustainability's original one (light scrim
+   over the wenge finish, .section--pulp + data-lmdf="wenge") on #decors,
+   #advantages, #certificates and #cta, and this footer one on #process,
+   #sustainability and #clients — which carry .section--footer-tone to
+   share this rule — landing on the footer itself. */
+.section--footer-tone[data-lmdf] .lmdf-parallax,
 .site-footer[data-lmdf] .lmdf-parallax {
   background-image:
     linear-gradient(rgba(0, 0, 0, 0.12), rgba(0, 0, 0, 0.12)),
@@ -424,9 +430,11 @@ body.is-lang-switching {
    (colophon --shell-muted 3.5:1, column heads / © line --shell-muted-soft
    2.2:1, measured on the rendered footer). Footer-only overrides, still in
    two steps so the hierarchy holds: 5.1:1 and 4.7:1. */
+html[data-theme="day"] .section--footer-tone,
 html[data-theme="day"] .site-footer {
   --shell-muted: #2F2A25;
   --shell-muted-soft: #36302A;
+  --shell-cta-lead: #2F2A25;
 }
 /* Mirror of the above for the light (pulp) sections: --ink-grey/--press-
    black body text has no opaque card behind it here either, and the photo
@@ -457,7 +465,6 @@ html[data-theme="day"] .site-footer {
    an opaque backing (inputs, decor/sustain cards): a soft shadow under
    already-safe text is imperceptible, not a second problem. */
 .section--dark[data-lmdf] .container,
-.cta-section[data-lmdf] .container,
 .site-footer[data-lmdf] .container {
   text-shadow: 0 1px 2px rgba(0, 0, 0, 0.45), 0 2px 16px rgba(0, 0, 0, 0.3);
 }
@@ -491,7 +498,6 @@ html[data-theme="day"] .site-footer {
    this pass earns its keep on the *light* sections instead, see the
    before/after comparison in git history). */
 .section--dark[data-lmdf] .lmdf-parallax::after,
-.cta-section[data-lmdf] .lmdf-parallax::after,
 .site-footer[data-lmdf] .lmdf-parallax::after {
   display: none;
 }
@@ -1749,6 +1755,24 @@ html[data-theme="day"] .theme-toggle__icon--day { opacity: 1; }
    theme is uniformly light by design (see the day/night theme comment near
    --shell-bg above). */
 #decors, #advantages { background: rgba(198, 175, 160, 0.85); }
+/* Light sections that used to be dark shells (#certificates, #cta) keep
+   their --shell-* components; on .section--pulp those tokens take their
+   day-theme (light-shell) values in both themes. */
+.section--pulp {
+  --shell-bg: var(--raw-pulp);
+  --shell-ink: var(--press-black);
+  --shell-muted: var(--ink-grey);
+  --shell-muted-soft: #6B6156;
+  --shell-border: rgba(30, 26, 23, 0.14);
+  --shell-border-strong: rgba(30, 26, 23, 0.3);
+  --shell-eyebrow: var(--registration-cyan);
+  --shell-cta-eyebrow: var(--kraft-brown-dark);
+  --shell-cta-lead: var(--ink-grey);
+  /* Opaque-ish paper fields: the day shell's 6% ink tint all but vanishes
+     over the photo. */
+  --shell-form-fill: rgba(247, 245, 241, 0.85);
+  --shell-form-ink: var(--press-black);
+}
 #sustainability { background: rgba(180, 149, 130, 0.85); }
 html[data-theme="day"] #decors,
 html[data-theme="day"] #advantages { background: rgba(238, 228, 219, 0.55); }
@@ -2796,6 +2820,12 @@ html[data-theme="day"] .process {
 
 .advantage h3 { margin-bottom: 0.5rem; }
 .advantage p { font-size: 0.95rem; }
+/* Brand cyan is too dark to read on the night footer tone; the shell's
+   eyebrow cyan is the same hue lifted (and is brand cyan again by day). */
+.section--footer-tone .eyebrow { color: var(--shell-eyebrow); }
+/* Bare text on the footer tone that the light sections set in --ink-grey. */
+.section--footer-tone .lead { color: var(--shell-muted); }
+.section--footer-tone .logo-marquee .client-logo { color: var(--shell-ink); }
 
 /* ---------- Sustainability ---------- */
 .sustain-grid {
@@ -2817,6 +2847,11 @@ html[data-theme="day"] .process {
   /* Warm-tinted rather than flat black, same as .decor-card's shadow. */
   border: 1px solid rgba(74, 67, 60, 0.18);
   background: var(--raw-pulp-dark);
+  /* Own ink and no inherited shadow: the section around it is the dark
+     footer tone, whose light text colour and drop shadow would otherwise
+     carry onto this light card. */
+  color: var(--ink-grey);
+  text-shadow: none;
   border-radius: var(--radius-card);
   padding: 1.75rem;
   /* Named properties, never `all` — and no scale, which would drag the
