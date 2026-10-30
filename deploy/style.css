@@ -46,6 +46,10 @@
      over the darkest section behind it (measured ≥5:1 in both themes) —
      see .logo/.nav-island/.action-island. */
   --header-island-bg: rgba(178, 167, 153, 0.6);
+  /* "Request a sample" fill, on request: the island tone 30% darker (each
+     channel × 0.7, same alpha), with a further 10% step (× 0.6) for hover. */
+  --header-island-bg-dark: rgba(125, 117, 107, 0.6);
+  --header-island-bg-darker: rgba(107, 100, 92, 0.6);
 
   --font-display: 'PT Sans Narrow', 'Arial Narrow', sans-serif;
   --font-body: 'IBM Plex Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
@@ -69,12 +73,12 @@
   /* Interactive surfaces are rounded; content cards (--radius-card) stay
      crisp. --radius-control covers every button and form field;
      --radius-island rounds the header bar's two outer ends (logo island's
-     left, action island's right) — the same radius as the buttons, on
-     request (it went 999px → 18px → this); every inner side (logo right,
+     left, action island's right) — 24px on request, matching the buttons
+     (it went 999px → 18px → --radius-control → this); every inner side (logo right,
      whole nav island, action left) is square — see .logo / .nav-island /
      .action-island. */
   --radius-control: 10px;
-  --radius-island: var(--radius-control);
+  --radius-island: 24px;
 
   --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
   --ease-in-out: cubic-bezier(0.77, 0, 0.175, 1);
@@ -84,7 +88,7 @@
      entire page (see .bg-texture). Light sections show it as a translucent
      tint (see .section--pulp-white/.section--pulp) since lightening never
      threatens white-text contrast there. Dark/brand-colored surfaces
-     (hero, .section--dark, .btn-primary,
+     (hero, .section--dark,
      .cta-section) use background-blend-mode: multiply instead of alpha —
      alpha-blending a dark tone with this light-toned photo necessarily
      brightens the surface (tried at 0.9, then 0.7, then 0.45 opacity: the
@@ -515,6 +519,26 @@ html[data-theme="day"] .site-footer {
   background-attachment: scroll, scroll, fixed;
   background-blend-mode: normal, soft-light, normal;
 }
+/* iOS Safari doesn't implement background-attachment: fixed — it falls back
+   to scroll, so `cover` sizes the board photo against each whole section
+   (2000px+ tall on a phone) instead of the viewport: a 1000px photo blown up
+   ~4x and re-cropped per section, i.e. visibly blurrier than desktop and
+   with a seam at every boundary. Same result here by other means: the layer
+   itself goes position: fixed (viewport-sized, so `scroll` attachment now
+   means what `fixed` does on desktop), and clip-path on the section clips
+   it back to that section's box — clip-path, unlike overflow, clips fixed
+   descendants. 100lvh rather than inset:0's bottom so the photo doesn't
+   rescale as Safari's toolbar collapses. Scoped to iOS only
+   (-webkit-touch-callout is iOS-WebKit-only); every other browser keeps the
+   desktop rule above, which already works there. */
+@supports (-webkit-touch-callout: none) {
+  [data-lmdf] { clip-path: inset(0); }
+  .lmdf-parallax {
+    position: fixed;
+    inset: 0 0 auto 0;
+    height: 100lvh;
+  }
+}
 /* Hex values duplicated from FINISHES in assets/mdf-stack.js — keep in sync
    by hand (that file is an ES module script.js can't import from). Order
    here is cosmetic only; each section's own data-lmdf is what assigns it. */
@@ -649,7 +673,7 @@ p.lead { font-size: clamp(1.05rem, 1.6vw, 1.25rem); color: var(--ink-grey); }
   letter-spacing: 0.03em;
   text-transform: uppercase;
   padding: 0.9em 1.6em;
-  border-radius: var(--radius-control);
+  border-radius: 24px;
   border: 1px solid transparent;
   transition: transform 200ms var(--ease-out), background 200ms, color 200ms, border-color 200ms;
 }
@@ -657,18 +681,24 @@ p.lead { font-size: clamp(1.05rem, 1.6vw, 1.25rem); color: var(--ink-grey); }
 .btn:active { transform: scale(0.97); transition-duration: 100ms; }
 
 .btn-primary {
-  background-color: var(--kraft-brown);
-  background-image: var(--bg-texture);
-  background-size: cover;
-  background-position: center;
-  background-blend-mode: multiply;
-  /* Pure black, not --press-black — needed for AA contrast (4.98:1) against
-     the lightened kraft-brown; press-black only reaches 4.10:1 here. */
+  /* Same glass as the header islands, one step darker (see
+     --header-island-bg-dark), so the CTA reads as part of that family
+     rather than a kraft block. Pure black ink, as on the old kraft fill. */
+  background-color: var(--header-island-bg-dark);
+  backdrop-filter: blur(16px) saturate(120%) brightness(1.4);
+  -webkit-backdrop-filter: blur(16px) saturate(120%) brightness(1.4);
   color: #000000;
   box-shadow: 0 2px 0 rgba(74, 41, 26, 0.35);
   transition: transform 200ms var(--ease-out), background-color 200ms, color 200ms, border-color 200ms, box-shadow 150ms var(--ease-out);
 }
-.btn-primary:hover { background-color: var(--kraft-brown-dark); }
+.btn-primary:hover { background-color: var(--header-island-bg-darker); }
+/* Inside the header the island is already the backdrop, and brightening it
+   again would make the CTA lighter than the island, not darker — so there
+   the tint just layers over the island's own glass. */
+.site-header .btn-primary {
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+}
 /* Letterpress impression on the primary CTA specifically (the one button
    that matters most) rather than the generic scale-down every button gets —
    sinks in and loses its resting shadow, like a plate stamping into paper. */
@@ -1064,7 +1094,7 @@ p.lead { font-size: clamp(1.05rem, 1.6vw, 1.25rem); color: var(--ink-grey); }
   /* Black halo outside the light ring — the same dual-colour edge the
      segmented control had, so it holds up over light and dark sections. */
   box-shadow: 0 0 0 1px var(--press-black);
-  border-radius: var(--radius-control);
+  border-radius: 24px;
   transition: filter 150ms, transform 150ms var(--ease-out);
 }
 .lang-current:hover { filter: brightness(1.1); }
@@ -1364,7 +1394,7 @@ html[data-theme="day"] .theme-toggle__icon--day { opacity: 1; }
   backdrop-filter: blur(16px) saturate(120%) brightness(1.4);
   -webkit-backdrop-filter: blur(16px) saturate(120%) brightness(1.4);
   border: 0;
-  border-radius: var(--radius-island);
+  border-radius: 24px;
   box-shadow: 0 6px 18px -6px rgba(30, 26, 23, 0.22), 0 1px 2px rgba(0, 0, 0, 0.05);
   color: var(--press-black);
   opacity: 0;
@@ -1397,18 +1427,12 @@ html[data-theme="day"] .theme-toggle__icon--day { opacity: 1; }
 .site-header.is-minimized .mini-pill:nth-child(2) { transition-delay: 260ms, 260ms, 0s, 0s, 0s; }
 .site-header.is-minimized .mini-pill:nth-child(1) { transition-delay: 310ms, 310ms, 0s, 0s, 0s; }
 
-/* "Request a sample" in the cluster: the full header's kraft CTA, carried
-   over in the same fill (texture multiplied into kraft-brown, pure black
-   ink for AA — see .btn-primary) and mono caps, so it stays the one
+/* "Request a sample" in the cluster: the full header's CTA, carried over
+   in the same fill (the island glass one step darker, pure black ink — see
+   .btn-primary) and mono caps, so it stays the one
    action that reads as primary, as Jitter's "Sign up" does. */
 .mini-pill--cta {
-  background-color: var(--kraft-brown);
-  background-image: var(--bg-texture);
-  background-size: cover;
-  background-position: center;
-  background-blend-mode: multiply;
-  backdrop-filter: none;
-  -webkit-backdrop-filter: none;
+  background-color: var(--header-island-bg-dark);
   color: #000000;
   font-family: var(--font-mono);
   font-size: 0.78rem;
@@ -1417,7 +1441,7 @@ html[data-theme="day"] .theme-toggle__icon--day { opacity: 1; }
   text-transform: uppercase;
 }
 @media (hover: hover) and (pointer: fine) {
-  .mini-pill--cta:hover { background-color: var(--kraft-brown-dark); }
+  .mini-pill--cta:hover { background-color: var(--header-island-bg-darker); }
 }
 
 @media (hover: hover) and (pointer: fine) {
@@ -1458,11 +1482,9 @@ html[data-theme="day"] .theme-toggle__icon--day { opacity: 1; }
   overflow: clip;
   transition: background-color 300ms, color 300ms;
 }
-@media (max-width: 760px) {
-  .hero {
-    background-image: linear-gradient(rgba(var(--shell-scrim-rgb), 0.72), rgba(var(--shell-scrim-rgb), 0.72)), url('assets/img/process-flow/certificates-belayakorona-768.jpg');
-  }
-}
+/* No 768px swap for phones, on request: a 390px-wide 3x phone covering a
+   tall hero needs ~1200-2700 device px, so the small file was visibly
+   softer than desktop. Same 1400px photo everywhere (~300KB). */
 
 /* Even columns and a tight gutter, so the board stack sits close to the
    headline rather than marooned at the far edge of the container. The copy
@@ -1630,7 +1652,7 @@ html[data-theme="day"] .theme-toggle__icon--day { opacity: 1; }
   width: 2.25rem;
   height: 2.25rem;
   border: 1px solid rgba(247, 245, 241, 0.18);
-  border-radius: var(--radius-control);
+  border-radius: 24px;
   background: transparent;
   color: var(--pulp-white);
   transition: background-color 150ms, transform 150ms var(--ease-out);
@@ -1865,7 +1887,7 @@ html[data-theme="day"] #sustainability { background: rgba(223, 204, 190, 0.55); 
   padding: 0;
   background: transparent;
   border: 1.5px solid var(--press-black);
-  border-radius: var(--radius-control);
+  border-radius: 24px;
   color: var(--press-black);
   transition: background 150ms, opacity 150ms, transform 150ms var(--ease-out);
 }
@@ -2005,7 +2027,7 @@ html[data-theme="day"] #sustainability { background: rgba(223, 204, 190, 0.55); 
   letter-spacing: 0.03em;
   padding: 0.55em 1em;
   border: 1px solid var(--raw-pulp-dark);
-  border-radius: var(--radius-control);
+  border-radius: 24px;
   /* Darker tint than the old --pulp-white, on request — one step down the
      same light-surface family (--raw-pulp), so the buttons read as sitting
      on the page rather than as a near-white chip floating on the section's
@@ -3373,11 +3395,6 @@ html[data-theme="day"] .site-loader {
   background-position: center, center;
   background-blend-mode: normal, multiply;
   animation: ds-ground 1.8s ease-in-out 0.2s both;
-}
-@media (max-width: 760px) {
-  .site-loader::before {
-    background-image: linear-gradient(rgba(var(--shell-scrim-rgb), 0.72), rgba(var(--shell-scrim-rgb), 0.72)), url('assets/img/process-flow/certificates-belayakorona-768.jpg');
-  }
 }
 .ds-name { fill: var(--loader-ink); }
 @keyframes ds-ground { from { opacity: 0; } to { opacity: 1; } }

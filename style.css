@@ -519,6 +519,26 @@ html[data-theme="day"] .site-footer {
   background-attachment: scroll, scroll, fixed;
   background-blend-mode: normal, soft-light, normal;
 }
+/* iOS Safari doesn't implement background-attachment: fixed — it falls back
+   to scroll, so `cover` sizes the board photo against each whole section
+   (2000px+ tall on a phone) instead of the viewport: a 1000px photo blown up
+   ~4x and re-cropped per section, i.e. visibly blurrier than desktop and
+   with a seam at every boundary. Same result here by other means: the layer
+   itself goes position: fixed (viewport-sized, so `scroll` attachment now
+   means what `fixed` does on desktop), and clip-path on the section clips
+   it back to that section's box — clip-path, unlike overflow, clips fixed
+   descendants. 100lvh rather than inset:0's bottom so the photo doesn't
+   rescale as Safari's toolbar collapses. Scoped to iOS only
+   (-webkit-touch-callout is iOS-WebKit-only); every other browser keeps the
+   desktop rule above, which already works there. */
+@supports (-webkit-touch-callout: none) {
+  [data-lmdf] { clip-path: inset(0); }
+  .lmdf-parallax {
+    position: fixed;
+    inset: 0 0 auto 0;
+    height: 100lvh;
+  }
+}
 /* Hex values duplicated from FINISHES in assets/mdf-stack.js — keep in sync
    by hand (that file is an ES module script.js can't import from). Order
    here is cosmetic only; each section's own data-lmdf is what assigns it. */
@@ -1462,11 +1482,9 @@ html[data-theme="day"] .theme-toggle__icon--day { opacity: 1; }
   overflow: clip;
   transition: background-color 300ms, color 300ms;
 }
-@media (max-width: 760px) {
-  .hero {
-    background-image: linear-gradient(rgba(var(--shell-scrim-rgb), 0.72), rgba(var(--shell-scrim-rgb), 0.72)), url('assets/img/process-flow/certificates-belayakorona-768.jpg');
-  }
-}
+/* No 768px swap for phones, on request: a 390px-wide 3x phone covering a
+   tall hero needs ~1200-2700 device px, so the small file was visibly
+   softer than desktop. Same 1400px photo everywhere (~300KB). */
 
 /* Even columns and a tight gutter, so the board stack sits close to the
    headline rather than marooned at the far edge of the container. The copy
@@ -3377,11 +3395,6 @@ html[data-theme="day"] .site-loader {
   background-position: center, center;
   background-blend-mode: normal, multiply;
   animation: ds-ground 1.8s ease-in-out 0.2s both;
-}
-@media (max-width: 760px) {
-  .site-loader::before {
-    background-image: linear-gradient(rgba(var(--shell-scrim-rgb), 0.72), rgba(var(--shell-scrim-rgb), 0.72)), url('assets/img/process-flow/certificates-belayakorona-768.jpg');
-  }
 }
 .ds-name { fill: var(--loader-ink); }
 @keyframes ds-ground { from { opacity: 0; } to { opacity: 1; } }
