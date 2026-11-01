@@ -1896,8 +1896,8 @@ if (stage._renderer) { stage._renderer.setPixelRatio(Math.min(window.devicePixel
   const DEFS = [
     { key: 'paperOut', title: 'Paper pallets · outbound', pre: 'OUT-PP-', base: 1530, unit: 'pallets loaded',
       stages: ['Arriving', 'Loading', 'Sealing', 'Departed'], cd: ['Docks in', 'Done in', 'Departs in', 'Next truck in'] },
-    { key: 'paperOut2', title: 'Paper pallets · outbound 2', pre: 'OUT-PQ-', base: 2140, unit: 'pallets loaded',
-      stages: ['Arriving', 'Loading', 'Sealing', 'Departed'], cd: ['Docks in', 'Done in', 'Departs in', 'Next truck in'] },
+    { key: 'inbound', title: 'Draft paper rolls · inbound', pre: 'IN-DR-', base: 2140, unit: 'rolls unloaded',
+      stages: ['Arriving', 'Unloading', 'Closing', 'Departed'], cd: ['Docks in', 'Done in', 'Departs in', 'Next truck in'] },
   ];
   const rows = DEFS.map((d, i) => {
     const r = mk('div', { padding: '10px 0 12px', borderTop: '1px solid ' + LINE });
