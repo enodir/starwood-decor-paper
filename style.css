@@ -73,12 +73,12 @@
   /* Interactive surfaces are rounded; content cards (--radius-card) stay
      crisp. --radius-control covers every button and form field;
      --radius-island rounds the header bar's two outer ends (logo island's
-     left, action island's right) — 24px on request, matching the buttons
+     left, action island's right) — 28px on request, matching the buttons
      (it went 999px → 18px → --radius-control → this); every inner side (logo right,
      whole nav island, action left) is square — see .logo / .nav-island /
      .action-island. */
   --radius-control: 10px;
-  --radius-island: 24px;
+  --radius-island: 28px;
 
   --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
   --ease-in-out: cubic-bezier(0.77, 0, 0.175, 1);
@@ -673,7 +673,7 @@ p.lead { font-size: clamp(1.05rem, 1.6vw, 1.25rem); color: var(--ink-grey); }
   letter-spacing: 0.03em;
   text-transform: uppercase;
   padding: 0.9em 1.6em;
-  border-radius: 24px;
+  border-radius: 28px;
   border: 1px solid transparent;
   transition: transform 200ms var(--ease-out), background 200ms, color 200ms, border-color 200ms;
 }
@@ -1094,7 +1094,7 @@ p.lead { font-size: clamp(1.05rem, 1.6vw, 1.25rem); color: var(--ink-grey); }
   /* Black halo outside the light ring — the same dual-colour edge the
      segmented control had, so it holds up over light and dark sections. */
   box-shadow: 0 0 0 1px var(--press-black);
-  border-radius: 24px;
+  border-radius: 28px;
   transition: filter 150ms, transform 150ms var(--ease-out);
 }
 .lang-current:hover { filter: brightness(1.1); }
@@ -1394,7 +1394,7 @@ html[data-theme="day"] .theme-toggle__icon--day { opacity: 1; }
   backdrop-filter: blur(16px) saturate(120%) brightness(1.4);
   -webkit-backdrop-filter: blur(16px) saturate(120%) brightness(1.4);
   border: 0;
-  border-radius: 24px;
+  border-radius: 28px;
   box-shadow: 0 6px 18px -6px rgba(30, 26, 23, 0.22), 0 1px 2px rgba(0, 0, 0, 0.05);
   color: var(--press-black);
   opacity: 0;
@@ -1652,7 +1652,7 @@ html[data-theme="day"] .theme-toggle__icon--day { opacity: 1; }
   width: 2.25rem;
   height: 2.25rem;
   border: 1px solid rgba(247, 245, 241, 0.18);
-  border-radius: 24px;
+  border-radius: 28px;
   background: transparent;
   color: var(--pulp-white);
   transition: background-color 150ms, transform 150ms var(--ease-out);
@@ -1887,7 +1887,7 @@ html[data-theme="day"] #sustainability { background: rgba(223, 204, 190, 0.55); 
   padding: 0;
   background: transparent;
   border: 1.5px solid var(--press-black);
-  border-radius: 24px;
+  border-radius: 28px;
   color: var(--press-black);
   transition: background 150ms, opacity 150ms, transform 150ms var(--ease-out);
 }
@@ -2027,7 +2027,7 @@ html[data-theme="day"] #sustainability { background: rgba(223, 204, 190, 0.55); 
   letter-spacing: 0.03em;
   padding: 0.55em 1em;
   border: 1px solid var(--raw-pulp-dark);
-  border-radius: 24px;
+  border-radius: 28px;
   /* Darker tint than the old --pulp-white, on request — one step down the
      same light-surface family (--raw-pulp), so the buttons read as sitting
      on the page rather than as a near-white chip floating on the section's
