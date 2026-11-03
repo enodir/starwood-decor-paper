@@ -31,6 +31,8 @@ const OFF = 12;             // part 2 (04–05) sits OFF metres downstream of pa
 // raised loading docks: hangars and the forklift aprons around them stand DOCK m above the truck yard; trucks drive and park at yard level
 // and back up beside the yellow-edged apron, so their bed sits near apron height
 const DOCK = 0.8;
+// paper roll: Ø 1.12 × 2.0 m — two fit side by side across a 20 ft container (2.35 m inside), one high standing on end
+const ROLL_R = 0.56, ROLL_Y = ROLL_R + 0.001, ROLL_TOP = ROLL_Y + Math.sqrt((2 * ROLL_R) ** 2 - 0.625 ** 2);
 function dockPose(o) { o.position.y = -DOCK; o.rotation.z = 0; }
 const model = new T.Group(); model.name = 'decor_paper_production_line';
 
@@ -88,7 +90,7 @@ function steer(f, a, b) {
     // forks-first unless the motion points (near) straight behind the forks — a back-out or reverse arc; a 90° corner or
     // segment join always flips back to forks-first. Hysteresis keeps reverse arcs (heading lag) from flickering.
     const ff = Math.atan2(-dx, -dz), off = Math.abs(wrapA(ff - y));
-    u.rev = off > (u.rev ? 1.8 : 2.3);
+    u.rev = !u.noRev && off > (u.rev ? 1.8 : 2.3);
     tgt = u.rev ? wrapA(ff + Math.PI) : ff;
   }
   const y0 = y;
@@ -170,7 +172,7 @@ function guideStand(p, n, x, r = 0.1) {
   roller(g, `${n}_idler`, r, x, y, { bz: FZ });
   return g;
 }
-function paperRoll(p, n, x, y, z, r = 0.62, len = 2.0) {
+function paperRoll(p, n, x, y, z, r = ROLL_R, len = 2.0) {
   const g = grp(p, n);
   cylZ(g, `${n}_paper`, r, len, M.paper, x, y, z, 64);
   cylZ(g, `${n}_core`, 0.076, len + 0.012, M.steelDark, x, y, z, 24);
@@ -453,19 +455,19 @@ for (const sd of [1, -1]) {
 rbox(tk, 'tailboard', 0.04, 0.4, 2.5, 0.015, M.steelLight, -4.33, 1.55, 0);
 for (let i = 0; i < 8; i++) rbox(tk, 'bed_crossmember_' + (i + 1), 0.08, 0.12, 2.3, 0.015, M.steelDark, -4.1 + i * 0.85, 1.15, 0);
 for (const [i, rx] of [-3.7, -2.44, -1.18, 0.08, 1.34].entries()) {
-  const ry = 1.35 + 0.62 + 0.001;
+  const ry = 1.35 + ROLL_Y;
   paperRoll(tk, 'truck_roll_' + (i + 1), rx, ry, 0);
   for (const dx of [-0.47, 0.47]) rbox(tk, 'truck_roll_' + (i + 1) + '_chock_' + (dx < 0 ? 'rear' : 'front'), 0.14, 0.12, 1.9, 0.03, M.rubber, rx + dx, 1.41, 0);
   for (const sz of [0.6, -0.6]) {
-    const st = mesh(tk, 'truck_roll_' + (i + 1) + '_strap_' + (sz > 0 ? 'r' : 'l'), new T.TorusGeometry(0.632, 0.01, 6, 48, Math.PI), M.steelDark, rx, ry, sz);
-    for (const dx of [-0.632, 0.632]) box(tk, st.name + '_' + (dx < 0 ? 'rear' : 'front') + '_leg', 0.02, 0.62, 0.04, M.steelDark, rx + dx, 1.66, sz);
+    const st = mesh(tk, 'truck_roll_' + (i + 1) + '_strap_' + (sz > 0 ? 'r' : 'l'), new T.TorusGeometry(ROLL_R + 0.012, 0.01, 6, 48, Math.PI), M.steelDark, rx, ry, sz);
+    for (const dx of [-ROLL_R - 0.012, ROLL_R + 0.012]) box(tk, st.name + '_' + (dx < 0 ? 'rear' : 'front') + '_leg', 0.02, ROLL_Y, 0.04, M.steelDark, rx + dx, 1.35 + ROLL_Y / 2, sz);
   }
 }
 
 // unloaded roll pyramid (3 + 2)
 const stack = grp(s1, 'roll_stack');
-[-25.2, -23.95, -22.7].forEach((x, i) => paperRoll(stack, `roll_bottom_${i + 1}`, x, 0.621, 0));
-[-24.575, -23.325].forEach((x, i) => paperRoll(stack, `roll_top_${i + 1}`, x, 1.692, 0));
+[-25.2, -23.95, -22.7].forEach((x, i) => paperRoll(stack, `roll_bottom_${i + 1}`, x, ROLL_Y, 0));
+[-24.575, -23.325].forEach((x, i) => paperRoll(stack, `roll_top_${i + 1}`, x, ROLL_TOP, 0));
 box(stack, 'stack_chock_rear', 0.16, 0.14, 1.9, M.rubber, -25.67, 0.07, 0);
 box(stack, 'stack_chock_front', 0.16, 0.14, 1.9, M.rubber, -22.23, 0.07, 0);
 
@@ -724,8 +726,8 @@ const uwP = pfx(uw.clone(true), 'h1_printed_'); uwP.name = 'printed_roll_unwind'
 uwP.getObjectByName('h1_printed_unwind_roll_paper').material = M.printed;
 s3.add(pfx(eg.clone(true), 'h1_'));
 const stackP = grp(s3, 'printed_roll_stack');
-[-25.2, -23.95, -22.7].forEach((x, i) => paperRoll(stackP, `printed_roll_bottom_${i + 1}`, x, 0.621, 0));
-[-24.575, -23.325].forEach((x, i) => paperRoll(stackP, `printed_roll_top_${i + 1}`, x, 1.692, 0));
+[-25.2, -23.95, -22.7].forEach((x, i) => paperRoll(stackP, `printed_roll_bottom_${i + 1}`, x, ROLL_Y, 0));
+[-24.575, -23.325].forEach((x, i) => paperRoll(stackP, `printed_roll_top_${i + 1}`, x, ROLL_TOP, 0));
 box(stackP, 'printed_stack_chock_rear', 0.16, 0.14, 1.9, M.rubber, -25.67, 0.07, 0);
 box(stackP, 'printed_stack_chock_front', 0.16, 0.14, 1.9, M.rubber, -22.23, 0.07, 0);
 stackP.traverse(o => { if (/_paper$/.test(o.name)) o.material = M.printed; });
@@ -1108,31 +1110,54 @@ const panels = PANEL_S.map((x, i) => {
   find(tk, n => /^dropside_(rib_|top_rail_)?right/.test(n)).filter(o => o.isMesh).forEach(m => hinge.attach(m));
   const straps = find(tk, n => /^truck_roll_\d_strap_/.test(n));
   const rolls = [1, 2, 3, 4, 5].map(i => tk.getObjectByName('truck_roll_' + i));
-  const RX = [-3.7, -2.44, -1.18, 0.08, 1.34], RY = 1.35 + 0.62 + 0.001;
+  const RX = [-3.7, -2.44, -1.18, 0.08, 1.34], RY = 1.35 + ROLL_Y;
   // stack slots filled in order (bottom row, then top row); roll i comes off the truck front-first
-  const SLOTS = [['roll_bottom_1', -25.2, 0.621], ['roll_bottom_2', -23.95, 0.621], ['roll_bottom_3', -22.7, 0.621], ['roll_top_1', -24.575, 1.692], ['roll_top_2', -23.325, 1.692]];
-  const tops = [];
-  const TKX = -42, FX = [[0, -28.5, 3.7], [8, -28.5, 3.7]], LF = [[0, 0.3], [8, 0.3]], PICK = [], DROP = [];
-  let tc = 8;
+  const SLOTS = [['roll_bottom_1', -25.2, ROLL_Y], ['roll_bottom_2', -23.95, ROLL_Y], ['roll_bottom_3', -22.7, ROLL_Y], ['roll_top_1', -24.575, ROLL_TOP], ['roll_top_2', -23.325, ROLL_TOP]];
+  // flow: truck docks on the north apron (side open to the containers) → roll handler stows each roll in container A (x −10.9)
+  // → then brings rolls one by one out of container B (x −16.5) round the west apron, in through the west door, onto the stack.
+  // s1 sits at world (13.7, 0, 44): lx/lz convert world → s1 coordinates
+  const lx = x => x - 13.7, lz = z => z - 44;
+  const TXW = -38, TZ = lz(40), TL = lz(44.5), LANE = lz(62.5), PICKZ = TZ + 1.35, DOORZ = lz(59.76), SLOTZ = lz(58.41), SLOTY = 0.151 + ROLL_R;
+  const XCA = lx(-10.945), XCB = lx(-16.485), WX = lx(-22), HOME = [-26.2, 6.0];
+  const SA = paperRoll(s1, 'container_a_front_roll', XCA, SLOTY, SLOTZ), SB = paperRoll(s1, 'container_b_front_roll', XCB, SLOTY, SLOTZ);
+  const tops = [], PICKA = [], DROPA = [], INA = [], PICKB = [], DROPB = [], OUTB = [];
+  let tc = 8; const FX = [[0, ...HOME], [8, ...HOME]], LF = [[0, 0.3], [8, 0.3]];
+  const go = (x, z, minT = 1.5) => { const [, px, pz] = FX[FX.length - 1]; tc += Math.max(minT, Math.hypot(x - px, z - pz) / 5); FX.push([tc, x, z]); };
+  const hold = (dt, y) => { tc += dt; FX.push([tc, ...FX[FX.length - 1].slice(1)]); LF.push([tc, y]); };
+  go(HOME[0], 3.7); go(WX, 3.7); go(WX, TL);
+  for (let k = 0; k < 5; k++) {
+    const i = 4 - k, xr = lx(TXW) + RX[i];
+    go(xr, TL); LF.push([tc, RY - DOCK]);
+    go(xr, PICKZ, 2); LF.push([tc, RY - DOCK]); PICKA[i] = tc;
+    hold(0.6, 1.28);
+    go(xr, TL, 2);
+    go(WX, TL); go(WX, LANE); go(XCA, LANE); LF.push([tc, 0.85]);
+    const tIn = tc; go(XCA, DOORZ, 1.8); INA[i] = (tIn + tc) / 2; LF.push([tc, 0.85]);
+    hold(0.7, SLOTY); DROPA[i] = tc;
+    go(XCA, LANE); LF.push([tc, 0.3]);
+    if (k < 4) { go(WX, LANE); go(WX, TL); }
+  }
+  const TDEP = tc + 2;
   SLOTS.forEach(([name, xd, ld], k) => {
-    const i = 4 - k, xr = TKX + RX[i], from = FX[FX.length - 1][1];
-    tops[i] = stack.getObjectByName(name);
-    tc += Math.max(2, Math.abs(xr - from) / 6); FX.push([tc, xr, 3.7]); LF.push([tc, RY - DOCK]);
-    tc += 2; FX.push([tc, xr, -3.25]); LF.push([tc, RY - DOCK]); PICK[i] = tc;
-    tc += 0.6; FX.push([tc, xr, -3.25]); LF.push([tc, 2.08 - DOCK]);
-    tc += 2; FX.push([tc, xr, 3.7]);
-    tc += Math.max(2, Math.abs(xd - xr) / 6); FX.push([tc, xd, 3.7]);
-    tc += 1.5; FX.push([tc, xd, 1.35]); LF.push([tc, 2.08]);
-    tc += 0.8; FX.push([tc, xd, 1.35]); LF.push([tc, ld]); DROP[i] = tc;
-    tc += 1.2; FX.push([tc, xd, 3.7]);
+    const i = 4 - k; tops[i] = stack.getObjectByName(name);
+    go(XCB, LANE); LF.push([tc, SLOTY]);
+    go(XCB, DOORZ, 1.8); LF.push([tc, SLOTY]); PICKB[i] = tc;
+    hold(0.6, 0.85);
+    const tOut = tc; go(XCB, LANE, 1.8); OUTB[i] = (tOut + tc) / 2;
+    go(WX, LANE); go(WX, 3.7); go(xd, 3.7); LF.push([tc, 0.85]);
+    go(xd, 1.35); LF.push([tc, 2.08]);
+    hold(0.8, ld); DROPB[i] = tc;
+    go(xd, 3.7, 1.2); LF.push([tc, 0.3]);
+    if (k < 4) { go(WX, 3.7); go(WX, LANE); }
   });
-  tc += 2.5; FX.push([tc, -28.5, 3.7]); LF.push([tc, 0.3]);
+  go(HOME[0], 3.7); go(...HOME); LF.push([tc, 0.3]);
   const LOOP = Math.ceil(tc + 2);
-  // stack is used up one roll at a time: top rolls early in the loop, each bottom roll just as its replacement is picked off the truck
-  const GONE = []; SLOTS.forEach((_, k) => { const i = 4 - k; GONE[i] = k >= 3 ? 2.5 + (k - 3) * 3 : PICK[i]; });
-  FX.push([LOOP, -28.5, 3.7]); LF.push([LOOP, 0.3]);
-  const TK = [[0, -88], [6, TKX], [LOOP - 6, TKX], [LOOP, -88]];
-  const DS = [[0, 0], [6, 0], [8, 0.94], [LOOP - 8, 0.94], [LOOP - 6, 0]];
+  FX.push([LOOP, ...HOME]); LF.push([LOOP, 0.3]);
+  // the line uses the stack up: top rolls early in the loop, each bottom roll as its replacement leaves container B
+  const GONE = []; SLOTS.forEach((_, k) => { const i = 4 - k; GONE[i] = k >= 3 ? 2.5 + (k - 3) * 3 : PICKB[i]; });
+  // truck: in from the west, parks heading east at the west front of hangar 3 (open side north onto the dock), backs out west
+  const TK = [[0, lx(-66)], [8, lx(TXW)], [TDEP, lx(TXW)], [TDEP + 8, lx(-66)], [LOOP, lx(-66)]];
+  const DS = [[0, 0], [8, 0], [10, 0.94], [TDEP - 2, 0.94], [TDEP, 0]];
   const ease = u => u * u * (3 - 2 * u);
   const key = (K, t) => {
     if (t <= K[0][0]) return K[0].slice(1);
@@ -1142,29 +1167,37 @@ const panels = PANEL_S.map((x, i) => {
     }
     return K[K.length - 1].slice(1);
   };
+  const inW = (t, A, B) => A.some((x, i) => t >= x && t < B[i]);
   let prevX = null;
   const apply = t => {
-    const [tx] = key(TK, t); tk.position.x = tx; dockPose(tk, tx - 4 - EXT, -66.8, 2.5);
+    const [tx] = key(TK, t); tk.position.set(tx, 0, TZ); tk.rotation.y = 0; dockPose(tk); tk.visible = tx + 13.7 > -65.5;
     if (prevX !== null) wheels.forEach(w => w.rotation.z -= (tx - prevX) / 0.52);
     prevX = tx;
     hinge.rotation.x = key(DS, t)[0] * Math.PI;
-    straps.forEach(m => m.visible = t < 6);
+    straps.forEach(m => m.visible = t < 8);
     const [fx, fz] = key(FX, t), lift = key(LF, t)[0];
     fl.position.set(fx, 0, fz); car.position.y = lift;
-    const yw = steer(fl, key(FX, t), key(FX, t + 0.3)), sn = Math.sin(yw), cs = Math.cos(yw);
+    const yw = steer(fl, key(FX, t), key(FX, t + 0.3)), sn = Math.sin(yw), cs = Math.cos(yw), cx = fx - 1.35 * sn, cz = fz - 1.35 * cs;
+    const th = yw - Math.PI, ct = Math.cos(th), st = Math.sin(th);
     rolls.forEach((r, i) => {
-      const carried = t >= PICK[i] && t < DROP[i];
-      r.visible = t < DROP[i]; tops[i].visible = t < GONE[i] || t >= DROP[i];
-      if (carried) { r.position.set(fx - 1.35 * sn - tk.position.x - RX[i] * cs, lift - RY - tk.position.y, fz - 1.35 * cs - tk.position.z + RX[i] * sn); r.rotation.y = yw; }
+      r.visible = t < DROPA[i];
+      if (t >= PICKA[i] && t < DROPA[i]) { r.position.set(cx - tk.position.x + RX[i] * ct, lift - RY - tk.position.y, cz - tk.position.z - RX[i] * st); r.rotation.y = yw; }
+      else { r.position.set(0, 0, 0); r.rotation.y = 0; }
+    });
+    SA.visible = !inW(t, INA, DROPA); SB.visible = !inW(t, PICKB, OUTB);
+    tops.forEach((r, i) => {
+      const xd = SLOTS[4 - i][1], ld = SLOTS[4 - i][2];
+      r.visible = t < GONE[i] || t >= PICKB[i];
+      if (t >= PICKB[i] && t < DROPB[i]) { r.position.set(cx - xd * cs, lift - ld, cz + xd * sn); r.rotation.y = yw; }
       else { r.position.set(0, 0, 0); r.rotation.y = 0; }
     });
   };
   const t0 = performance.now();
-  const lastDrop = Math.max(...DROP);
+  const lastDrop = Math.max(...DROPA);
   const tick = () => {
     const el = (performance.now() - t0) / 1000, t = el % LOOP;
     window.SHIP = window.SHIP || {};
-    window.SHIP.inbound = { t, LOOP, cycle: Math.floor(el / LOOP), done: DROP.filter(d => t >= d).length, total: DROP.length, marks: [6, lastDrop, LOOP - 6, LOOP] };
+    window.SHIP.inbound = { t, LOOP, cycle: Math.floor(el / LOOP), done: DROPA.filter(d => t >= d).length, total: DROPA.length, marks: [8, lastDrop, TDEP, LOOP] };
     apply(t); requestAnimationFrame(tick);
   };
   requestAnimationFrame(tick);
@@ -1269,6 +1302,11 @@ const panels = PANEL_S.map((x, i) => {
     return [...glide(t0, tb, rev, true), ...glide(tb, t1, [E, ...P.slice(1)])];
   };
   const lg = grp(model, 'sheet_transfer_logistics');
+  // ground under the forklifts: apron/hangar floor 0, ramp R1 (x −62…−58, z −1…9), truck yard (−DOCK), ramp R2 (x −40…−32.6, z 13.4…16.7)
+  const gy = () => 0;   // every forklift route now stays on dock level (hangar floors, aprons, the raised way between hangars 1 and 2)
+  // yard crossings only while neither paper-pallet truck is moving (both move at loop t 0–6 and 36.5–42.5)
+  const badT = t => { const m = ((t % 60) + 60) % 60; return m > 59.5 || m < 7 || (m > 35.5 && m < 43.5); };
+  const clearAt = (t, off) => { while (badT(t + off) || badT(t + off + 2.5)) t += 0.1; return t; };
   const prefix = (root, p) => root.traverse(o => { if (o.name) o.name = p + o.name; });
   const truck = (pre, name, x, z) => {
     const f = fl.clone(true); f.position.set(x, 0, z);
@@ -1337,10 +1375,10 @@ const panels = PANEL_S.map((x, i) => {
   // floor places only (no store buildings): empty-pallet place at PX0, impregnated paper place at BUF
   const pStore = { st: grp(lg, 'empty_pallet_place'), back: BZ };
   const stockTop = [];   // top three of the stack leave together on the collector
-  for (let k = 0; k < 5; k++) { const g = grp(pStore.st, 'empty_pallet_stock_' + (k + 1), PX0, k * 0.125, pStore.back); palletBase(g, 'empty_pallet_stock_' + (k + 1)); if (k >= 2) stockTop.push(g); }
+  for (let k = 0; k < 5; k++) { const g = grp(pStore.st, 'empty_pallet_stock_' + (k + 1), -12.7, k * 0.125, 17.2); palletBase(g, 'empty_pallet_stock_' + (k + 1)); if (k >= 2) stockTop.push(g); }
   // particleboard truck: arrives from the west like the other trucks, parks west of hangar 2 (side open to the north);
   // the board unloader carries its two-high load through the west door to the particleboard pile beside the paper rolls
-  const BTX = -26, BTZ = 12.0, UPXA = BTX - 2.45, UPXB = BTX + 0.15, UDX = -15.5, UDZ = 22;   // full bed: two 2-high stacks (rear A, front B)
+  const BTX = -26, BTZ = 12.0, UPXA = BTX - 2.45, UPXB = BTX + 0.15, UDX = -9.5, UDZ = 24.4;   // full bed: two 2-high stacks (rear A, front B)
   const bt = tk.clone(true);
   [...bt.children].filter(o => /^truck_roll_/.test(o.name)).forEach(o => bt.remove(o));
   const bHubs = []; bt.traverse(o => { if (/^wheel_.*_hub$/.test(o.name)) bHubs.push(o); });
@@ -1352,8 +1390,8 @@ const panels = PANEL_S.map((x, i) => {
   const dHubs = []; dTruck.traverse(o => { if (/^wheel_.*_hub$/.test(o.name)) dHubs.push(o); });
   const dHinge = dTruck.getObjectByName('hinge_dropside_right');
   prefix(dTruck, 'dispatch_'); dTruck.name = 'paper_dispatch_truck'; dTruck.position.set(-66, 0, DTZ); lg.add(dTruck);
-  // second paper dispatch truck: parks in the south bay (z 12, x −26), calls in the other half of the 4-loop cycle (sD 120–240)
-  const D2X = -26, D2Z = 12.0, dTruck2 = tk.clone(true);
+  // second paper dispatch truck: same bay as the first (the old z 12 truck lane is now the raised forklift way), calls in the other half of the 4-loop cycle (sD 120–240)
+  const D2X = -38, D2Z = 18, dTruck2 = tk.clone(true);
   [...dTruck2.children].filter(o => /^truck_roll_/.test(o.name)).forEach(o => dTruck2.remove(o));
   const dHubs2 = []; dTruck2.traverse(o => { if (/^wheel_.*_hub$/.test(o.name)) dHubs2.push(o); });
   const dHinge2 = dTruck2.getObjectByName('hinge_dropside_right');
@@ -1368,7 +1406,7 @@ const panels = PANEL_S.map((x, i) => {
   const DSB = [[0, 0], [26, 0], [27.5, 0.94], [62.5, 0.94], [64, 0], [DCY, 0]];
   let prevBX = null;
   // empty-pallet dispenser beside the stacker (hangar 1): stack hidden in the cabinet, one pallet at the pick slot
-  const DPX = 10.0, DPZ = 5.8, emptyPallet = n => { const g = grp(lg, n); palletBase(g, n); return { g }; };
+  const DPX = 10.0, DPZ = 4.5, emptyPallet = n => { const g = grp(lg, n); palletBase(g, n); return { g }; };
   {
     const dp = grp(lg, 'empty_pallet_dispenser');
     for (const dx of [-1.2, 1.2]) for (const dz of [-1.45, 1.45]) box(dp, 'dispenser_post_' + (dx < 0 ? 'w' : 'e') + (dz < 0 ? 's' : 'n'), 0.1, 2.2, 0.1, M.steelDark, DPX + dx, 1.1, DPZ + dz);
@@ -1391,21 +1429,28 @@ const panels = PANEL_S.map((x, i) => {
   for (const k of [1, 2]) { const g = grp(prs.g, 'restock_empty_pallet_' + (k + 1), 0, k * 0.125, 0); palletBase(g, 'restock_empty_pallet_' + (k + 1)); }
   const MDFM = std('mdf_board', 0x9c6f45, 0.75);
   // particleboard truck calls every 2nd loop with two pallets (stacked) → particleboard pile (x 11, z 20.3); the press feeder takes one per loop off the top
-  const BT_EVERY = 2, PH2 = 0.125 + NB * BH + 0.02, PILE_X = -11.0, PILE_Z = 25.0, PZF = PILE_Z + 1.1, PZR = PZF + 1.8;   // low pile on the north row, picked from the north aisle
+  const BT_EVERY = 2, PH2 = 0.125 + NB * BH + 0.02, PILE_X = -12.7, PILE_Z = 26.8, PZF = PILE_Z + 1.1, PZR = PZF + 1.8;   // low pile on the north row, picked from the north aisle
   // working pile (0–4 high) over a 4-loop cycle: τ = (L % 4)·60 + t; feeder takes one per loop, truck brings four
   const PTS = [0, 1, 2, 3].map(i => { const p = boardPallet('pile_pallet_' + (i + 1)); p.fill(NB); p.g.position.set(PILE_X, i * PH2, PILE_Z); return p; });
   const pileCnt = u => u < 29.45 ? 1 : u < 45.6 ? 0 : u < 75.6 ? 2 : u < 89.45 ? 4 : u < 149.45 ? 3 : u < 209.45 ? 2 : 1;
   const PICK_TIER = [0, 3, 2, 1];
   { // hangar 2 west entrance (door on z 22): paper rolls on the left (south), particleboard piles on the right (north); MDF further east
     const st = grp(lg, 'hangar_2_stock');
-    for (const [r, z] of [[1, 17.9], [2, 19.3]]) for (let i = 0; i < 6; i++) {   // rolls stored standing on end
-      const n = `stock_roll_r${r}_${i + 1}`, g = grp(st, n), x = -13.6 + i * 1.3;
-      cylY(g, n + '_paper', 0.62, 2.0, M.paper, x, 1.0, z, 64);
-      cylY(g, n + '_core', 0.076, 2.012, M.steelDark, x, 1.0, z, 24);
+    { // delivery-ready rows: 2 deep each side, 11 bays, 4 high; the two bays nearest the door hold the buffer · empty-pallet · dispatch · putaway places
+      const PS = 0.125 + N * SH, spots = [];
+      for (let k = 0; k <= 10; k++) for (const z of [15.0, 17.2, 26.8, 29.0]) if (!((k === 1 && z === 17.2) || (k < 2 && z === 26.8))) spots.push([-15.5 + 2.8 * k, z]);
+      const n = spots.length * 4, base = new T.InstancedMesh(new T.BoxGeometry(2.6, 0.125, 2.1), M.mdf, n), load = new T.InstancedMesh(new T.BoxGeometry(2.5, N * SH, 1.95), M.impreg.clone(), n);
+      base.name = 'stores_stock_pallet_bases'; load.name = 'stores_stock_paper_stacks'; load.material.name = 'stores_stock_impregnated'; load.material.color.set(0xffffff);
+      const mx = new T.Matrix4(), col = new T.Color(); let i = 0;
+      spots.forEach(([x, z], j) => { for (let tier = 0; tier < 4; tier++, i++) {
+        mx.makeTranslation(x, tier * PS + 0.0625, z); base.setMatrixAt(i, mx);
+        mx.makeTranslation(x, tier * PS + 0.125 + N * SH / 2, z); load.setMatrixAt(i, mx); load.setColorAt(i, col.setHex(DEC[(j * 3 + tier) % DEC.length].impreg));
+      } });
+      st.add(base, load);
     }
     // impregnated paper waiting to ship to the press plant; the putaway pile at PILE_X takes the newest pallet on top
     const PS = 0.125 + N * SH; let k = 0;
-    for (const [x, z, n] of [[PILE_X + 4.1, PILE_Z, 4], [-4.2, 20.3, 4], [-4.2, 23.7, 2], [PILE_X, PILE_Z, 2]]) for (let tier = 0; tier < n; tier++) {
+    for (const [x, z, n] of [[PILE_X, PILE_Z, 2]]) for (let tier = 0; tier < n; tier++) {
       const p = sheetPallet('stock_paper_pallet_' + (++k)); p.fill(N); p.mat.color.setHex(DEC[(k * 3) % DEC.length].impreg); st.attach(p.g); p.g.position.set(x, tier * PS, z);
     }
     let m = 0;
@@ -1438,13 +1483,13 @@ const panels = PANEL_S.map((x, i) => {
   // collector: full pallet off the lowered table → hangar 1 east door → paper store (from the south) → back →
   // empty pallet from the dispenser → onto the lift table
   // return leg is loaded: after the buffer drop it takes an empty pallet from the pallet store back to the dispenser stack (04)
-  const PSB = pStore.back - 1.1;
-  const F3 = [[0, LX, 5.6], [14.6, LX, 5.6], [16.6, LX, 1.1], [17.2, LX, 1.1], [18.6, LX, 5.8],
-    ...glide(18.6, 25.8, [[LX, 5.8], [YX, 5.8], [YX, SL], [BUF, SL], [BUF, BZ - 1.1]]), [26.2, BUF, BZ - 1.1],
-    ...backOut(26.2, 29.6, [[BUF, BZ - 1.1], [BUF, SL], [PX0, SL], [PX0, PSB]]), [30.5, PX0, PSB], ...backOut(30.5, 39.2, [[PX0, PSB], [PX0, SL], [YX, SL], [YX, 5.8], [DPX + 2.2, 5.8]]),
-    [40.2, DPX + 1.1, DPZ], [40.7, DPX + 1.1, DPZ], [41.5, DPX + 2.2, DPZ], [42.1, DPX + 2.2, DPZ], [42.9, DPX + 1.1, DPZ], [43.3, DPX + 1.1, DPZ], [44.0, LX, 5.8], [45.6, LX, 1.1], [PLACE, LX, 1.1], [48.0, LX, 5.8], [48.5, LX, 5.6], [LL, LX, 5.6]];
-  const L3 = [[0, 0.35], [16.6, 0.35], [17.2, 0.5], [25.8, 0.5], [26.2, 0.1], [27.5, 0.1], [29.2, 0.35], [29.9, 0.35], [30.5, 0.6], [31.5, 0.6], [32.5, 0.4], [37.5, 0.4], [38.7, 1.2], [40.2, 1.2],
-    [40.7, 1.0], [41.5, 1.0], [42.1, 0.1], [42.9, 0.1], [43.3, 0.35], [45.6, 0.35], [PLACE, 0.3], [48.0, 0.3], [49, 0.35], [LL, 0.35]];
+  const NZ = 7.3, HPX = -17.8, HPZ = 6.8, HPO = HPZ - 1.1, SZ3 = 3.0, DROP3 = 29.8;
+  // every reverse is a short straight back-out to a full stop; the next leg leaves at 90° so the truck always drives off forks-first
+  const F3 = [[0, LX, 5.6], [14.6, LX, 5.6], [16.6, LX, 1.1], [17.2, LX, 1.1], [18.4, LX, NZ],
+    ...glide(18.4, 29.2, [[LX, NZ], [-13.5, NZ], [-13.5, SZ3], [HPX, SZ3], [HPX, HPO]]), [DROP3, HPX, HPO], [31.0, HPX, SZ3],
+    ...glide(31.0, 41.6, [[HPX, SZ3], [-13.5, SZ3], [-13.5, NZ], [DPX + 2.2, NZ], [DPX + 2.2, DPZ]]),
+    [42.1, DPX + 2.2, DPZ], [42.9, DPX + 1.1, DPZ], [43.3, DPX + 1.1, DPZ], [44.0, LX, 5.8], [45.6, LX, 1.1], [PLACE, LX, 1.1], [48.0, LX, 5.8], [48.5, LX, 5.6], [LL, LX, 5.6]];
+  const L3 = [[0, 0.35], [16.6, 0.35], [17.2, 0.5], [29.2, 0.5], [DROP3, 0.1], [41.6, 0.1], [42.9, 0.1], [43.3, 0.35], [45.6, 0.35], [PLACE, 0.3], [48.0, 0.3], [49, 0.35], [LL, 0.35]];
   // board unloader: west door → truck bed → back through the door → north aisle → particleboard pile (from the north)
   const trip5 = (o, ux) => [[o + 27.5, UDX, UDZ], ...glide(o + 27.5, o + 32, [[UDX, UDZ], [ux, UDZ], [ux, BTZ + 1.1]]), [o + 32.5, ux, BTZ + 1.1], [o + 35, ux, UDZ],
     ...glide(o + 35, o + 44, [[ux, UDZ], [UDX, UDZ], [UDX, NL], [PILE_X, NL], [PILE_X, PZR]]), [o + 45, PILE_X, PZF], [o + 45.6, PILE_X, PZF], ...backOut(o + 45.6, o + 55, [[PILE_X, PZF], [PILE_X, NL], [UDX, NL], [UDX, UDZ]])];
@@ -1453,16 +1498,16 @@ const panels = PANEL_S.map((x, i) => {
   // paper dispatch (loops 2–3 of each 4-loop cycle, sD 0–120): the board unloader takes the dispatch paper pallet (x −1.5) off the
   // z 22 place row — dispatch paper · empty pallets (4.5) · press paper (10.5), 6 m apart — from NL, out of the west door onto the truck.
   // NL west of x 4.5 is the press feeder's only in loop t 19–38, so the NL runs sit outside that window. Restocked at sD 100.
-  const DSZ = BZ, DSF = DSZ + 1.1, DSR = DSF + 1.8, PHS = 0.125 + N * SH;
+  const DSZ = 26.8, DSF = DSZ + 1.1, DSR = DSF + 1.8, PHS = 0.125 + N * SH;
   const trip6 = (o, sx, ux, g, r, tz = DTZ, tx = DTX) => {
-    const a = o + g, b = a + 1, c = b + 0.6, d = c + r, e = d + 0.6, f = e + 1.0;
+    const a = o + g, b = a + 1, c = b + 0.6, d = c + r, e = d + 0.6, f = e + 1.0, PZ = DSZ - 1.1;
     return { x: sx, ux, tz, tx, pick: b, drop: e + 0.5,
-      F: [[o, UDX, UDZ], ...glide(o, a, [[UDX, UDZ], [UDX, NL], [sx, NL], [sx, DSR]]), [b, sx, DSF], [c, sx, DSF],
-        ...backOut(c, d, [[sx, DSF], [sx, NL], [UDX, NL], [UDX, UDZ], [ux, UDZ], [ux, tz + 1.1]]), [e, ux, tz + 1.1], [f, ux, tz + 1.1],
-        ...backOut(f, f + 9, [[ux, tz + 1.1], [ux, UDZ], [UDX, UDZ]])],
-      L: [[o, 0.3], [a, 0.3], [b, 0.1], [b + 0.1, 0.1], [c, 0.25], [c + 1, 0.4], [d - 1.5, 0.4], [d, 1.55 - DOCK], [e, 1.55 - DOCK], [e + 0.5, 1.45 - DOCK], [f, 1.45 - DOCK], [f + 1.5, 0.3]] };
+      F: [[o, UDX, UDZ], ...glide(o, a, [[UDX, UDZ], [sx, UDZ], [sx, PZ]]), [b, sx, PZ], [c, sx, PZ],
+        ...backOut(c, d, [[sx, PZ], [sx, 22], [-18.1, 22], [ux, 22], [ux, tz + 1.1]]), [e, ux, tz + 1.1], [f, ux, tz + 1.1],
+        ...backOut(f, f + 9, [[ux, tz + 1.1], [ux, 22], [-12, 22], [UDX, UDZ]])],
+      L: [[o, 0.3], [a - 1, 0.1], [b, 0.1], [b + 0.1, 0.1], [c, 0.25], [c + 1, 0.4], [d - 1.5, 0.4], [d, 1.55 - DOCK], [e, 1.55 - DOCK], [e + 0.5, 1.45 - DOCK], [f, 1.45 - DOCK], [f + 1.5, 0.3]] };
   };
-  const DT = [trip6(1, -1.5, DTX - 1.15, 5, 16), trip6(1, -1.5, D2X - 1.15, 5, 16, D2Z, D2X)];
+  const DT = [trip6(1, -15.5, DTX - 1.15, 5, 16), trip6(1, -15.5, D2X - 1.15, 5, 16, D2Z, D2X)];
   DT[0].off = 0; DT[1].off = 120;
   const F6 = [[0, UDX, UDZ], ...DT[0].F, [120, UDX, UDZ]], L6 = [[0, 0.3], ...DT[0].L, [120, 0.3]];
   const F6b = [[0, UDX, UDZ], ...DT[1].F, [120, UDX, UDZ]], L6b = [[0, 0.3], ...DT[1].L, [120, 0.3]];
@@ -1470,28 +1515,75 @@ const panels = PANEL_S.map((x, i) => {
     S.p = [0].map(k => { const p = sheetPallet('dispatch_paper_pallet_' + (i + 1)); p.fill(N); p.mat.color.setHex(DEC[1].impreg); p.g.position.set(S.x, k * PHS, DSZ); return p; });
   });
   // stores forklift (hangar 2): fresh impregnated pallet off the buffer place (north side) → putaway pile, then parks on the north aisle
-  const P4Z = NL - 1, P4_PICK = 32.05, P4_DROP = 41.5;
-  const F4 = [[0, BUF, P4Z], [30, BUF, P4Z], [32, BUF, BZ + 1.1], [32.6, BUF, BZ + 1.1],
-    ...backOut(32.6, 40, [[BUF, BZ + 1.1], [BUF, NL], [PILE_X, NL], [PILE_X, PZR]]), [41, PILE_X, PZF], [41.9, PILE_X, PZF],
-    ...backOut(41.9, 50, [[PILE_X, PZF], [PILE_X, NL], [BUF, NL], [BUF, P4Z]]), [LL, BUF, P4Z]];
-  const L4 = [[0, 0.1], [32, 0.1], [32.6, 0.3], [38, 0.3], [40, 1.3], [41, 1.3], [41.5, 1.15], [41.9, 1.08], [43.5, 0.3], [49, 0.1], [LL, 0.1]];
+  lg.remove(f4);
+  // runner: parks on the raised way east of the pallet door (hangar-1 mid-length), backs round into hangar 1 through the pallet door (x HPX), takes the pallet
+  // off the hand-off place from the north, out the same door, east along the way and into hangar 2; waits for the dispatch forklift if needed
+  const LN8 = 11.2, W8 = [HPX + 4, LN8], HPN = HPZ + 1.1, PZO = PILE_Z - 1.1;
+  const [f8, c8] = truck('runner_', 'forklift_stores_runner', ...W8); f8.userData.yaw = Math.PI / 2;
+  const O8 = 31.6, PICKU = 4.5;   // runner clock u = t − O8, starts once the collector has left the hand-off place
+  const pl = P => P.slice(1).reduce((m, p, i) => m + Math.hypot(p[0] - P[i][0], p[1] - P[i][1]), 0);
+  const F8 = [[0, ...W8], [0.5, ...W8], ...backOut(0.5, PICKU, [W8, [HPX, LN8], [HPX, HPN]]), [PICKU + 0.6, HPX, HPN]];
+  let u = PICKU + 0.6;
+  const f5At = T => { const tf = ((T % 120) + 120) % 120; return [key(F6, tf), key(F6b, tf)]; };
+  const clear8 = (K, a, b) => { for (let q = a; q <= b; q += 0.2) { const p = key(K, q), c = key(F3, (q + O8) % LL); if (Math.hypot(p[0] - c[0], p[1] - c[1]) < 4.2) return false; for (const h of [0, 60]) for (const o of f5At(q + O8 + h)) if (Math.hypot(o[0] - UDX, o[1] - UDZ) > 0.01 && Math.hypot(p[0] - o[0], p[1] - o[1]) < 4.2) return false; } return true; };
+  const go8 = (P, back, v = 5) => {
+    const d = pl(P) / v + (back ? 1 : 0);
+    for (let w = 0; w < 40; w += 0.25) { const ts = u + w, K = [[u, ...P[0]], [ts, ...P[0]], ...(back ? backOut : glide)(ts, ts + d, P)]; if (clear8(K, u, ts + d)) { if (w) F8.push([ts, ...P[0]]); F8.push(...K.slice(2)); u = ts + d; return; } }
+    console.warn('runner: no clear slot from', P[0]); F8.push(...glide(u, u + d, P)); u += d;
+  };
+  go8([[HPX, HPN], [HPX, LN8], [-24, LN8], [-24, 22], [PILE_X, 22], [PILE_X, PZO]], true);
+  const u2 = u, DROPU = u2 + 0.3; F8.push([u2 + 0.6, PILE_X, PZO], [u2 + 1.8, PILE_X, 22]); u = u2 + 1.8;
+  go8([[PILE_X, 22], [-24, 22], [-24, LN8], W8]);
+  if (u >= LL) console.warn('runner loop overrun', u);
+  F8.push([LL, ...W8]);
+  const L8 = [[0, 0.1], [PICKU, 0.1], [PICKU + 0.6, 0.4], [u2 - 1.5, 0.4], [u2 - 0.2, 1.3], [DROPU, 1.15], [u2 + 0.6, 1.08], [u2 + 2, 0.3], [u2 + 3, 0.1], [LL, 0.1]];
   // printed-roll transfer (roll clamp): top roll off the HANGAR-3 rewinder stack (east door, z 40) → yard lane x 21 → HANGAR-1 south-east door (z −6)
   // → printed-roll stack at the impregnation unwind; back the same way. Clear of the collector's yard runs (min gap ≈ 7 m).
-  const H3Z = 40.0, H3S = 13.0, A7 = 14.35, W7 = 17.0, LANE7 = 21.0, ZS7 = -6.0, H1X = -42.725, H1D = -1.35;
+  const H3Z = 40.0, H3S = 9.5, A7 = H3S + 1.35, W7 = A7, LANE7 = 21.0, ZS7 = -6.0, H1X = -42.725, H1D = 1.35, RDX = -45.5;   // RDX: roll door (west); the mid-length door (x −17.8) is the pallet door
   const f7 = fl.clone(true); f7.position.set(W7, 0, H3Z); f7.rotation.y = Math.PI / 2; prefix(f7, 'transfer_'); f7.name = 'forklift_roll_transfer'; lg.add(f7); f7.userData.yaw = Math.PI / 2;
   const c7 = f7.getObjectByName('transfer_fl_carriage');
   const r7 = paperRoll(lg, 'transfer_carried_roll', 0, 0, 0); r7.getObjectByName('transfer_carried_roll_paper').material = M.printed;
-  const rollX = (n, x, y, z) => { const g = grp(lg, n, x, y, z); cylX(g, n + '_paper', 0.62, 2.0, M.printed, 0, 0, 0, 64); cylX(g, n + '_core', 0.076, 2.012, M.steelDark, 0, 0, 0, 24); return g; };
-  rollX('printed_roll_out_1', H3S, 0.621, H3Z - 0.625); rollX('printed_roll_out_2', H3S, 0.621, H3Z + 0.625);
-  const h3top = rollX('printed_roll_out_top', H3S, 1.692, H3Z);
+  const rollX = (n, x, y, z) => { const g = grp(lg, n, x, y, z); cylX(g, n + '_paper', ROLL_R, 2.0, M.printed, 0, 0, 0, 64); cylX(g, n + '_core', 0.076, 2.012, M.steelDark, 0, 0, 0, 24); return g; };
+  rollX('printed_roll_out_1', H3S, ROLL_Y, H3Z - 0.625); rollX('printed_roll_out_2', H3S, ROLL_Y, H3Z + 0.625);
+  const h3top = rollX('printed_roll_out_top', H3S, ROLL_TOP, H3Z);
   for (const sd of [1, -1]) box(lg, 'printed_roll_out_chock_' + (sd > 0 ? 'n' : 's'), 1.9, 0.14, 0.16, M.rubber, H3S, 0.07, H3Z + sd * 1.095);
   const h1top = model.getObjectByName('printed_roll_top_2');
-  const F7 = [[0, W7, H3Z], [1.4, A7, H3Z], [2.0, A7, H3Z],
-    ...backOut(2.0, 28.0, [[A7, H3Z], [LANE7, H3Z], [LANE7, ZS7], [H1X, ZS7], [H1X, H1D]]), [29.0, H1X, H1D],
-    ...backOut(29.0, 55.0, [[H1X, H1D], [H1X, ZS7], [LANE7, ZS7], [LANE7, H3Z], [W7, H3Z]]), [LL, W7, H3Z]];
-  const L7 = [[0, 1.692], [1.4, 1.692], [2.0, 1.8], [5, 1.0], [25, 1.0], [27.5, 1.8], [28.4, 1.8], [28.8, 1.692], [30.5, 1.692], [33, 1.0], [52, 1.0], [55, 1.692], [LL, 1.692]];
+  // HANGAR-3 south-west door (z 40.3; the z 47.7 door is the base-paper handler's) → x −24 lane → raised way between hangars 1 and 2 → HANGAR-1 roll door (north side, x −45.5) →
+  // unwind stack from the north; back the same way. One roll per 240 s; it waits at home or at the
+  // hold points until the collector, runner and dispatch forklift are clear.
+  const plen = P => P.slice(1).reduce((m, p, i) => m + Math.hypot(p[0] - P[i][0], p[1] - P[i][1]), 0);
+  const V7 = 4.2, LP7 = 240, F7 = [[0, A7, H3Z], [1.0, A7, H3Z]]; let t7 = 1.0;
+  const REV7 = [];
+  // collector, runner, and the dispatch forklift (both of its 120 s trip variants — the roll loop is 120 s too, so its phase is fixed)
+  const others = T => { const t = ((T % LL) + LL) % LL, tf = ((T % 120) + 120) % 120; return [key(F3, t), key(F8, (t - O8 + LL) % LL), key(F6, tf), key(F6b, tf)]; };
+  // each run waits (at its start point, clear of the other forklifts' routes) until the whole hold + run keeps 4.2 m from the
+  // collector and runner, and — west of x −54.5 (ramps / yard) — no paper-pallet truck is moving
+  let arr7 = 0, dep7 = null;
+  const run7 = (P, back) => {
+    const d = plen(P) / V7;
+    for (let w = 0; w < 80; w += 0.25) {
+      const ts = t7 + w, K = [[t7, ...P[0]], [ts, ...P[0]], ...(back ? backOut : glide)(ts, ts + d, P)];
+      let ok = true;
+      for (let q = arr7; q <= ts + d && ok; q += 0.2) {
+        const p = key(K, q);
+        if (p[0] < -54.5 && badT(q)) { ok = false; break; }
+        for (const o of others(q)) if (Math.hypot(p[0] - o[0], p[1] - o[1]) < 4.2) { ok = false; break; }
+      }
+      if (ok) { if (dep7 === null) dep7 = ts; if (w) F7.push([ts, ...P[0]]); F7.push(...K.slice(2)); if (back) REV7.push([ts, ts + Math.min(5, d * 0.45)]); t7 = arr7 = ts + d; return; }
+    }
+    console.warn('roll transfer: no clear slot for run from', P[0]); F7.push(...glide(t7, t7 + d, P)); t7 = arr7 = t7 + d;
+  };
+  run7([[A7, H3Z], [13.5, H3Z], [13.5, 37], [-15.5, 37], [-15.5, 40.3], [-24, 40.3], [-24, 30]], true);
+  run7([[-24, 30], [-24, LN8], [RDX, LN8], [RDX, 5], [H1X, 5], [H1X, H1D]]);
+  const T7D = t7 + 0.6; F7.push([T7D, H1X, H1D]); t7 = T7D;
+  run7([[H1X, H1D], [H1X, 5], [RDX, 5], [RDX, LN8], [-24, LN8], [-24, 30]], true);
+  run7([[-24, 30], [-24, 40.3], [-15.5, 40.3], [-15.5, 37], [13.5, 37], [13.5, H3Z], [A7, H3Z]]);
+  { let m = 99; for (let q = arr7; q <= LP7; q += 0.2) for (const o of others(q)) m = Math.min(m, Math.hypot(A7 - o[0], H3Z - o[1])); if (m < 4.2) console.warn('roll transfer: home hold conflict', m); }
+  if (t7 > LP7 - 1) console.warn('roll transfer overrun', t7);
+  F7.push([LP7, A7, H3Z]);
+  const L7 = [[0, ROLL_TOP], [dep7 - 1, ROLL_TOP], [dep7, 1.8], [dep7 + 2.5, 1.0], [T7D - 3.5, 1.0], [T7D - 1.2, 1.8], [T7D - 0.6, 1.8], [T7D, ROLL_TOP], [T7D + 3, 1.0], [t7 - 3, 1.0], [t7 - 1, ROLL_TOP], [LP7, ROLL_TOP]];
   const TOPY = 1.26, LOW = TOPY - 0.125 - N * SH, EMPTY = TOPY - 0.125;
-  const onForks = (p, f, l) => { const y = f.rotation.y; p.g.position.set(f.position.x - 1.1 * Math.sin(y), l - 0.1, f.position.z - 1.1 * Math.cos(y)); p.g.rotation.y = y; };
+  const onForks = (p, f, l) => { const y = f.rotation.y; p.g.position.set(f.position.x - 1.1 * Math.sin(y), l - 0.1 + f.position.y, f.position.z - 1.1 * Math.cos(y)); p.g.rotation.y = y; };
   const place = (p, x, y, z, ry = 0) => { p.g.position.set(x, y, z); p.g.rotation.y = ry; };
   const t0 = performance.now();
   const tick = now => {
@@ -1536,9 +1628,10 @@ const panels = PANEL_S.map((x, i) => {
     ltPlat.position.y = tt - 0.03; ltCol.scale.y = tt - 0.18; ltCol.position.y = (0.12 + tt - 0.06) / 2;
     pt.g.visible = t < 16.6 || t >= PLACE; pt.g.position.set(LX, tt, 0); pt.fill(shown);
     // forklifts
-    const [x3, z3] = key(F3, t), l3 = key(L3, t)[0], [x4, z4] = key(F4, t), l4 = key(L4, t)[0];
+    const [x3, z3] = key(F3, t), l3 = key(L3, t)[0];
     f3.position.set(x3, 0, z3); c3.position.y = l3 + 0.22; steer(f3, key(F3, t), key(F3, t + 0.3));
-    f4.position.set(x4, 0, z4); c4.position.y = l4 + 0.22; steer(f4, key(F4, t), key(F4, t + 0.3));
+    const u8 = (t - O8 + LL) % LL, [x8, z8] = key(F8, u8), l8 = key(L8, u8)[0];
+    f8.position.set(x8, gy(x8, z8), z8); c8.position.y = l8 + 0.22; steer(f8, key(F8, u8), key(F8, u8 + 0.3));
     const sD = (tau + 120) % 240, dsp = sD < 120, FK = dsp ? F6 : F6b, LK = dsp ? L6 : L6b, tF = dsp ? sD : sD - 120;
     const [x5, z5] = key(FK, tF), l5 = key(LK, tF)[0];
     f5.position.set(x5, 0, z5); c5.position.y = l5 + 0.22; steer(f5, key(FK, tF), key(FK, tF + 0.3));
@@ -1565,32 +1658,39 @@ const panels = PANEL_S.map((x, i) => {
     window.SHIP.paperOut = { t: sD, LOOP: 240, cycle: Math.floor((L + 2) / 4), done: sD >= DT[0].drop ? 1 : 0, total: 1, marks: [6, DT[0].drop, 36.5, 240] };
     window.SHIP.paperOut2 = { t: sD2, LOOP: 240, cycle: Math.floor(L / 4), done: sD2 >= DT[1].drop ? 1 : 0, total: 1, marks: [6, DT[1].drop, 36.5, 240] };
     // printed-roll transfer HANGAR-3 → HANGAR-1
-    const [x7, z7] = key(F7, t), l7 = key(L7, t)[0];
-    f7.position.set(x7, 0, z7); c7.position.y = l7; const y7 = steer(f7, [x7, z7], null);
-    const carry7 = t >= 1.4 && t < 28.8; r7.visible = carry7;
-    if (carry7) { r7.position.set(x7 - 1.35 * Math.sin(y7), l7, z7 - 1.35 * Math.cos(y7)); r7.rotation.y = y7; }
-    h3top.visible = t < 1.4 || t >= 40; if (h1top) h1top.visible = t >= 28.8 || t < 12;
+    const t7n = T % LP7, [x7, z7] = key(F7, t7n), l7 = key(L7, t7n)[0], g7 = gy(x7, z7);
+    f7.position.set(x7, g7, z7); c7.position.y = l7; f7.userData.noRev = !REV7.some(([a, b]) => t7n >= a && t7n < b); const y7 = steer(f7, [x7, z7], null);
+    const carry7 = t7n >= dep7 - 0.6 && t7n < T7D; r7.visible = carry7;
+    if (carry7) { r7.position.set(x7 - 1.35 * Math.sin(y7), l7 + g7, z7 - 1.35 * Math.cos(y7)); r7.rotation.y = y7; }
+    h3top.visible = t7n < dep7 - 0.6 || t7n >= dep7 + 59.4; if (h1top) h1top.visible = t7n >= T7D || t7n < T7D - 20;
     // restock on the return leg: three empty pallets off the stack (29.9) → dispenser stack top (40.45), feeds the slot at 43.9
-    stockTop.forEach((g, i) => g.visible = t < 29.9 || t >= 50 + i);
-    prs.g.visible = t >= 29.9 && t < 43.9;
-    if (t < 40.45) onForks(prs, f3, l3); else place(prs, DPX, 1.0, DPZ, Math.PI / 2);
+    prs.g.visible = false;
     // new stacking pallet: dispenser slot → collector forks (42.9) → lift table (46.0); next one drops into the slot
     pm.g.visible = t >= 42.9 && t < PLACE; if (pm.g.visible) onForks(pm, f3, l3);
     pd.g.visible = !(t >= 42.9 && t < 43.9); pd.g.position.y = t >= 43.9 && t < 44.9 ? 0.5 * (1 - ease(t - 43.9)) : 0;
     // impregnated pallet: collector forks → buffer place → stores forklift → top of the putaway pile (until the next one leaves the stacker)
-    if (t < 16.6 || t >= P4_DROP) place(pc, PILE_X, 2 * PHS, PILE_Z);
-    else if (t < 26.2) onForks(pc, f3, l3);
-    else if (t < P4_PICK) place(pc, BUF, 0, BZ);
-    else onForks(pc, f4, l4);
+    // impregnated pallet: collector → hand-off (hangar-1 west end) → runner → buffer place (hangar-2) → stores forklift → putaway pile
+    if (u8 >= PICKU && u8 < DROPU) onForks(pc, f8, l8);
+    else if (t >= 16.6 && t < DROP3) onForks(pc, f3, l3);
+    else if (t >= DROP3 && t < O8 + PICKU) place(pc, HPX, 0, HPZ);
+    else place(pc, PILE_X, 2 * PHS, PILE_Z);
     requestAnimationFrame(tick);
   };
   requestAnimationFrame(tick);
 }
 
-/* ---------- hangars: white corrugated arch buildings ---------- */
+/* ---------- hangars: white corrugated buildings — 4 m vertical side walls under an elliptical roof ---------- */
 const HANGARS = [];
 {
-  const R = 9;
+  // profile: vertical side walls HW high, then a half-ellipse roof (semi-axes R × RB) — ridge stays at 9 m
+  const R = 9, HW = 4, RB = 5;
+  const roofH = z => Math.abs(z) >= R ? HW : HW + RB * Math.sqrt(1 - (z / R) ** 2);
+  // one side of the profile, eave-to-ridge: [z, y] points from the base (|z| = r) up the wall and over to the ridge (z = 0)
+  const halfProf = (r = R, inset = 0) => {
+    const P = [[r, 0], [r, HW]], N = 40;
+    for (let i = 1; i <= N; i++) { const a = i / N * Math.PI / 2; P.push([r * Math.cos(a), HW + (RB - inset) * Math.sin(a)]); }
+    return P;
+  };
   const stripes = vertical => {
     const c = document.createElement('canvas'); c.width = vertical ? 32 : 4; c.height = vertical ? 4 : 32; const g = c.getContext('2d');
     for (let i = 0; i < 32; i++) { const v = Math.round(214 + 41 * Math.cos(i / 32 * Math.PI * 2)); g.fillStyle = 'rgb(' + v + ',' + v + ',' + v + ')'; vertical ? g.fillRect(i, 0, 1, 4) : g.fillRect(0, i, 4, 1); }
@@ -1600,26 +1700,37 @@ const HANGARS = [];
   const sheet = (n, map) => new T.MeshStandardMaterial({ name: n, color: 0xfbfaf6, roughness: 0.45, metalness: 0.15, side: T.DoubleSide, map, bumpMap: map, bumpScale: 1.5 });
   const trim = std('hangar_trim', 0x55595c, 0.5, 0.4), frame = std('hangar_arch_frame', 0xd9d6cf, 0.5, 0.4);
   const doorFrame = std('hangar_door_frame', 0x6b6f72, 0.5, 0.4), louvre = std('hangar_louvre', 0x2b2e30, 0.6, 0.3);
-  const ribGeo = new T.TorusGeometry(R - 0.15, 0.07, 6, 24, Math.PI / 2);
+  const ribGeo = sd => new T.TubeGeometry(new T.CatmullRomCurve3(halfProf(R - 0.15, 0.15).map(([z, y]) => new T.Vector3(0, Math.max(y, 0.22), sd * z)), false, 'centripetal'), 64, 0.07, 6);
+  const RIB = { 1: ribGeo(1), '-1': ribGeo(-1) };
   const endMap = tex(true, 1 / 0.3, 1);
-  const shell = (g, n, x0, x1, near) => {
-    const L = x1 - x0, geo = new T.CylinderGeometry(R, R, L, 64, 1, true, near ? 0 : Math.PI / 2, Math.PI / 2);
-    geo.rotateZ(Math.PI / 2);
+  const shell = (g, n, x0, x1, near, doors = []) => {
+    const segs = []; let xa = x0;
+    doors.map(d => [d.x - d.w / 2, d.x + d.w / 2, d.h]).sort((p, q) => p[0] - q[0]).forEach(([a, b, h]) => { segs.push([xa, a, 0], [a, b, h]); xa = b; });
+    segs.push([xa, x1, 0]);
+    segs.forEach(([a, b, h], i) => strip(g, n + (segs.length > 1 ? '_' + (i + 1) : ''), a, b, near, h));
+  };
+  const strip = (g, n, x0, x1, near, h) => {
+    const L = x1 - x0, sd = near ? 1 : -1, P = h ? [[R, h], ...halfProf().slice(1)] : halfProf(), pos = [], uv = [], idx = [];
+    let acc = [0]; for (let i = 1; i < P.length; i++) acc.push(acc[i - 1] + Math.hypot(P[i][0] - P[i - 1][0], P[i][1] - P[i - 1][1]));
+    P.forEach(([z, y], i) => { for (const e of [0, 1]) { pos.push(-L / 2 + e * L, y, sd * z); uv.push(acc[i] / acc[acc.length - 1], e); } });
+    for (let i = 0; i < P.length - 1; i++) { const a = 2 * i; idx.push(a, a + 1, a + 2, a + 1, a + 3, a + 2); }
+    const geo = new T.BufferGeometry(); geo.setAttribute('position', new T.Float32BufferAttribute(pos, 3)); geo.setAttribute('uv', new T.Float32BufferAttribute(uv, 2)); geo.setIndex(idx); geo.computeVertexNormals();
     return mesh(g, n, geo, sheet(n + '_sheeting', tex(false, 1, L / 0.3)), (x0 + x1) / 2, 0, 0);
   };
   const endWall = (g, n, x, doors, out, label) => {
-    const s = new T.Shape(); s.moveTo(-R, 0); s.absarc(0, 0, R, Math.PI, 0, true);
+    const s = new T.Shape(); s.moveTo(-R, 0); s.lineTo(-R, HW); s.absellipse(0, HW, R, RB, Math.PI, 0, true); s.lineTo(R, 0);
     doors.map(d => [-d.z - d.w / 2, -d.z + d.w / 2, d.h]).sort((p, q) => q[0] - p[0]).forEach(([a, b, h]) => { s.lineTo(b, 0); s.lineTo(b, h); s.lineTo(a, h); s.lineTo(a, 0); });
     s.lineTo(-R, 0);
     const w = mesh(g, n + '_wall', new T.ShapeGeometry(s, 48), sheet(n + '_cladding', endMap), x, 0, 0); w.rotation.y = Math.PI / 2;
-    const tr = mesh(g, n + '_edge_trim', new T.TorusGeometry(R, 0.12, 8, 64, Math.PI), trim, x, 0, 0); tr.rotation.y = Math.PI / 2;
+    const hp = halfProf(), full = [...hp.map(([z, y]) => [z, y]), ...hp.slice(0, -1).reverse().map(([z, y]) => [-z, y])];
+    mesh(g, n + '_edge_trim', new T.TubeGeometry(new T.CatmullRomCurve3(full.map(([z, y]) => new T.Vector3(0, y, z)), false, 'centripetal'), 160, 0.12, 8), trim, x, 0, 0);
     const fx = x + out * 0.06;
     doors.forEach((d, i) => {
       const k = n + '_door_' + (i + 1);
       for (const sd of [1, -1]) box(g, k + '_jamb_' + (sd > 0 ? 'a' : 'b'), 0.16, d.h + 0.15, 0.16, doorFrame, fx, (d.h + 0.15) / 2, d.z + sd * (d.w / 2 + 0.08));
       box(g, k + '_header', 0.16, 0.16, d.w + 0.32, doorFrame, fx, d.h + 0.08, d.z);
       const zmax = Math.abs(d.z) + d.w / 2 + 0.1;
-      if (Math.sqrt(R * R - zmax * zmax) > d.h + 0.75) {
+      if (roofH(zmax) > d.h + 0.75) {
         cylZ(g, k + '_shutter_coil', 0.24, d.w + 0.1, doorFrame, x - out * 0.3, d.h + 0.42, d.z, 32);
         box(g, k + '_shutter_hood', 0.55, 0.06, d.w + 0.2, trim, x - out * 0.3, d.h + 0.69, d.z);
       }
@@ -1643,7 +1754,7 @@ const HANGARS = [];
     const np = mesh(g, n + '_nameplate', new T.PlaneGeometry(4.6, 1.9), new T.MeshStandardMaterial({ name: n + '_nameplate_face', map: tx, emissiveMap: tx, emissive: 0xffffff, emissiveIntensity: 0.4, roughness: 0.5 }), fx + out * 0.045, 7.55, 0);
     np.rotation.y = out * Math.PI / 2;
   };
-  const hangar = (n, x0, x1, westDoors, eastDoors, label, notch) => {
+  const hangar = (n, x0, x1, westDoors, eastDoors, label, notch, sideDoors = []) => {
     const g = grp(model, n), Hg = { g, x0, x1 };
     Hg.near = grp(g, n + '_operator_side'); Hg.far = grp(g, n + '_drive_side');
     Hg.west = grp(g, n + '_west_end'); Hg.east = grp(g, n + '_east_end');
@@ -1654,78 +1765,34 @@ const HANGARS = [];
       box(g, n + '_floor_slab_dock_s', x1 - xa, 0.15, za + R, M.concrete, (xa + x1) / 2, -0.075, (za - R) / 2);
       box(g, n + '_floor_slab_dock_n', x1 - xa, 0.15, R - zb, M.concrete, (xa + x1) / 2, -0.075, (zb + R) / 2);
     }
-    shell(Hg.near, n + '_shell_operator_side', x0, x1, true);
+    shell(Hg.near, n + '_shell_operator_side', x0, x1, true, sideDoors);
     shell(Hg.far, n + '_shell_drive_side', x0, x1, false);
-    for (const sd of [1, -1]) box(sd > 0 ? Hg.near : Hg.far, n + '_base_rail_' + (sd > 0 ? 'operator' : 'drive'), x1 - x0, 0.22, 0.22, trim, (x0 + x1) / 2, 0.11, sd * (R - 0.08));
+    box(Hg.far, n + '_base_rail_drive', x1 - x0, 0.22, 0.22, trim, (x0 + x1) / 2, 0.11, -(R - 0.08));
+    { let xa = x0, k = 0; for (const [a, b] of [...sideDoors.map(d => [d.x - d.w / 2 - 0.16, d.x + d.w / 2 + 0.16]).sort((p, q) => p[0] - q[0]), [x1, x1]]) { if (a > xa) box(Hg.near, n + '_base_rail_operator_' + (++k), a - xa, 0.22, 0.22, trim, (xa + a) / 2, 0.11, R - 0.08); xa = b; } }
+    sideDoors.forEach((d, i) => {
+      const k = n + '_side_door_' + (i + 1) + '_' + d.name, zf = R + 0.06;
+      for (const sx of [1, -1]) box(Hg.near, k + '_jamb_' + (sx > 0 ? 'e' : 'w'), 0.16, d.h + 0.15, 0.16, doorFrame, d.x + sx * (d.w / 2 + 0.08), (d.h + 0.15) / 2, zf);
+      box(Hg.near, k + '_header', d.w + 0.32, 0.16, 0.16, doorFrame, d.x, d.h + 0.08, zf);
+      cylX(Hg.near, k + '_shutter_coil', 0.24, d.w + 0.1, doorFrame, d.x, d.h + 0.42, R - 0.3, 32);
+      box(Hg.near, k + '_threshold', d.w, 0.004, 0.6, M.marking, d.x, 0.003, R);
+    });
     const nr = Math.ceil((x1 - x0) / 4.5);
     for (let i = 1; i < nr; i++) for (const sd of [1, -1]) {
-      const r = mesh(sd > 0 ? Hg.near : Hg.far, n + '_arch_rib_' + i + '_' + (sd > 0 ? 'operator' : 'drive'), ribGeo, frame, x0 + i * (x1 - x0) / nr, 0, 0);
-      r.rotation.y = -sd * Math.PI / 2;
+      if (sd > 0 && sideDoors.some(d => Math.abs(x0 + i * (x1 - x0) / nr - d.x) < d.w / 2 + 0.3)) continue;
+      mesh(sd > 0 ? Hg.near : Hg.far, n + '_arch_rib_' + i + '_' + (sd > 0 ? 'operator' : 'drive'), RIB[sd], frame, x0 + i * (x1 - x0) / nr, 0, 0);
     }
     endWall(Hg.west, n + '_west', x0, westDoors, -1, label);
     endWall(Hg.east, n + '_east', x1, eastDoors, 1, label);
     g.traverse(o => { if (o.isMesh) o.userData.noCast = true; });
     HANGARS.push(Hg); return Hg;
   };
-  hangar('hangar_1', -35.8 - EXT, 15.6, [{ z: 3.7, w: 3.6, h: 3.6 }], [{ z: 5.8, w: 3.6, h: 3.6 }, { z: -6, w: 3.6, h: 3.6 }], ['HANGAR-1', '03 · 04']);
+  // hangar 1: no end door; two doors in the north side onto the raised way — printed-roll delivery (x −45.5) and outbound paper pallets (04, mid-length x −17.8)
+  hangar('hangar_1', -35.8 - EXT, 15.6, [], [], ['HANGAR-1', '03 · 04'], null, [{ x: -45.5, w: 3.6, h: 3.6, name: 'roll_delivery' }, { x: -17.8, w: 3.6, h: 3.6, name: 'paper_pallets_out' }]);
   // hangar 3 (print hall): base paper in through the west door (z 47.7), printed rolls out through the east door (z 40)
-  hangar('hangar_2', -18.1, 15.6, [{ z: 3.7, w: 3.6, h: 3.6 }], [{ z: -4, w: 3.4, h: 3.4 }], ['HANGAR-3', '01 · 02']).g.position.z = 44;
+  hangar('hangar_2', -18.1, 15.6, [{ z: 3.7, w: 3.6, h: 3.6 }, { z: -3.7, w: 3.6, h: 3.6 }], [], ['HANGAR-3', '01 · 02']).g.position.z = 44;
   // hangar 3: store hall between hangars 1 and 2, parallel, same size as hangar 2; east-end doors on the two store aisles (z 16 · 28)
-  const H3 = hangar('hangar_3', -18.1, 15.6, [{ z: 0, w: 3.6, h: 3.6 }], [{ z: -6, w: 3.4, h: 3.4 }, { z: 6, w: 3.4, h: 3.4 }], ['HANGAR-2', 'STORES']);
+  const H3 = hangar('hangar_3', -18.1, 15.6, [{ z: 0, w: 3.6, h: 3.6 }], [], ['HANGAR-2', 'STORES']);
   H3.g.position.z = 22;
-}
-/* ---------- forklift charging stations: yard, east of the yard lane, facing the hangar 1 / stores gap ---------- */
-{
-  const cg = grp(model, 'forklift_charging');
-  const body = std('charger_body', 0xf4f3ef, 0.4, 0.2), dark = std('charger_dark', 0x2b2e30, 0.6, 0.3);
-  const led = new T.MeshStandardMaterial({ name: 'charger_led', color: GREEN, emissive: GREEN, emissiveIntensity: 1.2 });
-  const CX = 28.6, ZS = [9.6, 13.4];
-  box(cg, 'charging_pad', 4.2, 0.03, 8.2, M.concrete, CX - 1.4, 0.015, 11.5);
-  rbox(cg, 'charging_canopy', 1.6, 0.12, 8.0, 0.03, dark, CX + 0.1, 3.2, 11.5);
-  for (const z of [7.7, 15.3]) box(cg, 'charging_canopy_post_' + (z < 11.5 ? 'south' : 'north'), 0.12, 3.15, 0.12, M.steelDark, CX + 0.6, 1.6, z);
-  ZS.forEach((z, i) => {
-    const k = 'charger_' + (i + 1);
-    box(cg, k + '_plinth', 0.7, 0.12, 0.6, M.concrete, CX, 0.09, z);
-    rbox(cg, k + '_cabinet', 0.5, 1.5, 0.5, 0.04, body, CX, 0.9, z);
-    box(cg, k + '_screen', 0.02, 0.28, 0.34, dark, CX - 0.255, 1.35, z);
-    box(cg, k + '_status_led', 0.03, 0.06, 0.34, led, CX - 0.255, 1.58, z);
-    box(cg, k + '_holster', 0.08, 0.14, 0.12, dark, CX - 0.27, 1.0, z + 0.12);
-    const coil = mesh(cg, k + '_cable_coil', new T.TorusGeometry(0.17, 0.025, 8, 32), dark, CX - 0.3, 0.72, z - 0.1); coil.rotation.y = Math.PI / 2;
-    for (const dz of [-0.95, 0.95]) box(cg, k + '_bay_line_' + (dz < 0 ? 'a' : 'b'), 3.0, 0.004, 0.08, M.marking, CX - 2.0, 0.035, z + dz);
-    for (const dz of [-0.35, 0.35]) box(cg, k + '_wheel_stop_' + (dz < 0 ? 'a' : 'b'), 0.12, 0.1, 0.4, M.rubber, CX - 0.75, 0.08, z + dz);
-  });
-  // two forklifts parked on charge: rear to the charger, forks west (clear of the yard lane), cable to the rear plate;
-  // a floating call-out over each shows the live charge level
-  ZS.forEach((z, i) => {
-    const f = fl.clone(true); f.position.set(CX - 1.6, 0, z); f.rotation.y = Math.PI / 2;
-    f.traverse(o => { if (o.name === 'fl_core_ram' || o.name === 'fl_ram_collar' || o.name === 'fl_operator') o.visible = false; });
-    const c = f.getObjectByName('fl_carriage'); c.position.y = 0.3;
-    for (const sd of [1, -1]) box(c, 'fl_fork_' + (sd > 0 ? 'r' : 'l'), 0.12, 0.05, 1.9, M.steelDark, sd * 0.6, -0.245, -1.0);
-    f.traverse(o => { if (o.name) o.name = 'charging_' + (i + 1) + '_' + o.name; }); f.name = 'charging_forklift_' + (i + 1); cg.add(f);
-    const cab = cylX(cg, 'charger_' + (i + 1) + '_cable', 0.025, 1.2, dark, CX - 0.85, 0.75, z - 0.1, 8);
-    const cv = document.createElement('canvas'); cv.width = 1024; cv.height = 512; const g = cv.getContext('2d');
-    const tx = new T.CanvasTexture(cv); tx.colorSpace = T.SRGBColorSpace; tx.anisotropy = 8;
-    const draw = pct => {
-      g.clearRect(0, 0, 1024, 512);
-      g.fillStyle = '#1d1f20'; g.fillRect(162, 20, 700, 210); g.fillStyle = '#5980a6'; g.fillRect(162, 20, 700, 16);
-      g.strokeStyle = '#ffffff'; g.lineWidth = 8; g.strokeRect(212, 78, 250, 116); g.fillStyle = '#ffffff'; g.fillRect(462, 112, 18, 48);
-      g.fillStyle = pct >= 100 ? GREEN : '#8fb0cf'; g.fillRect(224, 90, 226 * pct / 100, 92);
-      g.fillStyle = '#ffffff'; g.textAlign = 'left'; g.font = '700 150px "Barlow Condensed","Arial Narrow",Arial,sans-serif';
-      g.fillText(pct >= 100 ? 'FULL' : pct + '%', 520, 190, 320);
-      g.fillStyle = '#5980a6'; g.fillRect(482, 230, 60, 150);
-      g.beginPath(); g.moveTo(412, 370); g.lineTo(612, 370); g.lineTo(512, 500); g.closePath(); g.fill();
-      tx.needsUpdate = true;
-    };
-    const sp = new T.Sprite(new T.SpriteMaterial({ map: tx, transparent: true, depthWrite: false }));
-    sp.name = 'charging_forklift_' + (i + 1) + '_callout'; sp.scale.set(4, 2, 1); sp.position.set(CX - 1.6, 3.9, z); sp.renderOrder = 10; cg.add(sp);
-    const p0 = 1, rate = i ? 0.45 : 0.6; let last = -1; const t0 = performance.now();
-    const tick = now => {
-      const pct = Math.min(100, Math.floor(p0 + (now - t0) / 1000 * rate));   // 1 % → full, then holds FULL (charger stops)
-      if (pct !== last) { last = pct; draw(pct); }
-      if (pct < 100) requestAnimationFrame(tick);
-    };
-    draw(p0); requestAnimationFrame(tick);
-  });
 }
 /* ---------- raised docks: hangar plinths, forklift aprons (yellow edge where trucks back up), truck bay outlines on the low yard ---------- */
 {
@@ -1734,19 +1801,129 @@ const HANGARS = [];
   for (const [n, x0, x1, z0, z1] of [['hangar_1', -51.2, 15.6, -9, 9], ['hangar_2_stores', -18.1, 15.6, 13, 31], ['hangar_3', -18.1, 15.6, 35, 53]])
     box(dg, n + '_plinth', x1 - x0, DOCK, z1 - z0, wall, (x0 + x1) / 2, -DOCK / 2 - 0.075, (z0 + z1) / 2);
   // [name, x0, x1, z0, z1, yellow edges (s/n/w/e)]
-  const APRONS = [['west_hangar_1', -66.5, -51.2, -3.3, 9, ''], ['west_stores', -44, -18.1, 19.35, 31, 'sw'], ['west_board_bay', -32.6, -18.1, 13.35, 19.35, 'sw'],
-    ['west_paper_delivery', -33.4, -18.1, 40.7, 53, 'sw'], ['east_yard', 15.6, 31.5, -9, 53, ''], ['gap_1_2', -18.1, 15.6, 9, 13, ''], ['gap_2_3', -18.1, 15.6, 31, 35, '']];
+  const APRONS = [['west_hangar_1_w', -66.5, -62, -3.3, 9, ''], ['west_hangar_1_e', -58, -51.2, -3.3, 9, ''], ['west_hangar_1_ramp_head', -62, -58, -3.3, -1, ''], ['west_link_2_3', -32.6, -18.1, 31, 41.35, 'w'], ['west_stores', -44, -18.1, 19.35, 31, 'sw'], ['west_board_bay', -32.6, -18.1, 13.35, 19.35, 'w'], ['forklift_way_1_2', -51.2, -32.6, 9, 13.35, 'nw'], ['forklift_way_1_2_east', -32.6, -18.1, 9, 13.35, ''],
+    ['west_hangar_3', -44, -18.1, 41.35, 53, 'sw'], ['north_hangar_3', -33.4, 15.6, 53, 66, 'n'], ['east_yard', 15.6, 31.5, -9, 53, ''], ['gap_1_2', -18.1, 15.6, 9, 13, ''], ['gap_2_3', -18.1, 15.6, 31, 35, '']];
   for (const [n, x0, x1, z0, z1, e] of APRONS) {
     box(dg, 'apron_' + n, x1 - x0, H, z1 - z0, apronM, (x0 + x1) / 2, -H / 2, (z0 + z1) / 2);
     if (e.includes('s')) box(dg, 'apron_' + n + '_edge_s', x1 - x0, 0.012, 0.15, edge, (x0 + x1) / 2, 0.006, z0 + 0.075);
     if (e.includes('n')) box(dg, 'apron_' + n + '_edge_n', x1 - x0, 0.012, 0.15, edge, (x0 + x1) / 2, 0.006, z1 - 0.075);
     if (e.includes('w')) box(dg, 'apron_' + n + '_edge_w', 0.15, 0.012, z1 - z0, edge, x0 + 0.075, 0.006, (z0 + z1) / 2);
   }
+  // forklift ramps down to the truck yard: R1 north off the hangar-1 west apron, R2 up east onto the board-bay apron (between the two truck lanes)
+  {
+    const rampM = std('dock_ramp', 0xc9c8c3, 0.9), wedge = (L, Wd) => { const sh = new T.Shape(); sh.moveTo(0, 0); sh.lineTo(L, -DOCK); sh.lineTo(L, -H); sh.lineTo(0, -H); sh.closePath(); const g = new T.ExtrudeGeometry(sh, { depth: Wd, bevelEnabled: false }); g.translate(0, 0, -Wd / 2); return g; };
+    mesh(dg, 'forklift_ramp_r1', wedge(10, 4), rampM, -60, 0, -1).rotation.y = -Math.PI / 2;
+    mesh(dg, 'forklift_ramp_r2', wedge(7.4, 3.3), rampM, -32.6, 0, 15.05).rotation.y = Math.PI;
+    for (const sx of [-1, 1]) box(dg, 'forklift_ramp_r1_edge_' + (sx < 0 ? 'w' : 'e'), 0.15, 0.012, 10, edge, -60 + sx * 1.93, -0.39, 4, 0, 0).rotation.x = Math.atan2(DOCK, 10);
+  }
   // truck bays: yellow outline on three sides (open to the dock edge), centred on each truck's parked footprint
   const Y = -DOCK - 0.004;
-  for (const [n, cx, cz, L, w, side] of [['paper_delivery', -28.4, 39.4, 10.4, 1.3, 1], ['paper_dispatch', -38.1, 18, 10.4, 1.3, 1]]) {
+  for (const [n, cx, cz, L, w, side] of [['paper_delivery', -38.1, 40, 10.4, 1.3, 1], ['paper_dispatch', -38.1, 18, 10.4, 1.3, 1]]) {
     box(dg, n + '_bay_line_far', L, 0.008, 0.12, edge, cx, Y, cz - side * (w + 0.06));
     for (const sx of [-1, 1]) box(dg, n + '_bay_line_' + (sx < 0 ? 'w' : 'e'), 0.12, 0.008, w + 0.06 + w, edge, cx + sx * (L / 2), Y, cz - side * 0.03);
+  }
+}
+/* ---------- base-paper roll store: two-high shipping containers along HANGAR-3's north wall (x −18.1 … 15.6) ---------- */
+{
+  const cg = grp(model, 'paper_roll_containers');
+  const W = 2.44, H = 2.59, Y0 = 0, ZC = 53 + 0.5 + 6.06 / 2;
+  const rib = (() => { const c = document.createElement('canvas'); c.width = 64; c.height = 4; const x = c.getContext('2d');
+    const g = x.createLinearGradient(0, 0, 64, 0); [[0, '#c9c9c9'], [0.25, '#ffffff'], [0.5, '#d8d8d8'], [0.75, '#9a9a9a'], [1, '#c9c9c9']].forEach(([o, s]) => g.addColorStop(o, s));
+    x.fillStyle = g; x.fillRect(0, 0, 64, 4); return c; })();
+  const skin = (n, col, L) => { const t = new T.CanvasTexture(rib); t.wrapS = T.RepeatWrapping; t.repeat.set(L / 0.28, 1); t.colorSpace = T.SRGBColorSpace;
+    return std(n, col, 0.6, 0.35, { map: t }); };
+  const frameM = std('container_frame', 0x2b3a4a, 0.55, 0.4), floorM = std('container_floor', 0x6b5440, 0.85);
+  const COLS = [0xa8322a, 0x8c2620];
+  const container = (n, L, x, y, ci, open) => {
+    const g = grp(cg, n, x, y, ZC), col = COLS[ci], side = skin(n + '_skin', col, L), plain = std(n + '_paint', col, 0.6, 0.35);
+    box(g, n + '_floor', L - 0.04, 0.15, W - 0.04, floorM, 0, 0.085, 0);
+    box(g, n + '_roof', L - 0.1, 0.06, W - 0.1, plain, 0, H - 0.06, 0);
+    for (const s of [1, -1]) box(g, n + '_side_' + (s > 0 ? 'n' : 's'), L - 0.3, H - 0.4, 0.04, side, 0, H / 2, s * (W / 2 - 0.05));
+    box(g, n + '_end_w', 0.04, H - 0.4, W - 0.3, side, -L / 2 + 0.05, H / 2, 0);
+    for (const sx of [1, -1]) for (const sz of [1, -1]) box(g, n + '_post_' + (sx > 0 ? 'e' : 'w') + (sz > 0 ? 'n' : 's'), 0.16, H, 0.16, frameM, sx * (L / 2 - 0.08), H / 2, sz * (W / 2 - 0.08));
+    for (const yy of [0.115, H - 0.115]) for (const sz of [1, -1]) box(g, n + '_rail_' + (yy < 1 ? 'b' : 't') + (sz > 0 ? 'n' : 's'), L - 0.34, 0.2, 0.12, frameM, 0, yy, sz * (W / 2 - 0.075));
+    for (const sz of [1, -1]) {
+      const leaf = grp(g, n + '_door_' + (sz > 0 ? 'n' : 's'), L / 2 - 0.06, 0, sz * (W / 2 - 0.16));
+      box(leaf, n + '_door_' + (sz > 0 ? 'n' : 's') + '_panel', 0.05, H - 0.4, W / 2 - 0.17, side, 0, H / 2, -sz * (W / 4 - 0.085));
+      for (const f of [0.3, 0.7]) box(leaf, n + '_door_' + (sz > 0 ? 'n' : 's') + '_bar_' + (f < 0.5 ? 'a' : 'b'), 0.06, H - 0.3, 0.04, M.steelLight, 0.04, H / 2, -sz * (W / 2) * f);
+      leaf.rotation.y = open ? -sz * 1.75 : 0;
+    }
+    // base-paper rolls stand on end, two across (same Ø as the line rolls), one high (instanced: one paper + one core mesh per container)
+    const R = ROLL_R, RH = 2.0, P = [];
+    for (let px = -L / 2 + 0.2 + R; px <= L / 2 - 0.25 - R; px += 2 * R + 0.04) if (!open || px <= 0)
+      for (const pz of [-(R + 0.02), R + 0.02]) P.push([px, 0.15 + RH / 2, pz]);
+    const ip = new T.InstancedMesh(new T.CylinderGeometry(R, R, RH, 40), M.paper, P.length), ic = new T.InstancedMesh(new T.CylinderGeometry(0.08, 0.08, RH + 0.012, 16), M.steelDark, P.length);
+    ip.name = n + '_rolls_paper'; ic.name = n + '_rolls_core';
+    const mx = new T.Matrix4(); P.forEach((p, i) => { mx.makeTranslation(...p); ip.setMatrixAt(i, mx); ic.setMatrixAt(i, mx); });
+    g.add(ip, ic);
+    g.traverse(o => { if (o.isMesh) o.userData.noCast = true; });
+    return g;
+  };
+  // twelve identical 20 ft boxes set crosswise to the hangar (long axis north–south), doors facing the north yard; every third lower door stands open
+  const L = 6.06, PITCH = W + 0.33, N = 12, X0 = (-18.1 + 15.6) / 2 - (N - 1) * PITCH / 2;
+  // east half: EV parking canopy over six bays, a charger at every other bay (1 · 3 · 5)
+  {
+    const ev = grp(model, 'ev_charging_canopy'), xa = X0 + 5 * PITCH + W / 2 + 3.0 + 0.4, xb = X0 + 11 * PITCH + W / 2, za = 53.5, zb = 53.5 + L, CH = 3.3;
+    const postM = std('canopy_steel', 0x4d6175, 0.5, 0.45), roofM = std('canopy_roof', 0xf3f4f5, 0.6, 0.15), lineM = std('ev_bay_line', 0xf2f2f3, 0.8);
+    const evM = std('ev_charger_body', 0xf4f5f6, 0.4, 0.1), accM = std('ev_charger_accent', 0x5980a6, 0.45, 0.2), scrM = std('ev_charger_screen', 0x1d2a38, 0.25, 0.1, { emissive: 0x2b5a85, emissiveIntensity: 0.6 });
+    // curved (barrel) roof sheet, pitched down from the hangar side (back, south) to the open front (north)
+    const RZ0 = za - 0.25, RZ1 = zb + 0.75, HB = CH + 0.9, HF = CH, BUL = 0.45, TH = 0.08;
+    const roofY = z => { const t = (z - RZ0) / (RZ1 - RZ0); return HB + (HF - HB) * t + BUL * Math.sin(Math.PI * t); };
+    const prof = new T.Shape(), NS = 32;
+    for (let i = 0; i <= NS; i++) { const z = RZ0 + (RZ1 - RZ0) * i / NS; (i ? prof.lineTo : prof.moveTo).call(prof, -z, roofY(z)); }
+    for (let i = NS; i >= 0; i--) { const z = RZ0 + (RZ1 - RZ0) * i / NS; prof.lineTo(-z, roofY(z) - TH); }
+    const roof = mesh(ev, 'canopy_roof', new T.ExtrudeGeometry(prof, { depth: xb - xa + 0.8, bevelEnabled: false, curveSegments: 1 }), roofM, xa - 0.4, Y0, 0);
+    roof.rotation.y = Math.PI / 2;
+    const PX = [0, 1, 2, 3, 4, 5].map(k => xa + 0.2 + k * (xb - xa - 0.4) / 5);   // six pairs of posts
+    for (const z of [za + 0.25, zb - 0.25]) {
+      const top = roofY(z) - TH;
+      for (const x of PX) cylY(ev, `canopy_post_${x.toFixed(1)}_${z.toFixed(1)}`, 0.07, top, postM, x, Y0 + top / 2, z, 16);
+      box(ev, 'canopy_beam_' + (z < za + 1 ? 's' : 'n'), xb - xa, 0.3, 0.2, postM, (xa + xb) / 2, Y0 + top - 0.15, z);
+    }
+    box(ev, 'canopy_fascia', xb - xa + 0.8, 0.22, 0.05, accM, (xa + xb) / 2, Y0 + roofY(RZ1) - TH / 2, RZ1 + 0.03);
+    for (let j = 0; j <= 6; j++) box(ev, 'ev_bay_line_' + j, 0.1, 0.01, L - 0.6, lineM, xa + 0.05 + j * (xb - xa - 0.1) / 6, Y0 + 0.006, (za + zb) / 2 + 0.3);
+    // Li Auto-style home wallbox: glossy black rounded pebble on a back plate, gun docked low on the front, cable dropping to the floor
+    const rr = (w, h, r) => { const sh = new T.Shape(); sh.moveTo(-w / 2 + r, -h / 2); sh.lineTo(w / 2 - r, -h / 2); sh.quadraticCurveTo(w / 2, -h / 2, w / 2, -h / 2 + r); sh.lineTo(w / 2, h / 2 - r); sh.quadraticCurveTo(w / 2, h / 2, w / 2 - r, h / 2); sh.lineTo(-w / 2 + r, h / 2); sh.quadraticCurveTo(-w / 2, h / 2, -w / 2, h / 2 - r); sh.lineTo(-w / 2, -h / 2 + r); sh.quadraticCurveTo(-w / 2, -h / 2, -w / 2 + r, -h / 2); return sh; };
+    const shellM = std('li_wallbox_shell', 0x0c0d0f, 0.18, 0.2), plateM = std('li_wallbox_plate', 0x18191c, 0.45, 0.1), logoM = std('li_logo', 0xf4f4f4, 0.4, 0, { emissive: 0xffffff, emissiveIntensity: 0.25 });
+    const gunM = std('li_gun', 0x1e2024, 0.35, 0.2), cableM = std('ev_cable', 0x111316, 0.55), clampM = std('ev_post_clamp', 0x8a96a3, 0.4, 0.6);
+    const shellG = new T.ExtrudeGeometry(rr(0.18, 0.28, 0.07), { depth: 0.04, bevelEnabled: true, bevelThickness: 0.025, bevelSize: 0.02, bevelSegments: 6, curveSegments: 12 });
+    const plateG = new T.ExtrudeGeometry(rr(0.2, 0.3, 0.07), { depth: 0.015, bevelEnabled: true, bevelThickness: 0.005, bevelSize: 0.005, bevelSegments: 2, curveSegments: 12 });
+    // outer posts: white wall-box chargers (screen, light bar, side e-stop, docked gun)
+    const stopM = std('ev_estop', 0xc62828, 0.4), stopRing = std('ev_estop_ring', 0xf2a516, 0.5), barM = std('ev_light_bar', 0xffffff, 0.3, 0, { emissive: 0xbfe3ff, emissiveIntensity: 0.9 });
+    [PX[1], PX[5]].forEach((x, j) => {
+      const n = 'ev_charger_' + (j ? 3 : 1), c = grp(ev, n, x, Y0, za + 0.25 + 0.07);
+      for (const y of [0.95, 1.55]) box(c, n + '_clamp_' + (y < 1.2 ? 'lo' : 'hi'), 0.26, 0.05, 0.05, clampM, 0, y, 0.0);
+      box(c, n + '_body', 0.34, 0.5, 0.15, evM, 0, 1.3, 0.1);
+      box(c, n + '_face', 0.38, 0.56, 0.025, evM, 0, 1.3, 0.19);
+      box(c, n + '_screen', 0.16, 0.11, 0.004, scrM, 0, 1.38, 0.204);
+      box(c, n + '_light_bar', 0.18, 0.015, 0.004, barM, 0, 1.5, 0.204);
+      box(c, n + '_card_panel', 0.24, 0.06, 0.003, accM, 0, 1.22, 0.203);
+      cylX(c, n + '_estop_ring', 0.03, 0.02, stopRing, 0.18, 1.42, 0.1, 16);
+      cylX(c, n + '_estop', 0.022, 0.03, stopM, 0.195, 1.42, 0.1, 16);
+      box(c, n + '_gun_socket', 0.03, 0.09, 0.07, cableM, 0.185, 1.16, 0.1);
+      box(c, n + '_gun', 0.13, 0.06, 0.06, evM, 0.25, 1.13, 0.1, -0.5);
+      const cab = new T.Mesh(new T.TubeGeometry(new T.CatmullRomCurve3([new T.Vector3(0.3, 1.09, 0.1), new T.Vector3(0.36, 0.75, 0.14), new T.Vector3(0.34, 0.35, 0.2), new T.Vector3(0.26, 0.12, 0.28), new T.Vector3(0.12, 0.045, 0.42), new T.Vector3(-0.2, 0.04, 0.6), new T.Vector3(-0.55, 0.04, 0.62), new T.Vector3(-0.75, 0.04, 0.45)], false, 'centripetal'), 80, 0.016, 8), cableM);
+      cab.name = n + '_cable'; c.add(cab);
+    });
+    // middle post: Li Auto wallbox
+    [PX[3]].forEach(x => {
+      const n = 'ev_charger_2', c = grp(ev, n, x, Y0, za + 0.25 + 0.07), Yc = 1.3 / 1.1; c.scale.setScalar(1.1);
+      for (const y of [Yc - 0.1, Yc + 0.1]) box(c, n + '_clamp_' + (y < Yc ? 'lo' : 'hi'), 0.22, 0.035, 0.03, clampM, 0, y, 0.0);
+      mesh(c, n + '_back_plate', plateG, plateM, 0, Yc, 0.015);
+      mesh(c, n + '_shell', shellG, shellM, 0, Yc, 0.04);
+      box(c, n + '_logo_l', 0.012, 0.03, 0.004, logoM, -0.012, Yc + 0.03, 0.107); box(c, n + '_logo_l_foot', 0.026, 0.01, 0.004, logoM, -0.005, Yc + 0.02, 0.107);
+      box(c, n + '_logo_i', 0.01, 0.022, 0.004, logoM, 0.016, Yc + 0.026, 0.107); box(c, n + '_logo_dot', 0.01, 0.008, 0.004, logoM, 0.016, Yc + 0.044, 0.107);
+      const dock = cylZ(c, n + '_gun_dock', 0.035, 0.02, plateM, 0, Yc - 0.075, 0.1, 24); dock.rotation.x = Math.PI / 2;
+      box(c, n + '_gun', 0.05, 0.11, 0.05, gunM, 0.012, Yc - 0.115, 0.125, -0.25);
+      const cab = new T.Mesh(new T.TubeGeometry(new T.CatmullRomCurve3([new T.Vector3(0.025, Yc - 0.17, 0.13), new T.Vector3(0.06, Yc - 0.45, 0.16), new T.Vector3(0.05, 0.3, 0.17), new T.Vector3(0.0, 0.1, 0.22), new T.Vector3(-0.15, 0.04, 0.3), new T.Vector3(-0.45, 0.035, 0.36), new T.Vector3(-0.6, 0.035, 0.38)], false, 'centripetal'), 60, 0.012, 8), cableM);
+      cab.name = n + '_cable'; c.add(cab);
+    });
+    ev.traverse(o => { if (o.isMesh) o.userData.noCast = true; });
+  }
+  for (let i = 0; i < N / 2; i++) {
+    const x = X0 + i * PITCH, k = String(i + 1).padStart(2, '0');
+    container('roll_container_lower_' + k, L, x, Y0, i % 2, i === 0 || i === 2).rotation.y = -Math.PI / 2;
+    container('roll_container_upper_' + k, L, x, Y0 + H, (i + 1) % 2, false).rotation.y = -Math.PI / 2;
   }
 }
 {
